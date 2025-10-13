@@ -1,0 +1,12 @@
+{
+    "project_name": "My Python Project",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-').replace('_', '-') }}",
+    "project_description": "A Python project",
+    "author_name": "Your Name",
+    "author_email": "your.email@example.com",
+    "python_version": ["3.10", "3.11", "3.12"],
+    "use_ai_workflow": ["no", "yes"],
+    "runner_type": ["github-hosted", "self-hosted"],
+    "include_docker": ["no", "yes"],
+    "license": ["MIT", "BSD-3-Clause", "Apache-2.0", "GPL-3.0", "None"]
+}

@@ -1,0 +1,15 @@
+{
+    "project_name": "My C++ Project",
+    "project_slug": "{{ cookiecutter.project_name.lower().replace(' ', '-') }}",
+    "project_description": "A C++ project",
+    "author_name": "Your Name",
+    "author_email": "your.email@example.com",
+    "cpp_standard": ["17", "20", "23"],
+    "build_system": ["cmake", "meson"],
+    "use_ai_workflow": ["no", "yes"],
+    "runner_type": ["github-hosted", "self-hosted"],
+    "enable_cache": ["yes", "no"],
+    "use_ninja": ["yes", "no"],
+    "testing_framework": ["gtest", "catch2", "doctest"],
+    "license": ["MIT", "BSD-3-Clause", "Apache-2.0", "GPL-3.0", "None"]
+}

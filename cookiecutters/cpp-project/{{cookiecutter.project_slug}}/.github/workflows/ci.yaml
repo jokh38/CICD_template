@@ -1,0 +1,18 @@
+name: C++ CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    uses: YOUR-ORG/github-cicd-templates/.github/workflows/cpp-ci-reusable.yaml@v1
+    with:
+      build-type: 'Release'
+      cpp-compiler: 'g++'
+      run-tests: true
+      enable-cache: {% if cookiecutter.enable_cache == "yes" %}true{% else %}false{% endif %}
+      runner-type: '{% if cookiecutter.runner_type == "self-hosted" %}self-hosted{% else %}ubuntu-latest{% endif %}'
+      use-ninja: {% if cookiecutter.use_ninja == "yes" %}true{% else %}false{% endif %}

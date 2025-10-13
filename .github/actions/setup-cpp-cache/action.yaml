@@ -1,0 +1,57 @@
+name: 'Setup C++ with Cache'
+description: 'Setup C++ environment with sccache'
+
+inputs:
+  compiler:
+    description: 'C++ compiler (g++ or clang++)'
+    required: false
+    default: 'g++'
+  enable-cache:
+    description: 'Enable sccache'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Install build tools
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install cmake ninja
+        fi
+
+    - name: Install sccache
+      if: inputs.enable-cache == 'true'
+      shell: bash
+      run: |
+        SCCACHE_VERSION=0.7.7
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          FILE=sccache-v$SCCACHE_VERSION-x86_64-unknown-linux-musl
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          FILE=sccache-v$SCCACHE_VERSION-x86_64-apple-darwin
+        fi
+
+        curl -L https://github.com/mozilla/sccache/releases/download/v$SCCACHE_VERSION/$FILE.tar.gz | tar xz
+        sudo mv $FILE/sccache /usr/local/bin/
+        chmod +x /usr/local/bin/sccache
+
+    - name: Setup sccache
+      if: inputs.enable-cache == 'true'
+      shell: bash
+      run: |
+        echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> $GITHUB_ENV
+        echo "SCCACHE_DIR=$HOME/.cache/sccache" >> $GITHUB_ENV
+
+    - name: Cache sccache
+      if: inputs.enable-cache == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/sccache
+        key: sccache-${{ runner.os }}-${{ inputs.compiler }}-${{ github.sha }}
+        restore-keys: |
+          sccache-${{ runner.os }}-${{ inputs.compiler }}-

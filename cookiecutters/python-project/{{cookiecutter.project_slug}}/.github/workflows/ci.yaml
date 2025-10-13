@@ -1,0 +1,16 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  ci:
+    uses: YOUR-ORG/github-cicd-templates/.github/workflows/python-ci-reusable.yaml@v1
+    with:
+      python-version: '{{cookiecutter.python_version}}'
+      run-tests: true
+      run-coverage: true
+      runner-type: '{% if cookiecutter.runner_type == "self-hosted" %}self-hosted{% else %}ubuntu-latest{% endif %}'
