@@ -70,6 +70,8 @@ EOF
 run_script() {
     local script_path="$1"
     local description="$2"
+    shift 2
+    local script_args=("$@")
 
     if [ ! -f "$script_path" ]; then
         print_error "Script not found: $script_path"
@@ -77,14 +79,14 @@ run_script() {
     fi
 
     print_status "Running: $description"
-    print_status "Executing: $script_path"
+    print_status "Executing: $script_path ${script_args[*]}"
 
     if [ "$DRY_RUN" = "true" ]; then
-        print_status "[DRY RUN] Would execute: $script_path"
+        print_status "[DRY RUN] Would execute: $script_path ${script_args[*]}"
         return 0
     fi
 
-    if bash "$script_path"; then
+    if bash "$script_path" "${script_args[@]}"; then
         print_success "Completed: $description"
     else
         print_error "Failed: $description"
@@ -132,11 +134,11 @@ create_test_projects() {
         print_status "Creating test projects..."
 
         if [ "$INSTALL_CPP" = "true" ] || [ "$INSTALL_ALL" = "true" ]; then
-            run_script "$LINUX_DIR/validation/create-test-projects.sh --cpp-only" "C++ Test Project"
+            run_script "$LINUX_DIR/validation/create-test-projects.sh" "C++ Test Project" --cpp-only
         fi
 
         if [ "$INSTALL_PYTHON" = "true" ] || [ "$INSTALL_ALL" = "true" ]; then
-            run_script "$LINUX_DIR/validation/create-test-projects.sh --python-only" "Python Test Project"
+            run_script "$LINUX_DIR/validation/create-test-projects.sh" "Python Test Project" --python-only
         fi
     fi
 }
@@ -155,14 +157,14 @@ run_validation() {
             validation_args="--system-only"
         fi
 
-        run_script "$LINUX_DIR/validation/run-validation.sh $validation_args" "Validation Tests"
+        run_script "$LINUX_DIR/validation/run-validation.sh" "Validation Tests" $validation_args
     fi
 }
 
 # Function to cleanup
 cleanup() {
     print_status "Cleaning up..."
-    run_script "$LINUX_DIR/validation/run-validation.sh --cleanup" "Cleanup"
+    run_script "$LINUX_DIR/validation/run-validation.sh" "Cleanup" --cleanup
 }
 
 # Function to print summary
@@ -328,10 +330,10 @@ main() {
 
     if [ "$DRY_RUN" != "true" ]; then
         print_summary
-    else {
+    else
         print_status "DRY RUN completed successfully"
         print_status "Run without --dry-run to execute the installation"
-    }
+    fi
 }
 
 # Execute main function with all arguments

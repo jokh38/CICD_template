@@ -3,13 +3,18 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UTILS_DIR="$SCRIPT_DIR/../utils"
 RUNNER_USER="github-runner"
 SCCACHE_VERSION="0.11.0"
+
+# Source utility functions
+if [ -f "$UTILS_DIR/check-deps.sh" ]; then
+    source "$UTILS_DIR/check-deps.sh"
+else
+    echo -e "\033[0;31m[ERROR]\033[0m Utility functions not found: $UTILS_DIR/check-deps.sh"
+    exit 1
+fi
 
 install_sccache() {
     echo -e "${GREEN}Installing sccache for compilation caching...${NC}"
@@ -77,6 +82,18 @@ EOF
 }
 
 main() {
+    # Check if sccache is already installed
+    if check_sccache; then
+        print_success "sccache is already installed - skipping installation"
+        # Still configure if not configured
+        if [ ! -f "/home/$RUNNER_USER/.config/sccache/config" ]; then
+            configure_sccache
+        else
+            print_success "sccache is already configured"
+        fi
+        exit 0
+    fi
+
     install_sccache
     configure_sccache
 }

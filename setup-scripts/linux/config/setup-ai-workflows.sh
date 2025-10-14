@@ -3,12 +3,33 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UTILS_DIR="$SCRIPT_DIR/../utils"
 RUNNER_USER="github-runner"
+
+# Source utility functions
+if [ -f "$UTILS_DIR/check-deps.sh" ]; then
+    source "$UTILS_DIR/check-deps.sh"
+else
+    echo -e "\033[0;31m[ERROR]\033[0m Utility functions not found: $UTILS_DIR/check-deps.sh"
+    exit 1
+fi
+
+# Function to check if AI workflow templates are already set up
+check_ai_workflows() {
+    print_status "Checking AI workflow templates..."
+
+    local cpp_template="/home/$RUNNER_USER/.config/templates/cpp/.github/workflows/ai-workflow.yaml"
+    local python_template="/home/$RUNNER_USER/.config/templates/python/.github/workflows/ai-workflow.yaml"
+
+    if [ -f "$cpp_template" ] && [ -f "$python_template" ]; then
+        print_success "AI workflow templates are already set up"
+        return 0
+    else
+        print_warning "AI workflow templates are not set up"
+        return 1
+    fi
+}
 
 create_cpp_ai_workflow() {
     echo -e "${GREEN}Creating C++ AI workflow template...${NC}"
@@ -282,6 +303,12 @@ EOF
 }
 
 main() {
+    # Check if AI workflow templates are already set up
+    if check_ai_workflows; then
+        print_success "AI workflow templates are already set up - skipping"
+        exit 0
+    fi
+
     create_cpp_ai_workflow
     create_python_ai_workflow
 }

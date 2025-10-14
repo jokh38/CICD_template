@@ -3,12 +3,17 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UTILS_DIR="$SCRIPT_DIR/../utils"
 RUNNER_USER="github-runner"
+
+# Source utility functions
+if [ -f "$UTILS_DIR/check-deps.sh" ]; then
+    source "$UTILS_DIR/check-deps.sh"
+else
+    echo -e "\033[0;31m[ERROR]\033[0m Utility functions not found: $UTILS_DIR/check-deps.sh"
+    exit 1
+fi
 
 install_python_tools() {
     echo -e "${GREEN}Installing Python development tools for $RUNNER_USER...${NC}"
@@ -39,6 +44,12 @@ EOF
 }
 
 main() {
+    # Check if Python tools are already installed for the runner user
+    if check_python_tools; then
+        print_success "Python tools are already installed - skipping"
+        exit 0
+    fi
+
     install_python_tools
 }
 

@@ -3,21 +3,16 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+UTILS_DIR="$SCRIPT_DIR/../utils"
 
-detect_os() {
-    if [ -f /etc/debian_version ]; then
-        OS="debian"
-    elif [ -f /etc/redhat-release ]; then
-        OS="redhat"
-    else
-        echo -e "${RED}Unsupported OS${NC}"
-        exit 1
-    fi
-}
+# Source utility functions
+if [ -f "$UTILS_DIR/check-deps.sh" ]; then
+    source "$UTILS_DIR/check-deps.sh"
+else
+    echo -e "\033[0;31m[ERROR]\033[0m Utility functions not found: $UTILS_DIR/check-deps.sh"
+    exit 1
+fi
 
 install_build_tools() {
     echo -e "${GREEN}Installing build tools...${NC}"
@@ -40,6 +35,13 @@ install_build_tools() {
 
 main() {
     detect_os
+
+    # Check if build tools are already installed
+    if check_build_tools; then
+        print_success "Build tools are already installed - skipping"
+        exit 0
+    fi
+
     install_build_tools
 }
 
