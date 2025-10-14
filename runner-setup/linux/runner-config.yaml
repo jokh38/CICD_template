@@ -1,5 +1,5 @@
 # GitHub Actions Self-Hosted Runner Configuration
-# Windows Runner Settings for CICD Template System - Phase 6.2
+# Linux Runner Settings for CICD Template System - Phase 6.2
 # Version: 2.319.1
 
 # Runner Configuration
@@ -10,17 +10,17 @@ runner:
   # Runner name (will be replaced with hostname during installation)
   name: "{{ hostname }}"
 
-  # Runner user for Windows service
+  # Runner user for Linux service
   user: "github-runner"
 
   # Installation directory
-  install_dir: "C:\\actions-runner"
+  install_dir: "/opt/actions-runner"
 
   # Configuration directory
-  config_dir: "C:\\actions-runner\\config"
+  config_dir: "/opt/actions-runner/config"
 
   # Log directory
-  log_dir: "C:\\actions-runner\\_diag"
+  log_dir: "/var/log/actions-runner"
 
   # Working directory for jobs
   work_dir: "_work"
@@ -28,9 +28,9 @@ runner:
   # Default labels for the runner
   labels:
     - "self-hosted"
-    - "windows"
+    - "linux"
     - "x64"
-    - "x86_64"
+    - "ubuntu"
 
   # Maximum number of parallel jobs
   max_jobs: 1

@@ -29,9 +29,9 @@ The Windows runner setup includes:
    # Right-click PowerShell and select "Run as Administrator"
    ```
 
-2. **Navigate to the runner setup directory**
+2. **Navigate to the Windows runner setup directory**
    ```powershell
-   cd C:\path\to\CICD_template\runner-setup
+   cd C:\path\to\CICD_template\runner-setup\windows
    ```
 
 3. **Run the installation script**
@@ -51,13 +51,14 @@ The Windows runner setup includes:
 ## 📁 File Structure
 
 ```
-runner-setup/
+runner-setup/windows/
 ├── install-runner-windows.ps1      # Main installation script
 ├── manage-runner-service.ps1       # Service management utility
 ├── runner-config-windows.yaml      # Windows-specific configuration
-├── README-Windows.md               # This file
-└── README.md                       # Linux documentation (for reference)
+└── README.md                       # This file
 ```
+
+**Note**: For Linux setup, see the `../linux/` directory.
 
 ## 🛠️ Installation Options
 
