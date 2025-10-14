@@ -10,6 +10,24 @@ NC='\033[0m'
 
 RUNNER_USER="github-runner"
 
+# Function to detect the best Python command to use
+detect_python_cmd() {
+    # Check if we're in a conda environment
+    if [ -n "$CONDA_DEFAULT_ENV" ]; then
+        echo "python"
+        return 0
+    fi
+
+    # Try python first, then python3
+    if command -v python &> /dev/null; then
+        echo "python"
+    elif command -v python3 &> /dev/null; then
+        echo "python3"
+    else
+        echo "python3"  # fallback
+    fi
+}
+
 validate_cpp_tools() {
     echo -e "${GREEN}Running C++ tools validation...${NC}"
 
@@ -46,6 +64,7 @@ validate_python_tools() {
     echo -e "${GREEN}Running Python tools validation...${NC}"
 
     TEST_DIR="/tmp/python-test-project"
+    PYTHON_CMD=$(detect_python_cmd)
 
     if [ ! -d "$TEST_DIR" ]; then
         echo -e "${RED}Python test project not found. Run create-test-projects.sh first.${NC}"
@@ -54,16 +73,16 @@ validate_python_tools() {
 
     # Test ruff
     echo "Testing ruff..."
-    cd $TEST_DIR && python3 -m ruff check .
-    cd $TEST_DIR && python3 -m ruff format --check .
+    cd $TEST_DIR && $PYTHON_CMD -m ruff check .
+    cd $TEST_DIR && $PYTHON_CMD -m ruff format --check .
 
     # Test pytest
     echo "Testing pytest..."
-    cd $TEST_DIR && python3 -m pytest tests/ -v
+    cd $TEST_DIR && $PYTHON_CMD -m pytest tests/ -v
 
     # Test mypy
     echo "Testing mypy..."
-    cd $TEST_DIR && python3 -m mypy .
+    cd $TEST_DIR && $PYTHON_CMD -m mypy .
 
     echo -e "${GREEN}✅ Python validation tests passed${NC}"
 }
@@ -93,15 +112,17 @@ validate_system_tools() {
 
     # Test Python tools
     echo "Testing Python tools..."
-    python3 --version
-    if python3 -m ruff --version &> /dev/null; then
-        python3 -m ruff --version
+    PYTHON_CMD=$(detect_python_cmd)
+    echo "Using Python command: $PYTHON_CMD"
+    $PYTHON_CMD --version
+    if $PYTHON_CMD -m ruff --version &> /dev/null; then
+        $PYTHON_CMD -m ruff --version
     else
         echo -e "${YELLOW}⚠️ ruff not found${NC}"
     fi
 
-    if python3 -m pytest --version &> /dev/null; then
-        python3 -m pytest --version
+    if $PYTHON_CMD -m pytest --version &> /dev/null; then
+        $PYTHON_CMD -m pytest --version
     else
         echo -e "${YELLOW}⚠️ pytest not found${NC}"
     fi
