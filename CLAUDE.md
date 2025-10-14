@@ -1,181 +1,66 @@
-# AI Assistant Workflow Guide
+# --- AI Assistant Global Directives ---
+# Intelligent Development Workflow with Integrated Verification Loop
 
-This document provides guidance for AI assistants (like Claude) working on this C++ project.
+## 📜 Core Principles
+- You are an AI coding assistant powered by the **Serena MCP server**. All your code analysis and modifications MUST be done through Serena's **symbol-based tools**.
+- Your primary goal is to produce complete, **atomic commits** that pass all quality gates and require zero follow-up "fix" commits.
+- **Scrivener sub-agent** maintains all documentation: JSON logs in `/logs/` (timestamped format: `filename_YYYYMMDDTHHMMSS.json`), status.md in `docs/`.
+- This document is your **highest-level directive**.
 
-## Project Overview
+---
 
-**Project**: {{cookiecutter.project_name}}
-**Description**: {{cookiecutter.project_description}}
-**Language**: C++{{cookiecutter.cpp_standard}}
-**Build System**: {{cookiecutter.build_system | capitalize}}
-**Testing Framework**: {{cookiecutter.testing_framework | upper}}
+## 🏛️ Non-Negotiable Rules
+- You **MUST NOT** violate any rule listed in `docs/AI/ARCHITECTURE_INVARINTS.md`.
+- Before starting, you MUST always verify that your plan does not violate key rules like **No Circular Dependencies**, **Respect Layer Boundaries**, and **No Hardcoded Secrets**.
+- Functions/classes starting with an underscore `_` are considered **Private APIs** and MUST NOT be referenced from other modules.
 
-## Development Setup
+---
 
-### Build Configuration
+## 🚀 Standard Operating Procedure (SOP) with Verification
+For every code modification request, you **MUST** follow this full procedure:
 
-This project uses {{cookiecutter.build_system | capitalize}} as the build system:
+1.  **Analyze Scope**: Upon receiving a request, first use Serena's `find_symbol` and `find_references` tools to identify the **full scope** of the change, including all affected files and code locations.
 
-```bash
-# Configure build
-{% if cookiecutter.build_system == "cmake" %}
-cmake -B build {% if cookiecutter.use_ninja == "yes" %}-G Ninja{% endif %}
+2.  **Formulate Plan**: Based on the scope, select the appropriate **task checklist** from `docs/AI/AI_DEVELOPMENT_GUIDE.md`. Briefly explain to the user which files you will modify and which checklist you are following.
+    - Invoke **Scrivener** to create `/logs/context_YYYYMMDDTHHMMSS.json` with task details.
 
-# Build the project
-cmake --build build
+3.  **Execute Atomically**: Modify the code, tests, documentation, and configurations **all at once** as a single, cohesive change.
+    - Invoke **Scrivener** to create `/logs/changelog_YYYYMMDDTHHMMSS.json` with modifications.
 
-# Run tests
-ctest --test-dir build
-{% else %}
-meson setup build
+4.  **Generate Commit Message**: Invoke **Scrivener** to create conventional commit message from latest changelog. Present to user for confirmation.
 
-# Build the project
-meson compile -C build
+5.  **Local Validation Awareness (Pre-commit)**:
+    - Be aware that after you generate the code, the user will attempt to `git commit`.
+    - This action will trigger a **`pre-commit` hook** that performs local checks (e.g., code formatting with `black`, linting with `flake8`).
+    - If these checks fail, **the commit will be blocked**. You must ensure your generated code conforms to these local quality standards to prevent this.
+    - On failure: Invoke **Scrivener** to create `/logs/errorlog_YYYYMMDDTHHMMSS.json`.
 
-# Run tests
-meson test -C build
-{% endif %}
-```
+6.  **Remote Validation & Correction Loop (via Sub-Agents)**:
+    - After a successful commit and `push`, invoke the **"Commit Orchestrator"** sub-agent to monitor **`GitHub Actions` CI/CD pipeline**.
+    - Invoke **Scrivener** to update latest context log with validation status.
+    - **If pipeline fails**:
+        - **A. Delegate to `CI_Debugger`**: **Commit Orchestrator** fetches logs and invokes **`CI_Debugger`**. **Scrivener** creates `/logs/errorlog_YYYYMMDDTHHMMSS.json`.
+        - **B. Await Fix**: `CI_Debugger` analyzes and returns fix. **Scrivener** records attempted solutions in errorlog.
+        - **C. Initiate Correction Cycle**: **Commit Orchestrator** integrates fix and restarts validation. **Scrivener** creates new changelog log.
 
-### Code Quality Tools
+7.  **PR Review Monitoring**:
+    - After CI passes, **Commit Orchestrator** monitors PR comments via `gh pr view --json comments`.
+    - Invoke **Scrivener** to update latest context log with PR status.
+    - **On approval**: Proceed to finalization.
+    - **On change request**: Log in new errorlog via **Scrivener**, return to step 3.
+    - **On timeout (2 hours)**: Notify user for manual intervention.
 
-The project includes pre-commit hooks for code quality:
+8.  **Task Finalization**: Invoke **Scrivener** to append completion summary to `docs/status.md` and update latest context log with final status.
 
-```bash
-# Install pre-commit hooks (done automatically)
-pre-commit install
+---
 
-# Run hooks manually
-pre-commit run --all-files
-```
+## 🔄 Interaction and Synchronization Protocol
+- **On Rule Violation**: If a user's request violates a rule in `ARCHITECTURE_INVARIANTS.md`, you **MUST STOP IMMEDIATELY**. Explain which rule would be violated and ask for clarification.
+- **Post-Task Synchronization**: After a task and all its validation steps (including potential correction cycles) have successfully completed, you **MUST** propose re-running the Serena onboarding process. Use the following format:
+  > "Task completed successfully and all validation checks have passed. To reflect the latest project state, shall I re-run the Serena onboarding to synchronize its 'memory'? (Y/n)"
 
-## Project Structure
+---
 
-```
-{{cookiecutter.project_slug}}/
-├── src/                      # Source files
-│   ├── main.cpp             # Main executable
-│   └── library.cpp          # Library implementation
-├── include/{{cookiecutter.project_slug}}/  # Header files
-│   └── library.hpp          # Library header
-├── tests/                    # Test files
-│   └── test_example.cpp     # Example tests
-├── build/                    # Build output directory
-├── .github/workflows/        # CI/CD workflows
-├── CMakeLists.txt or meson.build  # Build configuration
-└── README.md                # Project documentation
-```
-
-## Coding Standards
-
-### C++ Standards
-
-- **C++ Standard**: C++{{cookiecutter.cpp_standard}}
-- **Style**: Follow modern C++ best practices
-- **Formatting**: Use clang-format (configured in .clang-format)
-- **Warnings**: Compile with `-Wall -Wextra -Wpedantic -Werror`
-
-### Code Organization
-
-- **Headers**: Use include guards (`#pragma once` preferred)
-- **Namespaces**: Use `{{cookiecutter.project_namespace}}` namespace
-- **Functions**: Include proper documentation and type safety
-- **Error Handling**: Use exceptions or error codes consistently
-
-## Testing
-
-### Framework: {{cookiecutter.testing_framework | upper}}
-
-- Test files are located in `tests/` directory
-- Use descriptive test names
-- Aim for high test coverage
-- Test both success and failure scenarios
-
-### Running Tests
-
-```bash
-{% if cookiecutter.build_system == "cmake" %}
-# Run all tests
-ctest --test-dir build
-
-# Run tests with verbose output
-ctest --test-dir build --verbose
-
-# Run specific test
-./build/test_example
-{% else %}
-# Run all tests
-meson test -C build
-
-# Run tests with verbose output
-meson test -C build --verbose
-
-# Run specific test
-./build/tests/test_example
-{% endif %}
-```
-
-## Build System Details
-
-### {% if cookiecutter.build_system == "cmake" %}CMake{% else %}Meson{% endif %}
-
-{% if cookiecutter.build_system == "cmake" %}
-- **Minimum Version**: 3.20
-- **Generator**: {% if cookiecutter.use_ninja == "yes" %}Ninja{% else %}Default{% endif %}
-- **Configuration**: Debug and Release builds supported
-- **Dependencies**: Managed with FetchContent (e.g., gtest)
-{% else %}
-- **Configuration**: Simple and readable meson.build files
-- **Dependencies**: Managed with wrap files
-- **Cross-compilation**: Built-in support
-{% endif %}
-
-## Working with this Project
-
-When making changes:
-
-1. **Build First**: Always build before committing
-2. **Run Tests**: Ensure all tests pass
-3. **Check Code**: Run pre-commit hooks
-4. **Document Changes**: Update relevant documentation
-
-### Common Commands
-
-```bash
-# Clean build
-{% if cookiecutter.build_system == "cmake" %}
-rm -rf build && cmake -B build{% if cookiecutter.use_ninja == "yes" %} -G Ninja{% endif %}
-{% else %}
-rm -rf build && meson setup build
-{% endif %}
-
-# Debug build
-{% if cookiecutter.build_system == "cmake" %}
-cmake -B build -DCMAKE_BUILD_TYPE=Debug{% if cookiecutter.use_ninja == "yes" %} -G Ninja{% endif %}
-{% else %}
-meson setup build --buildtype=debug
-{% endif %}
-
-# Release build
-{% if cookiecutter.build_system == "cmake" %}
-cmake -B build -DCMAKE_BUILD_TYPE=Release{% if cookiecutter.use_ninja == "yes" %} -G Ninja{% endif %}
-{% else %}
-meson setup build --buildtype=release
-{% endif %}
-```
-
-## CI/CD Integration
-
-The project includes GitHub Actions workflows for:
-- **Continuous Integration**: Build and test on multiple platforms
-- **Code Quality**: Linting and static analysis
-- **Release**: Automated releases (when applicable)
-
-{% if cookiecutter.use_ai_workflow == "yes" %}
-## AI Assistant Integration
-
-This project supports AI assistant workflows:
-- Trigger AI workflows with `@claude` mentions in issues/PRs
-- AI can help with code reviews, bug fixes, and feature development
-- See `.github/workflows/ai-workflow.yaml` for details
-{% endif %}
+## 🧠 Knowledge Management & Continuous Improvement
+- Significant errors discovered during CI/CD validation are logged in `/logs/errorlog_*.json` by **Scrivener**.
+- Consult recent errorlog files to avoid repeating past mistakes. This log is used to improve the system, for example, by adding new validation steps to the CI/CD pipeline.

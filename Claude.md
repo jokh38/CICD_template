@@ -1,4 +1,4 @@
-# --- AI Assistant Global Directives (v2.2) ---
+# --- AI Assistant Global Directives ---
 # Intelligent Development Workflow with Integrated Verification Loop
 
 ## 📜 Core Principles
