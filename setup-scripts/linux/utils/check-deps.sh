@@ -170,13 +170,17 @@ check_python_tools() {
         fi
     done
 
-    # Check for Python packages
+    # Check for Python packages in both system and user installations
     if command_exists pip3; then
-        local python_packages=("ruff" "pytest" "mypy" "black" "isort")
+        local python_packages=("ruff" "pytest" "pytest-cov" "pytest-mock" "mypy" "pre-commit" "black" "isort" "flake8" "bandit" "pipx")
         for package in "${python_packages[@]}"; do
+            # Check system-wide installation
             if ! pip3 show "$package" &> /dev/null; then
-                missing_tools+=("python3-$package")
-                all_installed=false
+                # Check user installation for github-runner user
+                if ! sudo -u github-runner -H pip3 show "$package" &> /dev/null; then
+                    missing_tools+=("python3-$package")
+                    all_installed=false
+                fi
             fi
         done
     else

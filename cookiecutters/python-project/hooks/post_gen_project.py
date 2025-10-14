@@ -15,6 +15,30 @@ def run_command(cmd, check=True):
         print(f"Error: {e}")
         return False
 
+def copy_claude_md():
+    """Copy CLAUDE.md from docs/ directory."""
+    print("📋 Copying CLAUDE.md from template docs...")
+
+    # Define paths
+    source_claude = "docs/CLAUDE.md"
+    target_claude = "docs/CLAUDE.md"
+
+    # Ensure docs directory exists
+    os.makedirs("docs", exist_ok=True)
+
+    # Copy the main CLAUDE.md from the template root docs/
+    template_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    source_path = os.path.join(template_root, "docs", "CLAUDE.md")
+
+    if os.path.exists(source_path):
+        with open(source_path, 'r') as src:
+            content = src.read()
+        with open(target_claude, 'w') as dst:
+            dst.write(content)
+        print("   ✓ CLAUDE.md copied to docs/")
+    else:
+        print("   ⚠️  Source CLAUDE.md not found, keeping template version")
+
 def initialize_git():
     """Initialize git repository."""
     print("📦 Initializing git repository...")
@@ -86,6 +110,13 @@ def print_next_steps():
 def main():
     """Main post-generation logic."""
     try:
+        # Copy the main CLAUDE.md from template docs
+        copy_claude_md()
+
+        # Remove the template CLAUDE.md if it exists
+        if os.path.exists("CLAUDE.md"):
+            os.remove("CLAUDE.md")
+
         initialize_git()
         create_venv()
         install_dependencies()
