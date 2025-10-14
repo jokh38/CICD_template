@@ -1,75 +1,122 @@
-# GitHub Actions Self-Hosted Runner Setup (Linux)
+# Linux Development Environment Setup
 
-Part of the CICD Template System - Phase 6.2
+Part of the CICD Template System - Modular Setup Scripts
 
-This directory contains scripts and configuration files for setting up GitHub Actions self-hosted runners on Linux systems (Ubuntu/Debian/RHEL).
+This directory contains modular scripts for setting up GitHub Actions self-hosted runners and development environments on Linux systems (Ubuntu/Debian/RHEL).
 
 ## 📁 File Structure
 
 ```
-runner-setup/linux/
-├── install-runner-linux.sh          # Main runner installation script
-├── setup-python-tools.sh            # Python development tools setup
-├── setup-cpp-tools.sh               # C++ development tools setup
-├── runner-config.yaml               # Linux-specific configuration
-└── README.md                         # This file
+linux/
+├── core/                            # Core system dependencies
+│   └── install-system-deps.sh       # System packages and dependencies
+├── tools/                           # Development tools
+│   ├── install-compilers.sh         # Compiler tools (GCC, Clang)
+│   ├── install-build-tools.sh       # Build tools (CMake, Ninja)
+│   ├── install-sccache.sh           # Compilation caching
+│   ├── install-cpp-frameworks.sh    # C++ testing frameworks
+│   └── install-python-tools.sh      # Python development tools
+├── config/                          # Configuration setup
+│   ├── setup-code-formatting.sh     # Code formatting configurations
+│   └── setup-ai-workflows.sh        # AI workflow templates
+├── validation/                      # Testing and validation
+│   ├── create-test-projects.sh      # Create test projects for validation
+│   └── run-validation.sh            # Run validation tests
+├── install-runner-linux.sh          # GitHub Actions runner setup
+├── runner-config.yaml               # Runner configuration
+└── README.md                        # This file
 ```
 
 **Note**: For Windows setup, see the `../windows/` directory.
+**Note**: Use `../total_run.sh` for complete orchestrated setup.
 
 ## Quick Start
 
-### 1. Install GitHub Actions Runner
+### Option 1: Complete Orchestration (Recommended)
 
 ```bash
-# Run as root
+# From setup-scripts root directory
+sudo ./total_run.sh
+```
+
+This will install everything: system dependencies, compilers, build tools, C++ and Python development environments, configurations, and run validation.
+
+### Option 2: Modular Installation
+
+#### Install System Dependencies and Runner
+
+```bash
+# Install system dependencies
+sudo ./core/install-system-deps.sh
+
+# Install GitHub Actions runner
 sudo ./install-runner-linux.sh
 ```
 
-This will:
-- Install system dependencies
-- Create a dedicated `github-runner` user
-- Download and configure the GitHub Actions runner
-- Install and start the systemd service
-
-You'll be prompted for:
-- GitHub URL (e.g., https://github.com/your-org)
-- Registration token (from GitHub repository/organization settings)
-- Runner name (optional, defaults to hostname)
-
-### 2. Setup Development Tools
-
-After installing the runner, choose your development environment:
-
-#### Python Development Tools
+#### Install Development Tools
 
 ```bash
-sudo ./install-runner-linux.sh --setup-python
-# or
-sudo ./setup-python-tools.sh
+# Basic tools (compilers + build tools)
+sudo ./tools/install-compilers.sh
+sudo ./tools/install-build-tools.sh
+
+# Python development tools
+sudo ./tools/install-python-tools.sh
+
+# C++ development tools
+sudo ./tools/install-sccache.sh
+sudo ./tools/install-cpp-frameworks.sh
+
+# Configuration setup
+sudo ./config/setup-code-formatting.sh
+sudo ./config/setup-ai-workflows.sh
+
+# Validation
+./validation/create-test-projects.sh
+sudo ./validation/run-validation.sh
 ```
 
-Installs:
-- ruff (linting + formatting)
-- pytest (testing)
-- mypy (type checking)
-- pre-commit (git hooks)
-- Additional tools: black, isort, flake8, bandit, pipx
-
-#### C++ Development Tools
+### Option 3: Selective Installation
 
 ```bash
-sudo ./install-runner-linux.sh --setup-cpp
-# or
-sudo ./setup-cpp-tools.sh
+# C++ development only
+sudo ./total_run.sh --cpp-only
+
+# Python development only
+sudo ./total_run.sh --python-only
+
+# Basic tools only
+sudo ./total_run.sh --basic
 ```
 
-Installs:
-- GCC/G++ and Clang compilers
-- CMake and Ninja build tools
-- sccache (compilation cache)
-- Google Test and Catch2 frameworks
-- clang-format and clang-tidy
+## What Gets Installed
+
+### Core Components
+- **System dependencies**: build-essential, git, curl, etc.
+- **Compilers**: GCC/G++, Clang/LLVM
+- **Build tools**: CMake, Ninja, Meson
+- **GitHub Actions runner**: Configured as systemd service
+
+### Python Development
+- **ruff**: Ultra-fast linting and formatting
+- **pytest**: Testing framework with coverage
+- **mypy**: Static type checking
+- **pre-commit**: Git hooks management
+- **Additional**: black, isort, flake8, bandit, pipx
+
+### C++ Development
+- **sccache**: Compilation caching for faster builds
+- **Google Test**: Testing framework
+- **Catch2**: Modern testing framework
+- **Google Benchmark**: Performance testing
+- **clang-format**: Code formatting
+- **clang-tidy**: Static analysis
+
+### Configurations
+- **Global configs**: `.clang-format`, `.clang-tidy`, `ruff.toml`
+- **CMake presets**: Debug and release configurations
+- **AI workflows**: GitHub Actions templates
+- **Shell aliases**: Development shortcuts for both languages
 
 ## Configuration
 
