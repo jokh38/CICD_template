@@ -8,64 +8,69 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Write-ColorOutput {
-    param(
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    Write-Host $Message -ForegroundColor $Color
+# Get script directory
+$ScriptDir = $PSScriptRoot
+$UtilsDir = Join-Path (Split-Path $ScriptDir -Parent) "utils"
+
+# Import utility module
+$UtilsModule = Join-Path $UtilsDir "Check-Dependencies.psm1"
+if (Test-Path $UtilsModule) {
+    Import-Module $UtilsModule -Force
+} else {
+    Write-Host "ERROR: Utility module not found: $UtilsModule" -ForegroundColor Red
+    exit 1
 }
 
 function Install-Chocolatey {
-    Write-ColorOutput "Installing Chocolatey package manager..." "Green"
+    Write-Success "Installing Chocolatey package manager..."
 
     if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
         Set-ExecutionPolicy Bypass -Scope Process -Force
         [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
         iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-        Write-ColorOutput "✅ Chocolatey installed" "Green"
+        Write-Success "✅ Chocolatey installed"
     } else {
-        Write-ColorOutput "✅ Chocolatey already installed" "Green"
+        Write-Success "✅ Chocolatey already installed"
     }
 }
 
 function Install-VisualStudioBuildTools {
-    Write-ColorOutput "Installing Visual Studio Build Tools..." "Green"
+    Write-Success "Installing Visual Studio Build Tools..."
 
     $vsBuildTools = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\VisualStudio\SxS\VS7*" -ErrorAction SilentlyContinue
     if ($vsBuildTools) {
-        Write-ColorOutput "✅ Visual Studio Build Tools already installed" "Green"
+        Write-Success "✅ Visual Studio Build Tools already installed"
         return
     }
 
     choco install visualstudio2022buildtools --package-parameters "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended" -y
-    Write-ColorOutput "✅ Visual Studio Build Tools installed" "Green"
+    Write-Success "✅ Visual Studio Build Tools installed"
 }
 
 function Install-Git {
-    Write-ColorOutput "Installing Git..." "Green"
+    Write-Success "Installing Git..."
 
     if (Get-Command git -ErrorAction SilentlyContinue) {
-        Write-ColorOutput "✅ Git already installed" "Green"
+        Write-Success "✅ Git already installed"
     } else {
         choco install git -y
-        Write-ColorOutput "✅ Git installed" "Green"
+        Write-Success "✅ Git installed"
     }
 }
 
 function Install-Python {
-    Write-ColorOutput "Installing Python..." "Green"
+    Write-Success "Installing Python..."
 
     if (Get-Command python -ErrorAction SilentlyContinue) {
-        Write-ColorOutput "✅ Python already installed" "Green"
+        Write-Success "✅ Python already installed"
     } else {
         choco install python3 -y
-        Write-ColorOutput "✅ Python installed" "Green"
+        Write-Success "✅ Python installed"
     }
 }
 
 function Install-SystemDeps {
-    Write-ColorOutput "Installing additional system dependencies..." "Green"
+    Write-Success "Installing additional system dependencies..."
 
     $packages = @(
         "vcredist-all",
@@ -75,30 +80,36 @@ function Install-SystemDeps {
     )
 
     foreach ($package in $packages) {
-        Write-ColorOutput "Installing $package..." "Yellow"
+        Write-Warning "Installing $package..."
         choco install $package -y
     }
 
-    Write-ColorOutput "✅ System dependencies installed" "Green"
+    Write-Success "✅ System dependencies installed"
 }
 
 function Update-Path {
-    Write-ColorOutput "Updating PATH environment variable..." "Green"
+    Write-Success "Updating PATH environment variable..."
 
     $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
-    Write-ColorOutput "✅ PATH updated" "Green"
+    Write-Success "✅ PATH updated"
 }
 
 function Main {
-    Write-ColorOutput "Starting Windows system dependencies installation..." "Green"
+    Write-Success "Starting Windows system dependencies installation..."
 
     try {
         # Check if running as Administrator
         $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
         if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-ColorOutput "Please run this script as Administrator" "Red"
+            Write-Error-Output "Please run this script as Administrator"
             exit 1
+        }
+
+        # Check if system dependencies are already installed
+        if ((Test-SystemDependencies) -and (-not $Force)) {
+            Write-Success "System dependencies are already installed - skipping"
+            exit 0
         }
 
         Install-Chocolatey
@@ -108,12 +119,12 @@ function Main {
         Install-SystemDeps
         Update-Path
 
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "✅ System dependencies installation complete!" "Green"
-        Write-ColorOutput "================================" "Green"
+        Write-Success "================================"
+        Write-Success "✅ System dependencies installation complete!"
+        Write-Success "================================"
 
     } catch {
-        Write-ColorOutput "Error: $($_.Exception.Message)" "Red"
+        Write-Error-Output "Error: $($_.Exception.Message)"
         exit 1
     }
 }

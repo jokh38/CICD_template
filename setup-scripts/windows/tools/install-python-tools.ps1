@@ -8,12 +8,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Write-ColorOutput {
-    param(
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    Write-Host $Message -ForegroundColor $Color
+# Get script directory
+$ScriptDir = $PSScriptRoot
+$UtilsDir = Join-Path (Split-Path (Split-Path $ScriptDir -Parent) -Parent) "utils"
+
+# Import utility module
+$UtilsModule = Join-Path $UtilsDir "Check-Dependencies.psm1"
+if (Test-Path $UtilsModule) {
+    Import-Module $UtilsModule -Force
+} else {
+    Write-Host "ERROR: Utility module not found: $UtilsModule" -ForegroundColor Red
+    exit 1
 }
 
 function Update-Pip {
@@ -161,15 +166,21 @@ function Test-PythonTools {
 }
 
 function Main {
-    Write-ColorOutput "Starting Windows Python development tools installation..." "Green"
+    Write-Success "Starting Windows Python development tools installation..."
 
     try {
         # Check if running as Administrator
         $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
         if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-ColorOutput "Please run this script as Administrator" "Red"
+            Write-Error-Output "Please run this script as Administrator"
             exit 1
+        }
+
+        # Check if Python tools are already installed
+        if ((Test-PythonTools) -and (-not $Force)) {
+            Write-Success "Python tools are already installed - skipping"
+            exit 0
         }
 
         Update-Pip
@@ -180,13 +191,13 @@ function Main {
         Update-PythonPath
         Test-PythonTools
 
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "✅ Python tools installation complete!" "Green"
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "Note: Log out and back in to apply PATH changes" "Yellow"
+        Write-Success "================================"
+        Write-Success "✅ Python tools installation complete!"
+        Write-Success "================================"
+        Write-Warning "Note: Log out and back in to apply PATH changes"
 
     } catch {
-        Write-ColorOutput "Error: $($_.Exception.Message)" "Red"
+        Write-Error-Output "Error: $($_.Exception.Message)"
         exit 1
     }
 }

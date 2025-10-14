@@ -9,12 +9,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Write-ColorOutput {
-    param(
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    Write-Host $Message -ForegroundColor $Color
+# Get script directory
+$ScriptDir = $PSScriptRoot
+$UtilsDir = Join-Path (Split-Path (Split-Path $ScriptDir -Parent) -Parent) "utils"
+
+# Import utility module
+$UtilsModule = Join-Path $UtilsDir "Check-Dependencies.psm1"
+if (Test-Path $UtilsModule) {
+    Import-Module $UtilsModule -Force
+} else {
+    Write-Host "ERROR: Utility module not found: $UtilsModule" -ForegroundColor Red
+    exit 1
 }
 
 function Get-Architecture {
@@ -148,28 +153,43 @@ function Test-Sccache {
 }
 
 function Main {
-    Write-ColorOutput "Starting Windows sccache installation..." "Green"
+    Write-Success "Starting Windows sccache installation..."
 
     try {
         # Check if running as Administrator
         $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
         if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-ColorOutput "Please run this script as Administrator" "Red"
+            Write-Error-Output "Please run this script as Administrator"
             exit 1
+        }
+
+        # Check if sccache is already installed
+        if ((Test-Sccache) -and (-not $Force)) {
+            Write-Success "sccache is already installed - skipping installation"
+            # Still configure if not configured
+            $userProfile = [System.Environment]::GetEnvironmentVariable("USERPROFILE", "User")
+            $configPath = Join-Path $userProfile ".config\sccache\config"
+            if (-not (Test-Path $configPath)) {
+                Configure-Sccache
+                Test-Sccache
+            } else {
+                Write-Success "sccache is already configured"
+            }
+            exit 0
         }
 
         Install-Sccache
         Configure-Sccache
         Test-Sccache
 
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "✅ sccache installation complete!" "Green"
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "Note: Log out and back in to apply PATH changes" "Yellow"
+        Write-Success "================================"
+        Write-Success "✅ sccache installation complete!"
+        Write-Success "================================"
+        Write-Warning "Note: Log out and back in to apply PATH changes"
 
     } catch {
-        Write-ColorOutput "Error: $($_.Exception.Message)" "Red"
+        Write-Error-Output "Error: $($_.Exception.Message)"
         exit 1
     }
 }

@@ -8,38 +8,43 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Write-ColorOutput {
-    param(
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    Write-Host $Message -ForegroundColor $Color
+# Get script directory
+$ScriptDir = $PSScriptRoot
+$UtilsDir = Join-Path (Split-Path (Split-Path $ScriptDir -Parent) -Parent) "utils"
+
+# Import utility module
+$UtilsModule = Join-Path $UtilsDir "Check-Dependencies.psm1"
+if (Test-Path $UtilsModule) {
+    Import-Module $UtilsModule -Force
+} else {
+    Write-Host "ERROR: Utility module not found: $UtilsModule" -ForegroundColor Red
+    exit 1
 }
 
 function Install-LLVM {
-    Write-ColorOutput "Installing LLVM/Clang..." "Green"
+    Write-Success "Installing LLVM/Clang..."
 
     if (Get-Command clang -ErrorAction SilentlyContinue) {
-        Write-ColorOutput "✅ LLVM/Clang already installed" "Green"
+        Write-Success "✅ LLVM/Clang already installed"
     } else {
         choco install llvm --package-parameters "'/ADD=64'" -y
-        Write-ColorOutput "✅ LLVM/Clang installed" "Green"
+        Write-Success "✅ LLVM/Clang installed"
     }
 }
 
 function Install-MinGW {
-    Write-ColorOutput "Installing MinGW-w64..." "Green"
+    Write-Success "Installing MinGW-w64..."
 
     if (Get-Command gcc -ErrorAction SilentlyContinue) {
-        Write-ColorOutput "✅ MinGW-w64 already installed" "Green"
+        Write-Success "✅ MinGW-w64 already installed"
     } else {
         choco install mingw -y
-        Write-ColorOutput "✅ MinGW-w64 installed" "Green"
+        Write-Success "✅ MinGW-w64 installed"
     }
 }
 
 function Install-MSVC-Tools {
-    Write-ColorOutput "Configuring MSVC tools..." "Green"
+    Write-Success "Configuring MSVC tools..."
 
     $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     if (Test-Path $vsWhere) {
@@ -47,38 +52,38 @@ function Install-MSVC-Tools {
         $vcVarsPath = "$vsPath\VC\Auxiliary\Build\vcvars64.bat"
 
         if (Test-Path $vcVarsPath) {
-            Write-ColorOutput "✅ MSVC tools found at: $vsPath" "Green"
+            Write-Success "✅ MSVC tools found at: $vsPath"
 
             # Add to PATH for current session
             $env:PATH += ";$vsPath\VC\Tools\MSVC\*\bin\Hostx64\x64"
-            Write-ColorOutput "✅ MSVC tools added to PATH" "Green"
+            Write-Success "✅ MSVC tools added to PATH"
         } else {
-            Write-ColorOutput "⚠️ MSVC tools not properly configured" "Yellow"
+            Write-Warning "⚠️ MSVC tools not properly configured"
         }
     } else {
-        Write-ColorOutput "⚠️ Visual Studio installation not found" "Yellow"
+        Write-Warning "⚠️ Visual Studio installation not found"
     }
 }
 
 function Update-CompilerPath {
-    Write-ColorOutput "Updating compiler PATH..." "Green"
+    Write-Success "Updating compiler PATH..."
 
     $llvmPath = "${env:ProgramFiles}\LLVM\bin"
     $mingwPath = "C:\tools\mingw64\bin"
 
     if (Test-Path $llvmPath) {
         $env:PATH += ";$llvmPath"
-        Write-ColorOutput "✅ LLVM added to PATH" "Green"
+        Write-Success "✅ LLVM added to PATH"
     }
 
     if (Test-Path $mingwPath) {
         $env:PATH += ";$mingwPath"
-        Write-ColorOutput "✅ MinGW added to PATH" "Green"
+        Write-Success "✅ MinGW added to PATH"
     }
 }
 
 function Test-Compilers {
-    Write-ColorOutput "Testing installed compilers..." "Green"
+    Write-Success "Testing installed compilers..."
 
     $compilers = @("gcc", "g++", "clang", "clang++", "cl")
 
@@ -86,26 +91,32 @@ function Test-Compilers {
         try {
             $version = & $compiler --version 2>$null
             if ($LASTEXITCODE -eq 0) {
-                Write-ColorOutput "✅ $compiler is available" "Green"
+                Write-Success "✅ $compiler is available"
             } else {
-                Write-ColorOutput "⚠️ $compiler not found or not working" "Yellow"
+                Write-Warning "⚠️ $compiler not found or not working"
             }
         } catch {
-            Write-ColorOutput "⚠️ $compiler not found" "Yellow"
+            Write-Warning "⚠️ $compiler not found"
         }
     }
 }
 
 function Main {
-    Write-ColorOutput "Starting Windows compiler tools installation..." "Green"
+    Write-Success "Starting Windows compiler tools installation..."
 
     try {
         # Check if running as Administrator
         $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
         if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-            Write-ColorOutput "Please run this script as Administrator" "Red"
+            Write-Error-Output "Please run this script as Administrator"
             exit 1
+        }
+
+        # Check if compiler tools are already installed
+        if ((Test-CompilerTools) -and (-not $Force)) {
+            Write-Success "Compiler tools are already installed - skipping"
+            exit 0
         }
 
         Install-LLVM
@@ -114,12 +125,12 @@ function Main {
         Update-CompilerPath
         Test-Compilers
 
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "✅ Compiler tools installation complete!" "Green"
-        Write-ColorOutput "================================" "Green"
+        Write-Success "================================"
+        Write-Success "✅ Compiler tools installation complete!"
+        Write-Success "================================"
 
     } catch {
-        Write-ColorOutput "Error: $($_.Exception.Message)" "Red"
+        Write-Error-Output "Error: $($_.Exception.Message)"
         exit 1
     }
 }

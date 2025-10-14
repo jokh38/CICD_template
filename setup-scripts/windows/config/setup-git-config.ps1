@@ -9,12 +9,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-function Write-ColorOutput {
-    param(
-        [string]$Message,
-        [string]$Color = "White"
-    )
-    Write-Host $Message -ForegroundColor $Color
+# Get script directory
+$ScriptDir = $PSScriptRoot
+$UtilsDir = Join-Path (Split-Path (Split-Path $ScriptDir -Parent) -Parent) "utils"
+
+# Import utility module
+$UtilsModule = Join-Path $UtilsDir "Check-Dependencies.psm1"
+if (Test-Path $UtilsModule) {
+    Import-Module $UtilsModule -Force
+} else {
+    Write-Host "ERROR: Utility module not found: $UtilsModule" -ForegroundColor Red
+    exit 1
 }
 
 function Configure-GitUser {
@@ -347,9 +352,15 @@ function Test-GitConfiguration {
 }
 
 function Main {
-    Write-ColorOutput "Starting Windows git configuration setup..." "Green"
+    Write-Success "Starting Windows git configuration setup..."
 
     try {
+        # Check if git is already configured
+        if (Test-GitConfig) {
+            Write-Success "Git is already configured - skipping"
+            exit 0
+        }
+
         Configure-GitUser
         Set-GitAliases
         Set-GitCredentialsHelper
@@ -359,14 +370,14 @@ function Main {
         Test-GitConfiguration
 
         Write-Host ""
-        Write-ColorOutput "================================" "Green"
-        Write-ColorOutput "✅ Git configuration setup complete!" "Green"
-        Write-ColorOutput "================================" "Green"
+        Write-Success "================================"
+        Write-Success "✅ Git configuration setup complete!"
+        Write-Success "================================"
         Write-Host ""
-        Write-ColorOutput "Configured for user: $RunnerUser" "Cyan"
-        Write-ColorOutput "Git user: $GitUserName <$GitUserEmail>" "Cyan"
+        Write-Success "Configured for user: $RunnerUser"
+        Write-Success "Git user: $GitUserName <$GitUserEmail>"
         Write-Host ""
-        Write-ColorOutput "The git configuration includes:" "Cyan"
+        Write-Success "The git configuration includes:"
         Write-Host "  - User name and email"
         Write-Host "  - Useful aliases (st, co, br, cm, lg, etc.)"
         Write-Host "  - Global .gitignore"
@@ -374,10 +385,10 @@ function Main {
         Write-Host "  - Credentials helper"
         Write-Host "  - Git hooks directory"
         Write-Host ""
-        Write-ColorOutput "Git is now ready for use!" "Green"
+        Write-Success "Git is now ready for use!"
 
     } catch {
-        Write-ColorOutput "Error in git configuration setup: $($_.Exception.Message)" "Red"
+        Write-Error-Output "Error in git configuration setup: $($_.Exception.Message)"
         exit 1
     }
 }
