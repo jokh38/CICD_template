@@ -1,6 +1,6 @@
 #pragma once
 
-namespace {{cookiecutter.project_namespace}} {
+namespace {{cookiecutter.project_slug}} {
 
 class Library {
 public:
@@ -8,4 +8,4 @@ public:
     int add(int a, int b);
 };
 
-} // namespace {{cookiecutter.project_namespace}}
+} // namespace {{cookiecutter.project_slug}}

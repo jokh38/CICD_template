@@ -11,7 +11,7 @@ on:
 jobs:
   ai-assistant:
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, '@claude') || contains(github.event.issue.body, '@claude')
+    if: contains({% raw %}{{ github.event.comment.body }}{% endraw %}, '@claude') || contains({% raw %}{{ github.event.issue.body }}{% endraw %}, '@claude')
 
     steps:
     - name: Checkout repository
@@ -40,12 +40,12 @@ jobs:
         echo "   - Build System: {{cookiecutter.build_system}}"
         echo "   - Testing: {{cookiecutter.testing_framework}}"
 
-        if [ "${{ github.event_name }}" = "issue_comment" ]; then
-          echo "💬 Comment detected: ${{ github.event.comment.body }}"
-        elif [ "${{ github.event_name }}" = "issues" ]; then
-          echo "🐛 Issue detected: ${{ github.event.issue.title }}"
-        elif [ "${{ github.event_name }}" = "pull_request" ]; then
-          echo "🔄 PR detected: ${{ github.event.pull_request.title }}"
+        if [ "{% raw %}{{ github.event_name }}{% endraw %}" = "issue_comment" ]; then
+          echo "💬 Comment detected: {% raw %}{{ github.event.comment.body }}{% endraw %}"
+        elif [ "{% raw %}{{ github.event_name }}{% endraw %}" = "issues" ]; then
+          echo "🐛 Issue detected: {% raw %}{{ github.event.issue.title }}{% endraw %}"
+        elif [ "{% raw %}{{ github.event_name }}{% endraw %}" = "pull_request" ]; then
+          echo "🔄 PR detected: {% raw %}{{ github.event.pull_request.title }}{% endraw %}"
 
           # Run basic build check on PR
           echo "🔨 Building project..."

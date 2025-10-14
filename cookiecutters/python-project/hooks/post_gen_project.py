@@ -91,11 +91,10 @@ def main():
         install_dependencies()
         install_precommit()
 
-        # Remove AI workflow if not needed
+        # Remove AI workflow if not needed (but keep CLAUDE.md for general use)
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            for f in ["CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
-                if os.path.exists(f):
-                    os.remove(f)
+            if os.path.exists(".github/workflows/ai-workflow.yaml"):
+                os.remove(".github/workflows/ai-workflow.yaml")
 
         # Remove license if None
         if "{{ cookiecutter.license }}" == "None":

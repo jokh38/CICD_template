@@ -80,9 +80,9 @@ def main():
 
         # Cleanup
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            for f in ["CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
-                if os.path.exists(f):
-                    os.remove(f)
+            # Only remove AI workflow files, keep CLAUDE.md for general use
+            if os.path.exists(".github/workflows/ai-workflow.yaml"):
+                os.remove(".github/workflows/ai-workflow.yaml")
 
         if "{{ cookiecutter.license }}" == "None":
             if os.path.exists("LICENSE"):

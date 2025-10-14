@@ -6,7 +6,7 @@ TEST(ExampleTest, BasicTest) {
 }
 
 TEST(ExampleTest, LibraryAddTest) {
-    {{cookiecutter.project_namespace}}::Library lib;
+    {{cookiecutter.project_slug}}::Library lib;
     EXPECT_EQ(lib.add(5, 3), 8);
     EXPECT_EQ(lib.add(-1, 1), 0);
     EXPECT_EQ(lib.add(0, 0), 0);

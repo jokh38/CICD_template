@@ -6,7 +6,7 @@ This document provides guidance for AI assistants (like Claude) working on this 
 
 **Project**: {{cookiecutter.project_name}}
 **Description**: {{cookiecutter.project_description}}
-**Language**: Python {{cookiecutter.python_version}}}
+**Language**: Python {{cookiecutter.python_version}}
 
 ## Development Setup
 

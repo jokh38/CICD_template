@@ -4,7 +4,7 @@
 int main() {
     std::cout << "Hello, {{cookiecutter.project_name}}!" << std::endl;
 
-    {{cookiecutter.project_namespace}}::Library lib;
+    {{cookiecutter.project_slug}}::Library lib;
     lib.hello();
 
     int result = lib.add(5, 3);

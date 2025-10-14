@@ -11,7 +11,7 @@ on:
 jobs:
   ai-assistant:
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, '@claude') || contains(github.event.issue.body, '@claude')
+    if: contains({% raw %}{{ github.event.comment.body }}{% endraw %}, '@claude') || contains({% raw %}{{ github.event.issue.body }}{% endraw %}, '@claude')
 
     steps:
     - name: AI Assistant Response

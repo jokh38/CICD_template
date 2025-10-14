@@ -78,7 +78,7 @@ pre-commit run --all-files
 ### Code Organization
 
 - **Headers**: Use include guards (`#pragma once` preferred)
-- **Namespaces**: Use `{{cookiecutter.project_namespace}}` namespace
+- **Namespaces**: Use `{{cookiecutter.project_slug}}` namespace
 - **Functions**: Include proper documentation and type safety
 - **Error Handling**: Use exceptions or error codes consistently
 
