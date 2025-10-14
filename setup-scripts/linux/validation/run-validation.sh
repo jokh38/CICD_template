@@ -21,23 +21,23 @@ validate_cpp_tools() {
     fi
 
     # Configure and build project
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release"
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && cmake --build build"
+    cd $TEST_DIR && cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    cd $TEST_DIR && cmake --build build
 
     # Run tests
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && ctest --test-dir build --output-on-failure"
+    cd $TEST_DIR && ctest --test-dir build --output-on-failure
 
     # Test sccache
     echo "Testing sccache..."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && sccache --zero-stats && cmake --build build --clean-first && sccache --show-stats"
+    cd $TEST_DIR && sccache --zero-stats && cmake --build build --clean-first && sccache --show-stats
 
     # Test formatting (dry run)
     echo "Testing clang-format..."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && clang-format --dry-run --Werror src/*.cpp src/*.hpp tests/*.cpp"
+    cd $TEST_DIR && clang-format --dry-run --Werror src/*.cpp src/*.hpp tests/*.cpp
 
     # Test clang-tidy
     echo "Testing clang-tidy..."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && run-clang-tidy -p build src/*.cpp tests/*.cpp"
+    cd $TEST_DIR && run-clang-tidy -p build src/*.cpp tests/*.cpp
 
     echo -e "${GREEN}✅ C++ validation tests passed${NC}"
 }
@@ -54,16 +54,16 @@ validate_python_tools() {
 
     # Test ruff
     echo "Testing ruff..."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && python3 -m ruff check ."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && python3 -m ruff format --check ."
+    cd $TEST_DIR && python3 -m ruff check .
+    cd $TEST_DIR && python3 -m ruff format --check .
 
     # Test pytest
     echo "Testing pytest..."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && python3 -m pytest tests/ -v"
+    cd $TEST_DIR && python3 -m pytest tests/ -v
 
     # Test mypy
     echo "Testing mypy..."
-    sudo -u "$RUNNER_USER" bash -c "cd $TEST_DIR && python3 -m mypy ."
+    cd $TEST_DIR && python3 -m mypy .
 
     echo -e "${GREEN}✅ Python validation tests passed${NC}"
 }
@@ -94,14 +94,14 @@ validate_system_tools() {
     # Test Python tools
     echo "Testing Python tools..."
     python3 --version
-    if sudo -u "$RUNNER_USER" bash -c "command -v ruff &> /dev/null"; then
-        sudo -u "$RUNNER_USER" bash -c "ruff --version"
+    if python3 -m ruff --version &> /dev/null; then
+        python3 -m ruff --version
     else
         echo -e "${YELLOW}⚠️ ruff not found${NC}"
     fi
 
-    if sudo -u "$RUNNER_USER" bash -c "command -v pytest &> /dev/null"; then
-        sudo -u "$RUNNER_USER" bash -c "pytest --version"
+    if python3 -m pytest --version &> /dev/null; then
+        python3 -m pytest --version
     else
         echo -e "${YELLOW}⚠️ pytest not found${NC}"
     fi

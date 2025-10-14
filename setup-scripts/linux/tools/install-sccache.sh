@@ -65,7 +65,7 @@ BASHRC_EOF
     # Create sccache config
     mkdir -p ~/.config/sccache
     cat > ~/.config/sccache/config << 'SCCACHE_CONFIG'
-[cache]
+[disk]
 dir = "${HOME}/.cache/sccache"
 size = "10G"
 

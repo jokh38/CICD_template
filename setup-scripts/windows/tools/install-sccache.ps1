@@ -100,7 +100,7 @@ function Configure-Sccache {
 
         # Create sccache config
         $configContent = @"
-[cache]
+[disk]
 dir = "$cacheDir"
 size = "10G"
 
