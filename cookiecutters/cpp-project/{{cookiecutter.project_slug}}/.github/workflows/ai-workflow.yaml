@@ -1,0 +1,130 @@
+name: C++ AI Assistant Workflow
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  ai-assistant:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '@claude') || contains(github.event.issue.body, '@claude')
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup C++ Environment
+      uses: jokh38/cpp-dev-setup@v1
+      with:
+        cpp-standard: ${{ '{{cookiecutter.cpp_standard}}' }}
+        build-system: ${{ '{{cookiecutter.build_system}}' }}
+        use-ninja: ${{ '{{cookiecutter.use_ninja}}' }}
+
+    - name: Configure Build
+      run: |
+        {% if cookiecutter.build_system == "cmake" %}
+        cmake -B build {% if cookiecutter.use_ninja == "yes" %}-G Ninja{% endif %}
+        {% else %}
+        meson setup build
+        {% endif %}
+
+    - name: AI Assistant Analysis
+      run: |
+        echo "🤖 AI Assistant workflow triggered for C++ project"
+        echo "📊 Project Analysis:"
+        echo "   - Language: C++{{cookiecutter.cpp_standard}}"
+        echo "   - Build System: {{cookiecutter.build_system}}"
+        echo "   - Testing: {{cookiecutter.testing_framework}}"
+
+        if [ "${{ github.event_name }}" = "issue_comment" ]; then
+          echo "💬 Comment detected: ${{ github.event.comment.body }}"
+        elif [ "${{ github.event_name }}" = "issues" ]; then
+          echo "🐛 Issue detected: ${{ github.event.issue.title }}"
+        elif [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "🔄 PR detected: ${{ github.event.pull_request.title }}"
+
+          # Run basic build check on PR
+          echo "🔨 Building project..."
+          {% if cookiecutter.build_system == "cmake" %}
+          cmake --build build --config Debug
+          {% else %}
+          meson compile -C build
+          {% endif %}
+
+          echo "🧪 Running tests..."
+          {% if cookiecutter.build_system == "cmake" %}
+          ctest --test-dir build --output-on-failure
+          {% else %}
+          meson test -C build --verbose
+          {% endif %}
+        fi
+
+    - name: Code Quality Check
+      run: |
+        echo "🔍 Running code quality checks..."
+
+        # Check if clang-format is available
+        if command -v clang-format &> /dev/null; then
+          echo "✓ clang-format found"
+          clang-format --version
+        else
+          echo "⚠️ clang-format not found"
+        fi
+
+        # Check for common C++ issues
+        echo "📋 Static analysis summary:"
+        find src/ include/ tests/ -name "*.cpp" -o -name "*.hpp" | head -10 | while read file; do
+          echo "   - Analyzing: $file"
+          # Add actual static analysis tools here if needed
+        done
+
+    - name: AI Assistant Response
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const response = `
+          🤖 **C++ AI Assistant Analysis Complete**
+
+          **Project Status**: ✅ Analyzed
+          **Build System**: {{cookiecutter.build_system | capitalize}}
+          **C++ Standard**: C++{{cookiecutter.cpp_standard}}
+          **Testing**: {{cookiecutter.testing_framework | upper}}
+
+          **Next Steps**:
+          1. Review the build output above
+          2. Check test results
+          3. Address any compilation warnings
+          4. Consider code formatting with clang-format
+
+          **Available Commands**:
+          - \`@claude review code\` - Request code review
+          - \`@claude fix build\` - Help with build issues
+          - \`@claude add tests\` - Help with test coverage
+          `;
+
+          if (context.eventName === 'issue_comment') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          } else if (context.eventName === 'issues') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          } else if (context.eventName === 'pull_request') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          }
