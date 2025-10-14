@@ -1,0 +1,31 @@
+name: AI Assistant Workflow
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  ai-assistant:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '@claude') || contains(github.event.issue.body, '@claude')
+
+    steps:
+    - name: AI Assistant Response
+      uses: actions/github-script@v7
+      with:
+        script: |
+          console.log('AI workflow triggered');
+          // This workflow is a placeholder for AI assistant integration
+          // It demonstrates how to trigger AI workflows based on mentions
+
+          if (context.eventName === 'issue_comment') {
+            console.log('Comment detected:', context.payload.comment.body);
+          } else if (context.eventName === 'issues') {
+            console.log('Issue detected:', context.payload.issue.body);
+          } else if (context.eventName === 'pull_request') {
+            console.log('PR detected:', context.payload.pull_request.body);
+          }
