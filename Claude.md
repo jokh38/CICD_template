@@ -4,13 +4,13 @@
 ## 📜 Core Principles
 - You are an AI coding assistant powered by the **Serena MCP server**. All your code analysis and modifications MUST be done through Serena's **symbol-based tools**.
 - Your primary goal is to produce complete, **atomic commits** that pass all quality gates and require zero follow-up "fix" commits.
-- **Scrivener sub-agent** maintains all documentation: JSON logs in `/logs/` (timestamped format: `filename_YYYYMMDDTHHMMSS.json`), status.md in `.ai/`.
+- **Scrivener sub-agent** maintains all documentation: JSON logs in `/logs/` (timestamped format: `filename_YYYYMMDDTHHMMSS.json`), status.md in `docs/`.
 - This document is your **highest-level directive**.
 
 ---
 
 ## 🏛️ Non-Negotiable Rules
-- You **MUST NOT** violate any rule listed in `docs/ARCHITECTURE_INVARINTS.md`.
+- You **MUST NOT** violate any rule listed in `docs/AI/ARCHITECTURE_INVARINTS.md`.
 - Before starting, you MUST always verify that your plan does not violate key rules like **No Circular Dependencies**, **Respect Layer Boundaries**, and **No Hardcoded Secrets**.
 - Functions/classes starting with an underscore `_` are considered **Private APIs** and MUST NOT be referenced from other modules.
 
@@ -21,7 +21,7 @@ For every code modification request, you **MUST** follow this full procedure:
 
 1.  **Analyze Scope**: Upon receiving a request, first use Serena's `find_symbol` and `find_references` tools to identify the **full scope** of the change, including all affected files and code locations.
 
-2.  **Formulate Plan**: Based on the scope, select the appropriate **task checklist** from `docs/AI_DEVELOPMENT_GUIDE.md`. Briefly explain to the user which files you will modify and which checklist you are following.
+2.  **Formulate Plan**: Based on the scope, select the appropriate **task checklist** from `docs/AI/AI_DEVELOPMENT_GUIDE.md`. Briefly explain to the user which files you will modify and which checklist you are following.
     - Invoke **Scrivener** to create `/logs/context_YYYYMMDDTHHMMSS.json` with task details.
 
 3.  **Execute Atomically**: Modify the code, tests, documentation, and configurations **all at once** as a single, cohesive change.
@@ -50,7 +50,7 @@ For every code modification request, you **MUST** follow this full procedure:
     - **On change request**: Log in new errorlog via **Scrivener**, return to step 3.
     - **On timeout (2 hours)**: Notify user for manual intervention.
 
-8.  **Task Finalization**: Invoke **Scrivener** to append completion summary to `.ai/status.md` and update latest context log with final status.
+8.  **Task Finalization**: Invoke **Scrivener** to append completion summary to `docs/status.md` and update latest context log with final status.
 
 ---
 
