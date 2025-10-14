@@ -19,6 +19,7 @@ setup-scripts/
 │   │   ├── install-cpp-frameworks.sh
 │   │   └── install-python-tools.sh
 │   ├── config/                  # Configuration setup
+│   │   ├── setup-git-config.sh
 │   │   ├── setup-code-formatting.sh
 │   │   └── setup-ai-workflows.sh
 │   ├── validation/              # Testing and validation
@@ -37,6 +38,7 @@ setup-scripts/
     │   ├── install-cpp-frameworks.ps1
     │   └── install-python-tools.ps1
     ├── config/                  # Configuration setup
+    │   ├── setup-git-config.ps1
     │   └── setup-code-formatting.ps1
     ├── install-runner-windows.ps1 # GitHub Actions runner setup
     ├── runner-config-windows.yaml # Runner configuration
@@ -125,9 +127,17 @@ sudo ./total_run.sh --validate-only
 - **isort** (Import sorting)
 
 ### Configuration Files
+- **Git**: Global git configuration, user settings, aliases, commit templates
 - **C++**: `.clang-format`, `.clang-tidy`, CMake presets
 - **Python**: `ruff.toml`, pre-commit configurations
 - **AI Workflows**: GitHub Actions templates for Claude assistance
+
+### Git Configuration
+- **User setup**: Configured with Kwanghyun Jo <jokh38@gmail.com>
+- **Global aliases**: Common shortcuts (st, co, br, cm, lg, etc.)
+- **Global .gitignore**: Comprehensive ignore patterns
+- **Commit template**: Standardized commit message format
+- **Credentials helper**: Configured for seamless authentication
 
 ## 🔧 Modular Usage
 
@@ -144,6 +154,9 @@ sudo ./linux/tools/install-cpp-frameworks.sh
 # Setup code formatting configurations
 ./linux/config/setup-code-formatting.sh
 
+# Setup git configuration
+./linux/config/setup-git-config.sh
+
 # Create test projects
 ./linux/validation/create-test-projects.sh
 ```
@@ -158,6 +171,9 @@ sudo ./linux/tools/install-cpp-frameworks.sh
 
 # Setup code formatting configurations
 .\windows\config\setup-code-formatting.ps1
+
+# Setup git configuration
+.\windows\config\setup-git-config.ps1
 ```
 
 ## 🧪 Validation

@@ -121,6 +121,8 @@ install_python_tools() {
 setup_configurations() {
     print_status "Setting up configurations..."
 
+    run_script "$LINUX_DIR/config/setup-git-config.sh" "Git Configuration"
+    run_script "$LINUX_DIR/config/setup-code-formatting.sh" "Code Formatting Configurations"
     run_script "$LINUX_DIR/config/setup-ai-workflows.sh" "AI Workflow Templates"
 }
 
@@ -197,12 +199,18 @@ print_summary() {
     echo "  1. Log out and log back in to apply environment changes"
     echo "  2. Test the installation with your projects"
     echo "  3. Use the provided aliases for common tasks"
+    echo "  4. Git is configured and ready for use"
     echo ""
     echo "Configuration files created in:"
+    echo "  - ~/.gitconfig (Git configuration)"
+    echo "  - ~/.gitignore_global (Global gitignore)"
+    echo "  - ~/.config/git/commit.template (Commit template)"
     echo "  - ~/.clang-format, ~/.clang-tidy (C++)"
     echo "  - ~/.config/ruff/ruff.toml (Python)"
     echo "  - ~/.config/cmake/CMakePresets.json"
     echo "  - ~/.config/sccache/config"
+    echo ""
+    echo "Git user configured: Kwanghyun Jo <jokh38@gmail.com>"
     echo ""
 }
 

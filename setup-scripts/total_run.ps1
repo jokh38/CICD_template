@@ -170,8 +170,17 @@ function Install-PythonTools {
 function Set-Configurations {
     Write-Status "Setting up configurations..."
 
-    # For Windows, configuration is handled within individual scripts
-    # but we can add additional configuration here if needed
+    $scripts = @(
+        @{ Path = "$WindowsDir\config\setup-git-config.ps1"; Desc = "Git Configuration" },
+        @{ Path = "$WindowsDir\config\setup-code-formatting.ps1"; Desc = "Code Formatting Configurations" }
+    )
+
+    foreach ($script in $scripts) {
+        if (-not (Invoke-SetupScript -ScriptPath $script.Path -Description $script.Desc)) {
+            return $false
+        }
+    }
+
     Write-Success "Configurations completed"
     return $true
 }
@@ -264,12 +273,18 @@ function Show-Summary {
     Write-Host "  1. Restart PowerShell to apply environment changes"
     Write-Host "  2. Test the installation with your projects"
     Write-Host "  3. Use the provided aliases for common tasks"
+    Write-Host "  4. Git is configured and ready for use"
     Write-Host ""
     Write-Host "Configuration files created in:"
+    Write-Host "  - ~/.gitconfig (Git configuration)"
+    Write-Host "  - ~/.gitignore_global (Global gitignore)"
+    Write-Host "  - ~/.config/git/commit.template (Commit template)"
     Write-Host "  - ~\.clang-format, ~\.clang-tidy (C++)"
     Write-Host "  - ~\.config\ruff\ruff.toml (Python)"
     Write-Host "  - ~\.config\cmake\CMakePresets.json"
     Write-Host "  - ~\.config\sccache\config"
+    Write-Host ""
+    Write-Host "Git user configured: Kwanghyun Jo <jokh38@gmail.com>"
     Write-Host ""
 }
 
