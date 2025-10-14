@@ -80,7 +80,7 @@ def main():
 
         # Cleanup
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            # Only remove AI workflow files, keep CLAUDE.md for general use
+            # Only remove AI workflow files, keep docs/CLAUDE.md for general use
             if os.path.exists(".github/workflows/ai-workflow.yaml"):
                 os.remove(".github/workflows/ai-workflow.yaml")
 

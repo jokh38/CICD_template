@@ -76,7 +76,7 @@ def print_next_steps():
     print("4. ruff check .  # Lint code")
 
     if use_ai == "yes":
-        print("5. Review CLAUDE.md for AI assistant")
+        print("5. Review docs/CLAUDE.md for AI assistant")
 
     print("\n✅ All dependencies are installed and ready to use!")
     print("\n🔗 Add remote:")
@@ -91,7 +91,7 @@ def main():
         install_dependencies()
         install_precommit()
 
-        # Remove AI workflow if not needed (but keep CLAUDE.md for general use)
+        # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
             if os.path.exists(".github/workflows/ai-workflow.yaml"):
                 os.remove(".github/workflows/ai-workflow.yaml")

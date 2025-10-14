@@ -99,12 +99,10 @@ github-cicd-templates/
 │   └── lib/
 │       └── common-utils.sh
 │
-├── prompts/
-│   ├── CLAUDE_BASE.md
-│   ├── CLAUDE_PYTHON.md
-│   └── CLAUDE_CPP.md
-│
 └── docs/
+    ├── CLAUDE.md
+    ├── manuals/
+    │   └── Development_plan_of_this_CICD_template.md
     ├── README.md
     ├── QUICK_START.md
     ├── COOKIECUTTER_GUIDE.md
@@ -199,7 +197,7 @@ def print_next_steps():
     print("3. pip install -e .[dev]")
     
     if use_ai == "yes":
-        print("4. Review CLAUDE.md for AI assistant")
+        print("4. Review docs/CLAUDE.md for AI assistant")
     
     print("\n🔗 Add remote:")
     print("   git remote add origin <your-repo-url>")
@@ -214,7 +212,7 @@ def main():
         
         # Remove AI workflow if not needed
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            for f in ["CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
+            for f in ["docs/CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
                 if os.path.exists(f):
                     os.remove(f)
         
@@ -326,7 +324,7 @@ def main():
         
         # Cleanup
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            for f in ["CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
+            for f in ["docs/CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
                 if os.path.exists(f):
                     os.remove(f)
         
