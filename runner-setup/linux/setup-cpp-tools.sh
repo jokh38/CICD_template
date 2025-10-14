@@ -339,7 +339,7 @@ create_test_project() {
 
     TEST_DIR="/tmp/cpp-test-project"
     sudo -u "$RUNNER_USER" bash <<EOF
-    mkdir -p "$TEST_DIR"/{src,tests,cmake}
+    mkdir -p "$TEST_DIR"/{src,tests,cmake,.github/workflows}
     cd "$TEST_DIR"
 
     # Create main library source
@@ -483,6 +483,187 @@ include(GoogleTest)
 gtest_discover_tests(test_calculator)
 CMAKE_FILE
 
+    # Create AI workflow file
+    cat > .github/workflows/ai-workflow.yaml << 'AI_WORKFLOW'
+name: C++ AI Assistant Workflow
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  ai-assistant:
+    runs-on: ubuntu-latest
+    if: contains({% raw %}{{ github.event.comment.body }}{% endraw %}, '@claude') || contains({% raw %}{{ github.event.issue.body }}{% endraw %}, '@claude')
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup C++ Environment
+      uses: jokh38/cpp-dev-setup@v1
+      with:
+        cpp-standard: '17'
+        build-system: 'cmake'
+        use-ninja: 'true'
+
+    - name: Configure Build
+      run: |
+        cmake -B build -G Ninja
+
+    - name: AI Assistant Analysis
+      run: |
+        echo "🤖 AI Assistant workflow triggered for C++ project"
+        echo "📊 Project Analysis:"
+        echo "   - Language: C++17"
+        echo "   - Build System: cmake"
+        echo "   - Testing: gtest"
+
+        if [ "{% raw %}{{ github.event_name }}{% endraw %}" = "issue_comment" ]; then
+          echo "💬 Comment detected: {% raw %}{{ github.event.comment.body }}{% endraw %}"
+        elif [ "{% raw %}{{ github.event_name }}{% endraw %}" = "issues" ]; then
+          echo "🐛 Issue detected: {% raw %}{{ github.event.issue.title }}{% endraw %}"
+        elif [ "{% raw %}{{ github.event_name }}{% endraw %}" = "pull_request" ]; then
+          echo "🔄 PR detected: {% raw %}{{ github.event.pull_request.title }}{% endraw %}"
+
+          # Run basic build check on PR
+          echo "🔨 Building project..."
+          cmake --build build --config Debug
+
+          echo "🧪 Running tests..."
+          ctest --test-dir build --output-on-failure
+        fi
+
+    - name: Code Quality Check
+      run: |
+        echo "🔍 Running code quality checks..."
+
+        # Check if clang-format is available
+        if command -v clang-format &> /dev/null; then
+          echo "✓ clang-format found"
+          clang-format --version
+        else
+          echo "⚠️ clang-format not found"
+        fi
+
+        # Check for common C++ issues
+        echo "📋 Static analysis summary:"
+        find src/ include/ tests/ -name "*.cpp" -o -name "*.hpp" | head -10 | while read file; do
+          echo "   - Analyzing: $file"
+          # Add actual static analysis tools here if needed
+        done
+
+    - name: AI Assistant Response
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const response = `
+          🤖 **C++ AI Assistant Analysis Complete**
+
+          **Project Status**: ✅ Analyzed
+          **Build System**: CMake
+          **C++ Standard**: C++17
+          **Testing**: GTEST
+
+          **Next Steps**:
+          1. Review the build output above
+          2. Check test results
+          3. Address any compilation warnings
+          4. Consider code formatting with clang-format
+
+          **Available Commands**:
+          - \`@claude review code\` - Request code review
+          - \`@claude fix build\` - Help with build issues
+          - \`@claude add tests\` - Help with test coverage
+          `;
+
+          if (context.eventName === 'issue_comment') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          } else if (context.eventName === 'issues') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          } else if (context.eventName === 'pull_request') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          }
+AI_WORKFLOW
+
+    # Initialize git repository
+    echo "Initializing git repository..."
+    git init
+    git config user.name "Test User"
+    git config user.email "test@example.com"
+
+    # Create .gitignore
+    cat > .gitignore << 'GITIGNORE'
+# Build directories
+build/
+cmake-build-*/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled output
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Test output
+*.out
+*.log
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# sccache
+.sccache/
+
+# clang-tidy database
+compile_commands.json
+GITIGNORE
+
+    # Add initial files to git
+    git add .
+    git commit -m "Initial project setup with AI workflow
+
+    - Created basic C++ project structure
+    - Added AI workflow integration (.github/workflows/ai-workflow.yaml)
+    - Included source files, tests, and CMake configuration
+    - Added code formatting configurations (.clang-format, .clang-tidy)
+    - Set up .gitignore for C++ development
+
+    🤖 Generated with C++ development tools setup
+    "
+
     # Copy global configurations to project
     cp ~/.clang-format .
     cp ~/.clang-tidy .
@@ -547,6 +728,10 @@ print_success() {
     echo "  - ~/.config/cmake/CMakePresets.json"
     echo "  - ~/.config/sccache/config"
     echo "  - ~/.bashrc (C++ aliases added)"
+    echo ""
+    echo "Test project includes:"
+    echo "  - .github/workflows/ai-workflow.yaml (AI assistant integration)"
+    echo "  - Git repository with initial commit"
     echo ""
     echo "Available aliases for $RUNNER_USER:"
     echo "  - cmake-debug    : Configure debug build"

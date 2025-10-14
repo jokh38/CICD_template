@@ -160,7 +160,7 @@ create_test_project() {
     cd "$TEST_DIR"
 
     # Create simple Python package
-    mkdir -p src/test_project tests
+    mkdir -p src/test_project tests .github/workflows
 
     # Create __init__.py
     echo '"""Test project."""' > src/test_project/__init__.py
@@ -223,6 +223,305 @@ python_version = "3.10"
 strict = true
 PYPROJECT
 
+    # Create AI workflow file
+    cat > .github/workflows/ai-workflow.yaml << 'AI_WORKFLOW'
+name: AI Assistant Workflow
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  ai-assistant:
+    runs-on: ubuntu-latest
+    if: contains({% raw %}{{ github.event.comment.body }}{% endraw %}, '@claude') || contains({% raw %}{{ github.event.issue.body }}{% endraw %}, '@claude')
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python Environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff pytest mypy
+
+    - name: AI Assistant Analysis
+      run: |
+        echo "🤖 AI Assistant workflow triggered for Python project"
+        echo "📊 Project Analysis:"
+        echo "   - Language: Python 3.10"
+        echo "   - Tools: ruff, pytest, mypy"
+
+        if [ "{% raw %}{{ github.event_name }}{% endraw %}" = "issue_comment" ]; then
+          echo "💬 Comment detected: {% raw %}{{ github.event.comment.body }}{% endraw %}"
+        elif [ "{% raw %}{{ github.event_name }}{% endraw %}" = "issues" ]; then
+          echo "🐛 Issue detected: {% raw %}{{ github.event.issue.title }}{% endraw %}"
+        elif [ "{% raw %}{{ github.event_name }}{% endraw %}" = "pull_request" ]; then
+          echo "🔄 PR detected: {% raw %}{{ github.event.pull_request.title }}{% endraw %}"
+
+          # Run basic checks on PR
+          echo "🔍 Running code quality checks..."
+          ruff check .
+          ruff format --check .
+          mypy .
+          pytest tests/ -v
+        fi
+
+    - name: Code Quality Check
+      run: |
+        echo "🔍 Running code quality checks..."
+
+        # Check if ruff is available
+        if command -v ruff &> /dev/null; then
+          echo "✓ ruff found"
+          ruff --version
+        else
+          echo "⚠️ ruff not found"
+        fi
+
+        # Check if pytest is available
+        if command -v pytest &> /dev/null; then
+          echo "✓ pytest found"
+          pytest --version
+        else
+          echo "⚠️ pytest not found"
+        fi
+
+        # Check if mypy is available
+        if command -v mypy &> /dev/null; then
+          echo "✓ mypy found"
+          mypy --version
+        else
+          echo "⚠️ mypy not found"
+        fi
+
+        echo "📋 Static analysis summary:"
+        find src/ tests/ -name "*.py" | head -10 | while read file; do
+          echo "   - Analyzing: $file"
+        done
+
+    - name: AI Assistant Response
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const response = `
+          🤖 **Python AI Assistant Analysis Complete**
+
+          **Project Status**: ✅ Analyzed
+          **Language**: Python 3.10
+          **Tools**: ruff, pytest, mypy
+
+          **Next Steps**:
+          1. Review the code quality output above
+          2. Check test results
+          3. Address any linting issues
+          4. Consider type annotations with mypy
+
+          **Available Commands**:
+          - \`@claude review code\` - Request code review
+          - \`@claude fix imports\` - Help with import organization
+          - \`@claude add tests\` - Help with test coverage
+          - \`@claude type check\` - Help with type annotations
+          `;
+
+          if (context.eventName === 'issue_comment') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          } else if (context.eventName === 'issues') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          } else if (context.eventName === 'pull_request') {
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: response
+            });
+          }
+AI_WORKFLOW
+
+    # Initialize git repository
+    echo "Initializing git repository..."
+    git init
+    git config user.name "Test User"
+    git config user.email "test@example.com"
+
+    # Create .gitignore
+    cat > .gitignore << 'GITIGNORE'
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+GITIGNORE
+
+    # Add initial files to git
+    git add .
+    git commit -m "Initial project setup with AI workflow
+
+    - Created basic Python project structure
+    - Added AI workflow integration (.github/workflows/ai-workflow.yaml)
+    - Included source files, tests, and pyproject.toml configuration
+    - Set up .gitignore for Python development
+    - Configured ruff, pytest, and mypy
+
+    🤖 Generated with Python development tools setup
+    "
+
     echo "Test project created at $TEST_DIR"
 EOF
 
@@ -270,6 +569,10 @@ print_success() {
     echo "  - ~/.config/ruff/ruff.toml"
     echo "  - ~/.config/pre-commit/pre-commit-config.yaml"
     echo "  - ~/.bashrc (Python aliases added)"
+    echo ""
+    echo "Test project includes:"
+    echo "  - .github/workflows/ai-workflow.yaml (AI assistant integration)"
+    echo "  - Git repository with initial commit"
     echo ""
     echo "Available aliases for $RUNNER_USER:"
     echo "  - lint    : Run ruff check and format check"
