@@ -92,10 +92,10 @@ cookiecutter cookiecutters/cpp-project
 
 ### Using the Helper Script
 
-The easier way:
+The easier way (use absolute paths):
 ```bash
-bash scripts/create-project.sh python my-project
-bash scripts/create-project.sh cpp my-library
+bash scripts/create-project.sh python /home/user/my-project
+bash scripts/create-project.sh cpp /home/user/my-library
 ```
 
 ### From GitHub (If Template is Published)
@@ -235,11 +235,11 @@ cookiecutter gh:YOUR-ORG/templates \
 
 ### Output Directory
 
-Generate in specific location:
+Generate in specific location (use absolute path):
 
 ```bash
 cookiecutter cookiecutters/python-project \
-  --output-dir /path/to/projects
+  --output-dir /home/user/projects
 ```
 
 ---

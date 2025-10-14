@@ -21,11 +21,24 @@ def initialize_git():
     run_command('git commit -m "Initial commit from template"')
 
 def install_precommit():
-    print("🔧 Installing pre-commit hooks...")
-    if run_command("which pre-commit", check=False):
-        run_command("pre-commit install")
+    """Install pre-commit tool and hooks."""
+    print("🔧 Installing pre-commit...")
+
+    # Try to install pre-commit via pip (user level)
+    if not run_command("which pre-commit", check=False):
+        print("   Installing pre-commit via pip...")
+        if run_command("pip install --user pre-commit", check=False):
+            print("   ✓ pre-commit installed")
+        else:
+            print("   ⚠️  Failed to install pre-commit. Please install manually:")
+            print("      pip install pre-commit")
+            return
+
+    # Install pre-commit hooks
+    if run_command("pre-commit install", check=False):
+        print("   ✓ Pre-commit hooks installed")
     else:
-        print("⚠️  pre-commit not found")
+        print("   ⚠️  Failed to install pre-commit hooks")
 
 def setup_build_directory():
     print("🏗️  Creating build directory...")
@@ -55,6 +68,7 @@ def print_next_steps():
         print("3. meson compile -C build")
         print("4. meson test -C build")
 
+    print("\n✅ Pre-commit hooks are installed and ready to use!")
     print("\n🔗 Add remote:")
     print("   git remote add origin <repo-url>\n")
 

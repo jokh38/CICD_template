@@ -22,19 +22,39 @@ def initialize_git():
     run_command("git add .")
     run_command('git commit -m "Initial commit from template"')
 
-def install_precommit():
-    """Install pre-commit hooks."""
-    print("🔧 Installing pre-commit hooks...")
-    if run_command("which pre-commit", check=False):
-        run_command("pre-commit install")
-    else:
-        print("⚠️  pre-commit not found. Install: pip install pre-commit")
-
 def create_venv():
     """Create virtual environment."""
     print("🐍 Creating virtual environment...")
     python_version = "{{ cookiecutter.python_version }}"
     run_command(f"python{python_version} -m venv .venv")
+
+def install_dependencies():
+    """Install project dependencies including dev dependencies."""
+    print("📦 Installing project dependencies...")
+    venv_pip = ".venv/bin/pip"
+
+    # Upgrade pip first
+    if run_command(f"{venv_pip} install --upgrade pip", check=False):
+        print("   ✓ pip upgraded")
+
+    # Install project with dev dependencies
+    if run_command(f"{venv_pip} install -e .[dev]", check=False):
+        print("   ✓ Project and dev dependencies installed")
+        return True
+    else:
+        print("   ⚠️  Failed to install dependencies")
+        return False
+
+def install_precommit():
+    """Install pre-commit hooks."""
+    print("🔧 Installing pre-commit hooks...")
+    venv_precommit = ".venv/bin/pre-commit"
+
+    if os.path.exists(venv_precommit):
+        run_command(f"{venv_precommit} install")
+        print("   ✓ Pre-commit hooks installed")
+    else:
+        print("   ⚠️  pre-commit not found in virtual environment")
 
 def print_next_steps():
     """Print next steps for user."""
@@ -52,11 +72,13 @@ def print_next_steps():
     print("\n📋 Next Steps:")
     print("1. cd {{ cookiecutter.project_slug }}")
     print("2. source .venv/bin/activate")
-    print("3. pip install -e .[dev]")
+    print("3. pytest  # Run tests")
+    print("4. ruff check .  # Lint code")
 
     if use_ai == "yes":
-        print("4. Review CLAUDE.md for AI assistant")
+        print("5. Review CLAUDE.md for AI assistant")
 
+    print("\n✅ All dependencies are installed and ready to use!")
     print("\n🔗 Add remote:")
     print("   git remote add origin <your-repo-url>")
     print("   git push -u origin main\n")
@@ -65,8 +87,9 @@ def main():
     """Main post-generation logic."""
     try:
         initialize_git()
-        install_precommit()
         create_venv()
+        install_dependencies()
+        install_precommit()
 
         # Remove AI workflow if not needed
         if "{{ cookiecutter.use_ai_workflow }}" == "no":

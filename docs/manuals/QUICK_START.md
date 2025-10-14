@@ -68,15 +68,15 @@ bash scripts/create-project.sh python
 # - etc.
 ```
 
-**Or use non-interactive mode:**
+**Or use non-interactive mode with absolute path:**
 ```bash
-bash scripts/create-project.sh python my-awesome-api
+bash scripts/create-project.sh python /home/user/my-awesome-api
 ```
 
 #### 2. Navigate to Project
 
 ```bash
-cd my-awesome-api
+cd /home/user/my-awesome-api
 ```
 
 #### 3. Activate Virtual Environment
@@ -89,22 +89,11 @@ source .venv/bin/activate
 .venv\Scripts\activate
 ```
 
-You should see `(venv)` in your terminal prompt.
+You should see `(.venv)` in your terminal prompt.
 
-#### 4. Install Dependencies
+**Note:** All dependencies (Ruff, pytest, mypy, pre-commit) are already installed during project creation!
 
-```bash
-pip install -e .[dev]
-```
-
-This installs:
-- Your package in editable mode
-- Ruff (linting & formatting)
-- pytest (testing)
-- mypy (type checking)
-- pre-commit (git hooks)
-
-#### 5. Run Tests
+#### 4. Run Tests
 
 ```bash
 # Run the example test
@@ -114,7 +103,7 @@ pytest
 pytest --cov=src --cov-report=html
 ```
 
-#### 6. Check Code Quality
+#### 5. Check Code Quality
 
 ```bash
 # Lint and format
@@ -125,7 +114,7 @@ ruff format src/
 mypy src/
 ```
 
-#### 7. Make Your First Commit
+#### 6. Make Your First Commit
 
 ```bash
 # The project is already initialized with git
@@ -142,7 +131,7 @@ git add README.md
 git commit -m "Update README"
 ```
 
-#### 8. Push to GitHub
+#### 7. Push to GitHub
 
 ```bash
 # Add your remote repository
@@ -156,6 +145,14 @@ The CI/CD workflow will run automatically on GitHub Actions!
 
 ---
 
+**What was automatically set up for you:**
+- ✅ Virtual environment created
+- ✅ All dev dependencies installed (ruff, pytest, mypy, pre-commit)
+- ✅ Pre-commit hooks installed and ready
+- ✅ Git repository initialized with initial commit
+
+---
+
 ### Option B: C++ Project
 
 #### 1. Create Project
@@ -164,14 +161,14 @@ The CI/CD workflow will run automatically on GitHub Actions!
 # Interactive mode
 bash scripts/create-project.sh cpp
 
-# Or non-interactive
-bash scripts/create-project.sh cpp my-fast-library
+# Or non-interactive with absolute path
+bash scripts/create-project.sh cpp /home/user/my-fast-library
 ```
 
 #### 2. Navigate to Project
 
 ```bash
-cd my-fast-library
+cd /home/user/my-fast-library
 ```
 
 #### 3. Install Build Tools
@@ -230,6 +227,14 @@ pre-commit run --all-files
 git remote add origin https://github.com/YOUR-USERNAME/my-fast-library.git
 git push -u origin main
 ```
+
+---
+
+**What was automatically set up for you:**
+- ✅ Git repository initialized with initial commit
+- ✅ Pre-commit tool installed
+- ✅ Pre-commit hooks installed and ready
+- ✅ Build directory created
 
 ---
 
@@ -671,12 +676,12 @@ rm -rf build && cmake -B build -G Ninja
 
 ### Template Commands
 ```bash
-# Create project
-bash scripts/create-project.sh python my-project
-bash scripts/create-project.sh cpp my-project
+# Create project with absolute path
+bash scripts/create-project.sh python /home/user/my-project
+bash scripts/create-project.sh cpp /home/user/my-project
 
-# Sync configs
-bash scripts/sync-templates.sh python /path/to/project
+# Sync configs (use absolute path)
+bash scripts/sync-templates.sh python /home/user/existing-project
 
 # Verify setup
 bash scripts/verify-setup.sh

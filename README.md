@@ -17,8 +17,8 @@ pip install cookiecutter
 # Interactive mode
 bash scripts/create-project.sh python
 
-# Non-interactive mode
-bash scripts/create-project.sh python my-awesome-project
+# Non-interactive mode with absolute path
+bash scripts/create-project.sh python /home/user/my-awesome-project
 ```
 
 ### Create a C++ Project
@@ -27,8 +27,8 @@ bash scripts/create-project.sh python my-awesome-project
 # Interactive mode
 bash scripts/create-project.sh cpp
 
-# Non-interactive mode
-bash scripts/create-project.sh cpp my-fast-library
+# Non-interactive mode with absolute path
+bash scripts/create-project.sh cpp /home/user/my-fast-library
 ```
 
 ## 📁 Project Structure
@@ -156,36 +156,39 @@ Shared, version-controlled configurations:
 ### Python Project
 
 ```bash
-# Create project
-bash scripts/create-project.sh python my-api
+# Create project with absolute path (auto-installs all dependencies)
+bash scripts/create-project.sh python /home/user/my-api
 
-# Setup
-cd my-api
+# Activate and use immediately
+cd /home/user/my-api
 source .venv/bin/activate
-pip install -e .[dev]
 
-# Run tests
+# Everything is ready! Run tests
 pytest
 
-# Lint
+# Lint and format
 ruff check .
 ruff format .
 ```
 
+**Note:** Dependencies (ruff, pytest, mypy, pre-commit) are automatically installed during project creation!
+
 ### C++ Project
 
 ```bash
-# Create project
-bash scripts/create-project.sh cpp my-library
+# Create project with absolute path (auto-installs pre-commit)
+bash scripts/create-project.sh cpp /home/user/my-library
 
-# Build
-cd my-library
+# Build and test
+cd /home/user/my-library
 cmake -B build -G Ninja
 cmake --build build
 
 # Test
 ctest --test-dir build
 ```
+
+**Note:** Pre-commit is automatically installed and ready to use!
 
 ### Using Reusable Workflows
 
