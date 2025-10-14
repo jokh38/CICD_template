@@ -128,20 +128,31 @@ setup_cpp_tools() {
         apt-get install -y \
             clang clang-format clang-tidy \
             cmake ninja-build \
-            libgtest-dev
+            build-essential
     fi
 
-    # Install sccache
-    SCCACHE_VERSION="0.7.7"
-    curl -L https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-x86_64-unknown-linux-musl.tar.gz | tar xz
-    mv sccache-v${SCCACHE_VERSION}-x86_64-unknown-linux-musl/sccache /usr/local/bin/
+    # Install sccache v0.11.0
+    SCCACHE_VERSION="0.11.0"
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+        SCCACHE_ARCH="x86_64-unknown-linux-musl"
+    else
+        echo -e "${RED}Unsupported architecture: $ARCH${NC}"
+        exit 1
+    fi
+
+    curl -L "https://github.com/mozilla/sccache/releases/download/v${SCCACHE_VERSION}/sccache-v${SCCACHE_VERSION}-${SCCACHE_ARCH}.tar.gz" | tar xz
+    mv "sccache-v${SCCACHE_VERSION}-${SCCACHE_ARCH}/sccache" /usr/local/bin/
     chmod +x /usr/local/bin/sccache
+    rm -rf "sccache-v${SCCACHE_VERSION}-${SCCACHE_ARCH}"
 
     # Configure sccache
     sudo -u "$RUNNER_USER" bash <<'EOF'
 mkdir -p ~/.cache/sccache
 echo 'export SCCACHE_DIR=~/.cache/sccache' >> ~/.bashrc
 echo 'export SCCACHE_CACHE_SIZE="10G"' >> ~/.bashrc
+echo 'export CMAKE_C_COMPILER_LAUNCHER="sccache"' >> ~/.bashrc
+echo 'export CMAKE_CXX_COMPILER_LAUNCHER="sccache"' >> ~/.bashrc
 EOF
 
     echo -e "${GREEN}✅ C++ tools installed${NC}"
