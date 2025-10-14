@@ -1,0 +1,115 @@
+name: C++ Linux CI
+
+on:
+  push:
+    branches: [ $default-branch ]
+  pull_request:
+    branches: [ $default-branch ]
+
+jobs:
+  # Basic Build and Test
+  basic:
+    name: Basic CI
+    uses: ./.github/workflows/cpp-linux-runner.yaml
+    with:
+      build-type: 'Release'
+      cpp-standard: '20'
+      compiler: 'gcc'
+      build-system: 'cmake'
+      enable-cache: true
+      enable-tests: true
+      enable-coverage: false
+      enable-static-analysis: true
+      enable-formatting-check: true
+      runner-type: 'ubuntu-latest'
+      use-ninja: true
+
+  # Debug Build with Coverage
+  coverage:
+    name: Coverage Analysis
+    uses: ./.github/workflows/cpp-linux-runner.yaml
+    with:
+      build-type: 'Debug'
+      cpp-standard: '20'
+      compiler: 'gcc'
+      build-system: 'cmake'
+      enable-cache: true
+      enable-tests: true
+      enable-coverage: true
+      enable-static-analysis: false
+      enable-formatting-check: false
+      runner-type: 'ubuntu-latest'
+      use-ninja: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # Clang Build
+  clang:
+    name: Clang Build
+    uses: ./.github/workflows/cpp-linux-runner.yaml
+    with:
+      build-type: 'Release'
+      cpp-standard: '20'
+      compiler: 'clang'
+      build-system: 'cmake'
+      enable-cache: true
+      enable-tests: true
+      enable-coverage: false
+      enable-static-analysis: true
+      enable-formatting-check: true
+      runner-type: 'ubuntu-latest'
+      use-ninja: true
+
+  # Debug with Sanitizers
+  sanitizers:
+    name: Sanitizer Build
+    uses: ./.github/workflows/cpp-linux-runner.yaml
+    with:
+      build-type: 'Debug'
+      cpp-standard: '20'
+      compiler: 'gcc'
+      build-system: 'cmake'
+      enable-cache: true
+      enable-tests: true
+      enable-coverage: false
+      enable-static-analysis: false
+      enable-sanitizers: true
+      enable-memory-check: true
+      enable-formatting-check: false
+      runner-type: 'ubuntu-latest'
+      use-ninja: true
+
+  # C++17 Compatibility
+  cpp17:
+    name: C++17 Build
+    uses: ./.github/workflows/cpp-linux-runner.yaml
+    with:
+      build-type: 'Release'
+      cpp-standard: '17'
+      compiler: 'gcc'
+      build-system: 'cmake'
+      enable-cache: true
+      enable-tests: true
+      enable-coverage: false
+      enable-static-analysis: true
+      enable-formatting-check: true
+      runner-type: 'ubuntu-latest'
+      use-ninja: true
+
+  # Self-hosted Runner (if available)
+  self-hosted:
+    name: Self-hosted Build
+    uses: ./.github/workflows/cpp-linux-runner.yaml
+    with:
+      build-type: 'Release'
+      cpp-standard: '20'
+      compiler: 'gcc'
+      build-system: 'cmake'
+      enable-cache: true
+      enable-tests: true
+      enable-coverage: false
+      enable-static-analysis: true
+      enable-formatting-check: true
+      runner-type: 'self-hosted'
+      use-ninja: true
+    if: github.repository == 'YOUR-ORG/REPO-NAME'

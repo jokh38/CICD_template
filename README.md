@@ -91,7 +91,38 @@ github-cicd-templates/
 - Pre-commit hooks configured
 - GitHub Actions CI/CD ready
 
-### 2. Reusable Workflows
+### 2. Advanced C++ Linux Runner 🚀
+
+**NEW: Comprehensive C++ CI/CD workflow for Linux**
+
+Our new `cpp-linux-runner.yaml` provides enterprise-grade CI/CD with advanced features:
+
+- **🔧 Multiple Compilers**: GCC and Clang with version detection
+- **🏗️ Build Systems**: CMake and Meson support with Ninja generator
+- **⚡ Smart Caching**: sccache integration for 2-12x faster builds
+- **🔍 Static Analysis**: clang-tidy, cppcheck with customizable rules
+- **📊 Code Coverage**: lcov integration with Codecov upload
+- **🛡️ Safety Tools**: AddressSanitizer, UBSan, and Valgrind
+- **📝 Code Quality**: clang-format verification and enforcement
+- **📈 Performance**: Parallel builds and optimized configurations
+- **📋 Reporting**: Comprehensive build summaries and status badges
+
+```yaml
+# Example usage
+jobs:
+  ci:
+    uses: YOUR-ORG/github-cicd-templates/.github/workflows/cpp-linux-runner.yaml@v1
+    with:
+      build-type: 'Release'
+      cpp-standard: '20'
+      compiler: 'gcc'
+      enable-cache: true
+      enable-tests: true
+      enable-static-analysis: true
+      enable-coverage: true
+```
+
+### 3. Reusable Workflows
 
 Centralized CI/CD workflows that can be referenced across all projects:
 
@@ -105,7 +136,7 @@ jobs:
       run-coverage: true
 ```
 
-### 3. Composite Actions
+### 4. Composite Actions
 
 Reusable action components:
 - `setup-python-cache`: Python environment with dependency caching
@@ -175,7 +206,7 @@ jobs:
       run-coverage: true
 ```
 
-**C++:**
+**C++ (Standard):**
 ```yaml
 name: CI
 
@@ -188,6 +219,29 @@ jobs:
       build-type: 'Release'
       enable-cache: true
       use-ninja: true
+```
+
+**C++ (Advanced Linux Runner):**
+```yaml
+name: Advanced CI
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    uses: YOUR-ORG/github-cicd-templates/.github/workflows/cpp-linux-runner.yaml@v1
+    with:
+      build-type: 'Release'
+      cpp-standard: '20'
+      compiler: 'gcc'
+      enable-cache: true
+      enable-tests: true
+      enable-static-analysis: true
+      enable-coverage: true
+      enable-formatting-check: true
+      use-ninja: true
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 ```
 
 ### Sync Configurations to Existing Project
@@ -250,6 +304,13 @@ bash scripts/sync-templates.sh cpp /path/to/existing-project
 
 ## 📚 Documentation
 
+**📖 Comprehensive Guides:**
+- [Quick Start Guide](docs/manuals/QUICK_START.md) - Get started in 5 minutes
+- [Cookiecutter Guide](docs/manuals/COOKIECUTTER_GUIDE.md) - Template system deep dive
+- **[C++ Linux Runner Guide](docs/manuals/CPP_LINUX_RUNNER_GUIDE.md)** - Advanced C++ CI/CD workflow
+- [Troubleshooting](docs/manuals/TROUBLESHOOTING.md) - Common issues and solutions
+
+**🔧 Development Plan:**
 See `0.DEV_PLAN.md` for the complete development plan covering:
 - Phase 1-5: Implementation (completed)
 - Phase 6: Self-hosted runner setup
@@ -278,6 +339,13 @@ MIT License - see LICENSE file for details
 
 ---
 
-**Status:** ✅ Phases 1-5 Complete
-**Version:** 1.0.0
-**Last Updated:** 2025-10-13
+**Status:** ✅ Phases 1-5 Complete + Advanced C++ Linux Runner
+**Version:** 1.1.0
+**Last Updated:** 2025-10-14
+
+**🎉 New in v1.1.0:**
+- ✅ Advanced C++ Linux GitHub Actions runner
+- ✅ Comprehensive static analysis integration
+- ✅ Code coverage with Codecov support
+- ✅ Memory safety tools (ASan, UBSan, Valgrind)
+- ✅ Enterprise-grade CI/CD features
