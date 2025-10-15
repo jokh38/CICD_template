@@ -14,5 +14,5 @@ jobs:
       cpp-compiler: 'g++'
       run-tests: true
       enable-cache: true
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'
       use-ninja: true

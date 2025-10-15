@@ -21,7 +21,7 @@ jobs:
       enable-coverage: false
       enable-static-analysis: true
       enable-formatting-check: true
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'
       use-ninja: true
 
   # Debug Build with Coverage
@@ -38,7 +38,7 @@ jobs:
       enable-coverage: true
       enable-static-analysis: false
       enable-formatting-check: false
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'
       use-ninja: true
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -57,7 +57,7 @@ jobs:
       enable-coverage: false
       enable-static-analysis: true
       enable-formatting-check: true
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'
       use-ninja: true
 
   # Debug with Sanitizers
@@ -76,7 +76,7 @@ jobs:
       enable-sanitizers: true
       enable-memory-check: true
       enable-formatting-check: false
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'
       use-ninja: true
 
   # C++17 Compatibility
@@ -93,12 +93,12 @@ jobs:
       enable-coverage: false
       enable-static-analysis: true
       enable-formatting-check: true
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'
       use-ninja: true
 
-  # Self-hosted Runner (if available)
-  self-hosted:
-    name: Self-hosted Build
+  # GitHub-hosted Runner (fallback)
+  github-hosted:
+    name: GitHub-hosted Build
     uses: ./.github/workflows/cpp-linux-runner.yaml
     with:
       build-type: 'Release'
@@ -110,6 +110,6 @@ jobs:
       enable-coverage: false
       enable-static-analysis: true
       enable-formatting-check: true
-      runner-type: 'self-hosted'
+      runner-type: 'ubuntu-latest'
       use-ninja: true
     if: github.repository == 'YOUR-ORG/REPO-NAME'

@@ -7,7 +7,7 @@
     "cpp_standard": ["17", "20", "23"],
     "build_system": ["cmake", "meson"],
     "use_ai_workflow": ["no", "yes"],
-    "runner_type": ["github-hosted", "self-hosted"],
+    "runner_type": ["self-hosted", "github-hosted"],
     "enable_cache": ["yes", "no"],
     "use_ninja": ["yes", "no"],
     "testing_framework": ["gtest", "catch2", "doctest"],

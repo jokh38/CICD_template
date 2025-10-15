@@ -88,12 +88,12 @@ on:
         description: 'GitHub Actions runner type'
         required: false
         type: choice
-        default: 'ubuntu-latest'
+        default: 'self-hosted'
         options:
+          - 'self-hosted'
           - 'ubuntu-latest'
           - 'ubuntu-22.04'
           - 'ubuntu-20.04'
-          - 'self-hosted'
 
       use-ninja:
         description: 'Use Ninja build system (faster builds)'

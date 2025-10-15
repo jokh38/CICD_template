@@ -31,7 +31,7 @@ on:
         description: 'Runner type'
         required: false
         type: string
-        default: 'ubuntu-latest'
+        default: 'self-hosted'
 
     outputs:
       test-result:

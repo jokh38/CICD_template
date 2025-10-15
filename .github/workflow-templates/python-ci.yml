@@ -13,4 +13,4 @@ jobs:
       python-version: '3.10'
       run-tests: true
       run-coverage: true
-      runner-type: 'ubuntu-latest'
+      runner-type: 'self-hosted'

@@ -122,7 +122,7 @@ When you run Cookiecutter for a Python project, you'll be prompted for:
 | `author_email` | Your email | `john@example.com` | - |
 | `python_version` | Python version | `3.11` | `3.10` |
 | `use_ai_workflow` | Include AI prompts | `yes` / `no` | `no` |
-| `runner_type` | CI runner type | `github-hosted` / `self-hosted` | `github-hosted` |
+| `runner_type` | CI runner type | `self-hosted` / `github-hosted` | `self-hosted` |
 | `include_docker` | Add Dockerfile | `yes` / `no` | `no` |
 | `license` | License type | `MIT`, `Apache-2.0`, etc. | `MIT` |
 
@@ -147,7 +147,7 @@ For C++ projects:
 | `cpp_standard` | C++ standard | `17`, `20`, `23` | `17` |
 | `build_system` | Build system | `cmake` / `meson` | `cmake` |
 | `use_ai_workflow` | Include AI prompts | `yes` / `no` | `no` |
-| `runner_type` | CI runner type | `github-hosted` / `self-hosted` | `github-hosted` |
+| `runner_type` | CI runner type | `self-hosted` / `github-hosted` | `self-hosted` |
 | `enable_cache` | Enable sccache | `yes` / `no` | `yes` |
 | `use_ninja` | Use Ninja | `yes` / `no` | `yes` |
 | `testing_framework` | Test framework | `gtest`, `catch2`, `doctest` | `gtest` |

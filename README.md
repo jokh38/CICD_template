@@ -274,7 +274,7 @@ bash scripts/sync-templates.sh cpp /path/to/existing-project
 - `project_name`: Project display name
 - `project_slug`: Package name (auto-generated)
 - `python_version`: Python version (3.10, 3.11, 3.12)
-- `runner_type`: github-hosted or self-hosted
+- `runner_type`: self-hosted or github-hosted (default: self-hosted)
 - `use_ai_workflow`: Include AI workflow templates
 - `license`: MIT, BSD-3-Clause, Apache-2.0, GPL-3.0, None
 
@@ -294,7 +294,7 @@ bash scripts/sync-templates.sh cpp /path/to/existing-project
 - `working-directory`: Working directory
 - `run-tests`: Run pytest
 - `run-coverage`: Generate coverage report
-- `runner-type`: ubuntu-latest or self-hosted
+- `runner-type`: self-hosted (default) or ubuntu-latest
 
 **C++ CI:**
 - `build-type`: Release, Debug, RelWithDebInfo
@@ -302,7 +302,7 @@ bash scripts/sync-templates.sh cpp /path/to/existing-project
 - `cmake-options`: Extra CMake options
 - `run-tests`: Run ctest
 - `enable-cache`: Enable sccache
-- `runner-type`: ubuntu-latest or self-hosted
+- `runner-type`: self-hosted (default) or ubuntu-latest
 - `use-ninja`: Use Ninja generator
 
 ## 📚 Documentation
