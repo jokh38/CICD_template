@@ -1,0 +1,220 @@
+name: AI PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  models: read
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    if: |
+      !contains(github.event.pull_request.labels.*.name, 'skip-ai-review') &&
+      (github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Get PR details
+        id: pr-details
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
+
+          # Get PR details
+          PR_INFO=$(gh pr view $PR_NUMBER --json title,body,baseRefName,headRefName,author,files,commits)
+
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "pr_title=$(echo "$PR_INFO" | jq -r '.title')" >> $GITHUB_OUTPUT
+          echo "pr_body=$(echo "$PR_INFO" | jq -r '.body')" >> $GITHUB_OUTPUT
+          echo "base_branch=$(echo "$PR_INFO" | jq -r '.baseRefName')" >> $GITHUB_OUTPUT
+          echo "head_branch=$(echo "$PR_INFO" | jq -r '.headRefName')" >> $GITHUB_OUTPUT
+          echo "author=$(echo "$PR_INFO" | jq -r '.author.login')" >> $GITHUB_OUTPUT
+          echo "files_changed=$(echo "$PR_INFO" | jq -r '.files | length')" >> $GITHUB_OUTPUT
+          echo "commits_count=$(echo "$PR_INFO" | jq -r '.commits | length')" >> $GITHUB_OUTPUT
+
+          # Get changed files list
+          echo "$PR_INFO" | jq -r '.files[].path' > changed_files.txt
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+
+      - name: Get diff content
+        id: diff-content
+        run: |
+          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          BASE_BRANCH="${{ steps.pr-details.outputs.base_branch }}"
+
+          # Get the diff
+          git fetch origin $BASE_BRANCH
+          DIFF_CONTENT=$(git diff origin/$BASE_BRANCH...HEAD --no-color)
+
+          echo "$DIFF_CONTENT" > pr_diff.txt
+          echo "diff_file=pr_diff.txt" >> $GITHUB_OUTPUT
+
+      - name: Run Claude Code review
+        id: claude-review
+        uses: ./.github/actions/claude-code-runner
+        with:
+          task: |
+            You are an expert code reviewer conducting a thorough review of a Pull Request.
+
+            **PULL REQUEST DETAILS:**
+            - Title: ${{ steps.pr-details.outputs.pr_title }}
+            - Author: @${{ steps.pr-details.outputs.author }}
+            - Base Branch: ${{ steps.pr-details.outputs.base_branch }}
+            - Head Branch: ${{ steps.pr-details.outputs.head_branch }}
+            - Files Changed: ${{ steps.pr-details.outputs.files_changed }}
+            - Commits: ${{ steps.pr-details.outputs.commits_count }}
+
+            **PR DESCRIPTION:**
+            ${{ steps.pr-details.outputs.pr_body }}
+
+            **CHANGED FILES:**
+            $(cat changed_files.txt | sed 's/^/- /')
+
+            **TASK:**
+            Please conduct a comprehensive code review covering:
+
+            1. **Code Quality & Best Practices**
+               - Adherence to coding standards
+               - Code organization and structure
+               - Performance considerations
+               - Security implications
+
+            2. **Functionality & Logic**
+               - Correctness of implementation
+               - Edge cases and error handling
+               - Business logic validation
+               - Integration with existing code
+
+            3. **Testing & Documentation**
+               - Test coverage adequacy
+               - Test quality and relevance
+               - Documentation updates
+               - API documentation completeness
+
+            4. **Maintainability**
+               - Code readability
+               - Complexity analysis
+               - Technical debt considerations
+               - Future extensibility
+
+            5. **Specific Issues to Highlight:**
+               - Critical bugs or security issues
+               - Performance bottlenecks
+               - Breaking changes
+               - Missing error handling
+               - Inconsistent patterns
+
+            **REVIEW FORMAT:**
+            Please provide your review in markdown format with:
+            - Overall assessment (LGTM, Request Changes, or Needs Revision)
+            - Key strengths of the PR
+            - Specific issues found (with file paths and line numbers when applicable)
+            - Suggestions for improvements
+            - Any blockers for merge
+
+            Focus on being constructive and providing actionable feedback.
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          timeout: 600
+          add-dir: "src,docs,tests"
+
+      - name: Parse review results
+        id: review-results
+        run: |
+          echo '${{ steps.claude-review.outputs.results }}' > review_results.json
+          python .github/actions/claude-code-runner/scripts/parse_results.py review_results.json > parsed_review.json
+
+          REVIEW_SUMMARY=$(jq -r '.summary // "Review completed"' parsed_review.json)
+          echo "review_summary=$REVIEW_SUMMARY" >> $GITHUB_OUTPUT
+
+      - name: Post review comment
+        run: |
+          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          REVIEW_SUMMARY="${{ steps.review-results.outputs.review_summary }}"
+
+          # Create review comment
+          REVIEW_COMMENT=$(cat <<EOF
+          ## 🤖 AI Code Review
+
+          **Reviewed by:** Claude Code AI Assistant
+          **PR:** #${PR_NUMBER} - ${{ steps.pr-details.outputs.pr_title }}
+          **Author:** @${{ steps.pr-details.outputs.author }}
+          **Files Changed:** ${{ steps.pr-details.outputs.files_changed }}
+
+          ---
+
+          $REVIEW_SUMMARY
+
+          ---
+
+          *This review was generated automatically by Claude Code AI. Please review the suggestions and address any concerns before merging.*
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+          EOF
+          )
+
+          # Post as a review comment
+          gh pr comment $PR_NUMBER --body "$REVIEW_COMMENT"
+
+      - name: Check for critical issues
+        id: critical-check
+        run: |
+          REVIEW_SUMMARY="${{ steps.review-results.outputs.review_summary }}"
+
+          # Check for critical issues that should block merge
+          if echo "$REVIEW_SUMMARY" | grep -i -E "(critical|security|blocker|breaking change|do not merge)" > /dev/null; then
+            echo "critical_issues=true" >> $GITHUB_OUTPUT
+          else
+            echo "critical_issues=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Add blocking label if critical issues
+        if: steps.critical-check.outputs.critical_issues == 'true'
+        run: |
+          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          gh pr edit $PR_NUMBER --add-label "needs-changes,ai-review-blocked"
+
+      - name: Add approval label if no critical issues
+        if: steps.critical-check.outputs.critical_issues == 'false'
+        run: |
+          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          gh pr edit $PR_NUMBER --add-label "ai-review-approved"
+
+      - name: Handle review failures
+        if: failure()
+        run: |
+          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+
+          FAILURE_COMMENT=$(cat <<'EOF'
+          ## ❌ AI Review Failed
+
+          The automated AI review process encountered an error. Please proceed with manual review.
+
+          **Error:** ${{ steps.claude-review.outputs.error || 'Unknown error occurred' }}
+
+          ---
+
+          🤖 Generated with Claude Code AI
+          EOF
+          )
+
+          gh pr comment $PR_NUMBER --body "$FAILURE_COMMENT"

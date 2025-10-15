@@ -1,0 +1,89 @@
+name: 'Claude Code Runner'
+description: 'Run Claude Code CLI in automated workflows with proper error handling'
+author: 'AI Assistant'
+
+inputs:
+  task:
+    description: 'Task description for Claude'
+    required: true
+  add-dir:
+    description: 'Additional directories to include (comma-separated)'
+    required: false
+  timeout:
+    description: 'Timeout in seconds (default: 300)'
+    required: false
+    default: '300'
+  error-log:
+    description: 'Path to error log file for context'
+    required: false
+  retry-count:
+    description: 'Current retry attempt'
+    required: false
+    default: '0'
+  anthropic-api-key:
+    description: 'Anthropic API key for Claude Code'
+    required: true
+
+outputs:
+  success:
+    description: 'Whether the execution was successful'
+  results:
+    description: 'Results from Claude Code CLI'
+  error:
+    description: 'Error message if execution failed'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+
+    - name: Run Claude Code
+      shell: bash
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic-api-key }}
+        CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
+        BASH_DEFAULT_TIMEOUT_MS: ${{ inputs.timeout }}000
+      run: |
+        # Prepare arguments
+        ARGS="--task '${{ inputs.task }}'"
+        ARGS="$ARGS --timeout ${{ inputs.timeout }}"
+        ARGS="$ARGS --retry-count ${{ inputs.retry-count }}"
+
+        if [ -n "${{ inputs.add-dir }}" ]; then
+          IFS=',' read -ra DIRS <<< "${{ inputs.add-dir }}"
+          for dir in "${DIRS[@]}"; do
+            ARGS="$ARGS --add-dir '$dir'"
+          done
+        fi
+
+        if [ -n "${{ inputs.error-log }}" ] && [ -f "${{ inputs.error-log }}" ]; then
+          ARGS="$ARGS --error-log '${{ inputs.error-log }}'"
+        fi
+
+        # Run the script and capture output
+        OUTPUT=$(python .github/actions/claude-code-runner/scripts/run_claude_code.py $ARGS)
+        EXIT_CODE=$?
+
+        # Set outputs
+        if [ $EXIT_CODE -eq 0 ]; then
+          echo "success=true" >> $GITHUB_OUTPUT
+          echo "results<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        else
+          echo "success=false" >> $GITHUB_OUTPUT
+          echo "error<<EOF" >> $GITHUB_OUTPUT
+          echo "$OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        fi
+
+        # Exit with the same code as the script
+        exit $EXIT_CODE
