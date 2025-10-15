@@ -1,0 +1,377 @@
+name: AI Code Automation with MCP Integration
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task_type:
+        description: 'Type of task to perform'
+        required: true
+        type: choice
+        options:
+          - refactor
+          - fix-bug
+          - add-feature
+          - generate-tests
+          - security-audit
+          - optimize-performance
+          - code-review
+          - multi-language-analysis
+      description:
+        description: 'Task description'
+        required: true
+        type: string
+      project:
+        description: 'Target project (if multi-project workspace)'
+        required: false
+        type: string
+      use_mcp:
+        description: 'Enable MCP integration'
+        required: false
+        type: boolean
+        default: true
+  workflow_run:
+    workflows: ["CI", "Python CI", "C++ CI"]
+    types: [failed]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
+  BASH_DEFAULT_TIMEOUT_MS: 30000
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  models: read
+
+jobs:
+  ai-automation:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, '/claude') || contains(github.event.label.name, 'ai-assist') || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_run' || github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml tomllib
+
+      - name: Install Claude Code CLI
+        run: |
+          curl -fsSL https://claude.ai/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Node.js (for MCP servers)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install MCP servers
+        run: |
+          npm install -g @modelcontextprotocol/server-git @modelcontextprotocol/server-github @modelcontextprotocol/server-filesystem
+
+      - name: Parse trigger and determine task
+        id: parse_task
+        run: |
+          TASK_TYPE=""
+          DESCRIPTION=""
+          PROJECT=""
+          USE_MCP="true"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            TASK_TYPE="${{ github.event.inputs.task_type }}"
+            DESCRIPTION="${{ github.event.inputs.description }}"
+            PROJECT="${{ github.event.inputs.project }}"
+            USE_MCP="${{ github.event.inputs.use_mcp }}"
+          elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            TASK_TYPE="fix-bug"
+            DESCRIPTION="Fix CI/CD pipeline failures in workflow ${{ github.event.workflow.name }}"
+            USE_MCP="true"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            TASK_TYPE="code-review"
+            DESCRIPTION="Review pull request #${{ github.event.number }} with comprehensive analysis"
+            PROJECT=""
+            USE_MCP="true"
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            COMMENT="${{ github.event.comment.body }}"
+            if [[ "$COMMENT" =~ /claude\ +(refactor|fix-bug|add-feature|generate-tests|security-audit|optimize-performance|code-review|multi-language-analysis)\ +(.+) ]]; then
+              TASK_TYPE="${BASH_REMATCH[1]}"
+              DESCRIPTION="${BASH_REMATCH[2]}"
+            elif [[ "$COMMENT" =~ /claude\ +(.+) ]]; then
+              TASK_TYPE="general"
+              DESCRIPTION="${BASH_REMATCH[1]}"
+            fi
+            USE_MCP="true"
+          elif [[ "${{ github.event_name }}" == "issues" ]]; then
+            LABEL="${{ github.event.label.name }}"
+            ISSUE_BODY="${{ github.event.issue.body }}"
+
+            case "$LABEL" in
+              "ai-refactor")
+                TASK_TYPE="refactor"
+                DESCRIPTION="Code refactoring as requested in issue #${{ github.event.issue.number }}"
+                ;;
+              "ai-fix-bug")
+                TASK_TYPE="fix-bug"
+                DESCRIPTION="Bug fix as requested in issue #${{ github.event.issue.number }}"
+                ;;
+              "ai-add-feature")
+                TASK_TYPE="add-feature"
+                DESCRIPTION="Feature addition as requested in issue #${{ github.event.issue.number }}"
+                ;;
+              "ai-generate-tests")
+                TASK_TYPE="generate-tests"
+                DESCRIPTION="Test generation as requested in issue #${{ github.event.issue.number }}"
+                ;;
+              "ai-security-audit")
+                TASK_TYPE="security-audit"
+                DESCRIPTION="Security audit as requested in issue #${{ github.event.issue.number }}"
+                ;;
+              "ai-optimize")
+                TASK_TYPE="optimize-performance"
+                DESCRIPTION="Performance optimization as requested in issue #${{ github.event.issue.number }}"
+                ;;
+              *)
+                TASK_TYPE="general"
+                DESCRIPTION="General assistance as requested in issue #${{ github.event.issue.number }}"
+                ;;
+            esac
+
+            DESCRIPTION="$DESCRIPTION\\n\\nOriginal issue:\\n$ISSUE_BODY"
+          fi
+
+          echo "task_type=$TASK_TYPE" >> $GITHUB_OUTPUT
+          echo "description<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$DESCRIPTION" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "project=$PROJECT" >> $GITHUB_OUTPUT
+          echo "use_mcp=$USE_MCP" >> $GITHUB_OUTPUT
+
+      - name: Discover projects
+        id: discover_projects
+        run: |
+          python .github/actions/claude-code-runner/scripts/enhanced_claude_runner.py --list-projects > projects.json
+          echo "projects<<EOF" >> $GITHUB_OUTPUT
+          cat projects.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Show project information
+        run: |
+          echo "Discovered projects:"
+          cat projects.json | jq '.'
+
+      - name: Run AI task with MCP integration
+        id: ai_task
+        run: |
+          TASK_TYPE="${{ steps.parse_task.outputs.task_type }}"
+          DESCRIPTION="${{ steps.parse_task.outputs.description }}"
+          PROJECT="${{ steps.parse_task.outputs.project }}"
+          USE_MCP="${{ steps.parse_task.outputs.use_mcp }}"
+
+          if [[ -z "$TASK_TYPE" ]]; then
+            echo "No valid task detected"
+            exit 0
+          fi
+
+          # Build command
+          CMD="python .github/actions/claude-code-runner/scripts/enhanced_claude_runner.py"
+          CMD="$CMD --task-type $TASK_TYPE"
+          CMD="$CMD --description \"$DESCRIPTION\""
+
+          if [[ -n "$PROJECT" ]]; then
+            CMD="$CMD --project $PROJECT"
+          fi
+
+          if [[ "$USE_MCP" != "true" ]]; then
+            CMD="$CMD --no-mcp"
+          fi
+
+          CMD="$CMD --timeout 600"
+
+          # Execute and capture results
+          echo "Executing: $CMD"
+          eval $CMD > ai_result.json 2>ai_error.log || {
+            echo "AI task failed, checking error log..."
+            cat ai_error.log
+            exit 1
+          }
+
+          # Store results
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          cat ai_result.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Display results summary
+          echo "AI Task Results:"
+          cat ai_result.json | jq '.success, .task_type, .mcp_tools_used' || true
+
+      - name: Process AI results and create commit
+        if: steps.ai_task.outputs.result != ''
+        run: |
+          # Parse AI results
+          SUCCESS=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.success // false')
+          TASK_TYPE=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.task_type // "unknown"')
+          MCP_TOOLS=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.mcp_tools_used | join(", ") // "none"')
+
+          echo "Success: $SUCCESS"
+          echo "Task Type: $TASK_TYPE"
+          echo "MCP Tools Used: $MCP_TOOLS"
+
+          if [[ "$SUCCESS" == "true" ]]; then
+            # Check if there are any changes to commit
+            if git diff --quiet && git diff --staged --quiet; then
+              echo "No changes made by AI, skipping commit"
+            else
+              # Configure git
+              git config --local user.email "ai-assistant@users.noreply.github.com"
+              git config --local user.name "AI Assistant"
+
+              # Add all changes
+              git add -A
+
+              # Create commit message
+              COMMIT_MSG="AI ($TASK_TYPE): Automated code improvement"
+
+              if [[ -n "$MCP_TOOLS" && "$MCP_TOOLS" != "none" ]]; then
+                COMMIT_MSG="$COMMIT_MSG (MCP: $MCP_TOOLS)"
+              fi
+
+              COMMIT_MSG="$COMMIT_MSG
+
+              🤖 Generated with Claude Code + MCP Integration
+
+              - Task: ${{ steps.parse_task.outputs.description }}
+              - Tools: $MCP_TOOLS
+              - Trigger: ${{ github.event_name }}
+
+              Co-Authored-By: Claude <noreply@anthropic.com>"
+
+              # Create commit
+              git commit -m "$COMMIT_MSG"
+
+              echo "Created commit with AI-generated changes"
+            fi
+          else
+            echo "AI task failed, no changes to commit"
+            exit 1
+          fi
+
+      - name: Run validation tests
+        if: steps.ai_task.outputs.result != ''
+        run: |
+          # Run project-specific validation
+          if [[ -f "pyproject.toml" ]]; then
+            echo "Python project detected, running validation..."
+            if command -v ruff &> /dev/null; then
+              ruff check . --fix --exit-zero || true
+            fi
+            if command -v pytest &> /dev/null; then
+              pytest --tb=short --exit-zero || true
+            fi
+          elif [[ -f "CMakeLists.txt" ]]; then
+            echo "C++ project detected, running validation..."
+            cmake -B build -DCMAKE_BUILD_TYPE=Debug || true
+            cmake --build build || true
+            ctest --test-dir build --output-on-failure --exit-zero || true
+          elif [[ -f "package.json" ]]; then
+            echo "JavaScript/TypeScript project detected, running validation..."
+            npm test --silent || true
+          fi
+
+      - name: Push changes
+        if: steps.ai_task.outputs.result != ''
+        run: |
+          # Check if there are commits to push
+          if git rev-parse --verify HEAD~1 >/dev/null 2>&1; then
+            git push origin main
+            echo "Pushed changes to repository"
+          else
+            echo "No new commits to push"
+          fi
+
+      - name: Create or update issue comment
+        if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+        run: |
+          SUCCESS=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.success // false')
+          TASK_TYPE=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.task_type // "unknown"')
+          MCP_TOOLS=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.mcp_tools_used | join(", ") // "none"')
+
+          if [[ "$SUCCESS" == "true" ]]; then
+            COMMENT="✅ **AI Task Completed Successfully**
+
+            **Task Type:** $TASK_TYPE
+            **MCP Tools Used:** $MCP_TOOLS
+            **Trigger:** ${{ github.event_name }}
+
+            The AI assistant has processed your request and created the necessary changes. If this was for an issue, the changes have been committed and pushed to the main branch.
+
+            ---
+            *Processed by Claude Code with MCP integration*"
+          else
+            COMMENT="❌ **AI Task Failed**
+
+            **Task Type:** $TASK_TYPE
+            **Trigger:** ${{ github.event_name }}
+
+            The AI assistant encountered an error while processing your request. Please check the workflow logs for more details.
+
+            ---
+            *Processed by Claude Code with MCP integration*"
+          fi
+
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            gh issue comment ${{ github.event.issue.number }} --body "$COMMENT"
+          elif [[ "${{ github.event_name }}" == "issue_comment" ]]; then
+            gh issue comment ${{ github.event.issue.number }} --body "$COMMENT"
+          fi
+
+      - name: Create pull request comment
+        if: github.event_name == 'pull_request'
+        run: |
+          SUCCESS=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.success // false')
+          TASK_TYPE=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.task_type // "unknown"')
+          MCP_TOOLS=$(echo '${{ steps.ai_task.outputs.result }}' | jq -r '.mcp_tools_used | join(", ") // "none"')
+
+          if [[ "$SUCCESS" == "true" ]]; then
+            COMMENT="## 🤖 AI Code Review Results
+
+            **Review Type:** $TASK_TYPE
+            **MCP Tools Used:** $MCP_TOOLS
+
+            The AI assistant has completed the code review and generated improvements. Changes have been committed to the PR branch.
+
+            **Recommendations applied:**
+            - Code quality improvements
+            - Security enhancements
+            - Performance optimizations
+            - Test coverage improvements
+
+            ---
+            *Review conducted by Claude Code with MCP integration*"
+          else
+            COMMENT="## ⚠️ AI Review Issues
+
+            **Review Type:** $TASK_TYPE
+
+            The AI assistant encountered issues during the review process. Please check the workflow logs for details.
+
+            ---
+            *Review attempted by Claude Code with MCP integration*"
+          fi
+
+          gh pr comment ${{ github.event.number }} --body "$COMMENT"

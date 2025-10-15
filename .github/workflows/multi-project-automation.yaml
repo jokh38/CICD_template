@@ -1,0 +1,404 @@
+name: Multi-Project Automation
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Multi-project operation to perform'
+        required: true
+        type: choice
+        options:
+          - workspace-analysis
+          - cross-project-sync
+          - dependency-audit
+          - architecture-review
+          - cross-project-testing
+          - workspace-refactor
+      target_projects:
+        description: 'Target projects (comma-separated, leave empty for all)'
+        required: false
+        type: string
+      task_description:
+        description: 'Description of the task to perform'
+        required: false
+        type: string
+      create_issues:
+        description: 'Create issues for found problems'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # Run weekly workspace analysis
+    - cron: '0 2 * * 1'  # Monday 2 AM UTC
+  issue_comment:
+    types: [created]
+    if: contains(github.event.comment.body, '/workspace')
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  models: read
+
+jobs:
+  multi-project-analysis:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.operation == 'workspace-analysis' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Install Claude Code CLI
+        run: |
+          curl -fsSL https://claude.ai/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Node.js (for MCP servers)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install MCP servers
+        run: |
+          npm install -g @modelcontextprotocol/server-git @modelcontextprotocol/server-github @modelcontextprotocol/server-filesystem
+
+      - name: Generate workspace report
+        id: workspace_report
+        run: |
+          python .github/actions/claude-code-runner/scripts/multi_project_manager.py \
+            --workspace-root . \
+            report > workspace_report.json
+
+          echo "report<<EOF" >> $GITHUB_OUTPUT
+          cat workspace_report.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Analyze dependencies
+        id: dependency_analysis
+        run: |
+          python .github/actions/claude-code-runner/scripts/multi_project_manager.py \
+            --workspace-root . \
+            dependencies > dependency_graph.json
+
+          echo "graph<<EOF" >> $GITHUB_OUTPUT
+          cat dependency_graph.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Get project hierarchy
+        id: project_hierarchy
+        run: |
+          python .github/actions/claude-code-runner/scripts/multi_project_manager.py \
+            --workspace-root . \
+            hierarchy > project_hierarchy.json
+
+          echo "hierarchy<<EOF" >> $GITHUB_OUTPUT
+          cat project_hierarchy.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Save workspace state
+        run: |
+          python .github/actions/claude-code-runner/scripts/multi_project_manager.py \
+            --workspace-root . \
+            save-state
+
+      - name: Create summary dashboard
+        run: |
+          echo "# 📊 Workspace Analysis Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Project summary
+          TOTAL_PROJECTS=$(cat workspace_report.json | jq '.summary.total_projects')
+          LANGUAGES=$(cat workspace_report.json | jq -r '.summary.languages | join(", ")')
+          TOTAL_DEPENDENCIES=$(cat workspace_report.json | jq '.summary.total_dependencies')
+          TOTAL_LOC=$(cat workspace_report.json | jq '.summary.total_lines_of_code')
+          AVG_COVERAGE=$(cat workspace_report.json | jq '.summary.average_test_coverage | round(1)')
+
+          echo "## 📈 Overview" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Projects**: $TOTAL_PROJECTS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Languages**: $LANGUAGES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Dependencies**: $TOTAL_DEPENDENCIES" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Lines of Code**: $TOTAL_LOC" >> $GITHUB_STEP_SUMMARY
+          echo "- **Average Test Coverage**: $AVG_COVERAGE%" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Project details
+          echo "## 🏗️ Project Details" >> $GITHUB_STEP_SUMMARY
+          cat workspace_report.json | jq -r '.projects | to_entries[] | "**\(.key)** (\(.value.language)) - \(.value.metrics.lines_of_code) LOC, \(.value.metrics.test_coverage | round(1))% coverage"' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Dependency analysis
+          echo "## 🔗 Dependency Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "```mermaid" >> $GITHUB_STEP_SUMMARY
+          echo "graph TD" >> $GITHUB_STEP_SUMMARY
+          cat dependency_graph.json | jq -r '.edges[] | "    \(.source) --> |\(.type)| \(.target)"' >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Build hierarchy
+          echo "## 📚 Build Hierarchy" >> $GITHUB_STEP_SUMMARY
+          HIERARCHY=$(cat project_hierarchy.json | jq -r '.[]')
+          echo "Projects should be built in this order:" >> $GITHUB_STEP_SUMMARY
+          echo "$HIERARCHY" | nl >> $GITHUB_STEP_SUMMARY
+
+      - name: Create issues for problems (if requested)
+        if: github.event.inputs.create_issues == 'true'
+        run: |
+          # Find projects with low test coverage
+          cat workspace_report.json | jq -r '.projects | to_entries[] | select(.value.metrics.test_coverage < 50) | .key' | while read project; do
+            gh issue create \
+              --title "Low test coverage in $project" \
+              --label "ai-suggested,quality,coverage" \
+              --body "The workspace analysis identified that project **$project** has low test coverage ($(cat workspace_report.json | jq -r ".projects[\"$project\"].metrics.test_coverage | round(1)")%).
+
+            **Recommendations:**
+            - Add comprehensive unit tests
+            - Increase test coverage to at least 80%
+            - Consider using code coverage tools
+            - Add test coverage requirements to CI
+
+            This issue was automatically generated by workspace analysis on $(date)." \
+              || true
+          done
+
+          # Find projects with high technical debt
+          cat workspace_report.json | jq -r '.projects | to_entries[] | select(.value.metrics.technical_debt_score > 70) | .key' | while read project; do
+            gh issue create \
+              --title "High technical debt in $project" \
+              --label "ai-suggested,quality,technical-debt" \
+              --body "The workspace analysis identified that project **$project** has high technical debt (score: $(cat workspace_report.json | jq -r ".projects[\"$project\"].metrics.technical_debt_score | round(1)")).
+
+            **Recommendations:**
+            - Refactor complex code sections
+            - Improve code organization
+            - Update outdated dependencies
+            - Improve documentation
+            - Add automated quality checks
+
+            This issue was automatically generated by workspace analysis on $(date)." \
+              || true
+          done
+
+  cross-project-operations:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.operation != 'workspace-analysis'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+
+      - name: Install Claude Code CLI
+        run: |
+          curl -fsSL https://claude.ai/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install Node.js (for MCP servers)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install MCP servers
+        run: |
+          npm install -g @modelcontextprotocol/server-git @modelcontextprotocol/server-github @modelcontextprotocol/server-filesystem
+
+      - name: Parse operation parameters
+        id: parse_operation
+        run: |
+          OPERATION="${{ github.event.inputs.operation }}"
+          TARGET_PROJECTS="${{ github.event.inputs.target_projects }}"
+          DESCRIPTION="${{ github.event.inputs.task_description }}"
+          CREATE_ISSUES="${{ github.event.inputs.create_issues }}"
+
+          # Set default description if not provided
+          if [[ -z "$DESCRIPTION" ]]; then
+            case "$OPERATION" in
+              "cross-project-sync")
+                DESCRIPTION="Synchronize configurations and dependencies across projects"
+                ;;
+              "dependency-audit")
+                DESCRIPTION="Audit dependencies for security vulnerabilities and updates"
+                ;;
+              "architecture-review")
+                DESCRIPTION="Review architecture across all projects"
+                ;;
+              "cross-project-testing")
+                DESCRIPTION="Generate and run tests across multiple projects"
+                ;;
+              "workspace-refactor")
+                DESCRIPTION="Refactor code across the workspace for consistency"
+                ;;
+            esac
+          fi
+
+          echo "operation=$OPERATION" >> $GITHUB_OUTPUT
+          echo "description=$DESCRIPTION" >> $GITHUB_OUTPUT
+          echo "target_projects=$TARGET_PROJECTS" >> $GITHUB_OUTPUT
+          echo "create_issues=$CREATE_ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Execute cross-project task
+        id: cross_project_task
+        run: |
+          # Map operations to task types
+          case "${{ steps.parse_operation.outputs.operation }}" in
+            "cross-project-sync")
+              TASK_TYPE="refactor"
+              ;;
+            "dependency-audit")
+              TASK_TYPE="security-audit"
+              ;;
+            "architecture-review")
+              TASK_TYPE="code-review"
+              ;;
+            "cross-project-testing")
+              TASK_TYPE="generate-tests"
+              ;;
+            "workspace-refactor")
+              TASK_TYPE="refactor"
+              ;;
+            *)
+              TASK_TYPE="general"
+              ;;
+          esac
+
+          # Build command
+          CMD="python .github/actions/claude-code-runner/scripts/multi_project_manager.py"
+          CMD="$CMD --workspace-root ."
+          CMD="$CMD cross-project-task"
+          CMD="$CMD --task-type $TASK_TYPE"
+          CMD="$CMD --description \"${{ steps.parse_operation.outputs.description }}\""
+
+          if [[ -n "${{ steps.parse_operation.outputs.target_projects }}" ]]; then
+            CMD="$CMD --affected-projects ${{ steps.parse_operation.outputs.target_projects }}"
+          fi
+
+          echo "Executing: $CMD"
+          eval $CMD > cross_project_result.json 2>cross_project_error.log || {
+            echo "Cross-project task failed:"
+            cat cross_project_error.log
+            exit 1
+          }
+
+          echo "result<<EOF" >> $GITHUB_OUTPUT
+          cat cross_project_result.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Process results and create commits
+        if: steps.cross_project_task.outputs.result != ''
+        run: |
+          # Parse results
+          SUCCESSFUL_PROJECTS=$(cat cross_project_result.json | jq -r '.summary.successful')
+          FAILED_PROJECTS=$(cat cross_project_result.json | jq -r '.summary.failed')
+          SUCCESS_RATE=$(cat cross_project_result.json | jq -r '.summary.success_rate')
+
+          echo "Cross-project operation completed:"
+          echo "- Successful projects: $SUCCESSFUL_PROJECTS"
+          echo "- Failed projects: $FAILED_PROJECTS"
+          echo "- Success rate: $SUCCESS_RATE%"
+
+          # Commit changes if any
+          if ! git diff --quiet && ! git diff --staged --quiet; then
+            git config --local user.email "ai-assistant@users.noreply.github.com"
+            git config --local user.name "AI Assistant"
+
+            git add -A
+
+            OPERATION="${{ steps.parse_operation.outputs.operation }}"
+            COMMIT_MSG="AI Multi-Project: ${{ steps.parse_operation.outputs.description }}
+
+            Operation: $OPERATION
+            Success Rate: $SUCCESS_RATE%
+            Successful Projects: $SUCCESSFUL_PROJECTS
+            Failed Projects: $FAILED_PROJECTS
+
+            🤖 Generated with Claude Code Multi-Project Automation
+
+            Co-Authored-By: Claude <noreply@anthropic.com>"
+
+            git commit -m "$COMMIT_MSG"
+            git push origin main
+
+            echo "Changes committed and pushed"
+          else
+            echo "No changes to commit"
+          fi
+
+      - name: Create summary
+        run: |
+          echo "# 🚀 Multi-Project Operation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          OPERATION="${{ steps.parse_operation.outputs.operation }}"
+          DESCRIPTION="${{ steps.parse_operation.outputs.description }}"
+
+          echo "## 📋 Operation Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Operation**: $OPERATION" >> $GITHUB_STEP_SUMMARY
+          echo "- **Description**: $DESCRIPTION" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ -f cross_project_result.json ]]; then
+            echo "## 📊 Results Summary" >> $GITHUB_STEP_SUMMARY
+            cat cross_project_result.json | jq -r '.summary | to_entries[] | "- **\(.key)**: \(.value)"' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            echo "## 🏗️ Project-by-Project Results" >> $GITHUB_STEP_SUMMARY
+            cat cross_project_result.json | jq -r '.results | to_entries[] | "### \(.key)\n- **Success**: \(.value.success // false)\n- **Task Type**: \(.value.task_type // "unknown")\n- **MCP Tools**: \(.value.mcp_tools_used // ["none"] | join(", "))"' >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Handle workspace slash commands
+        if: github.event_name == 'issue_comment'
+        run: |
+          COMMENT="${{ github.event.comment.body }}"
+
+          if [[ "$COMMENT" =~ /workspace\ +(.+) ]]; then
+            COMMAND="${BASH_REMATCH[1]}"
+
+            case "$COMMAND" in
+              "analyze"|"analysis"|"report")
+                echo "Workspace analysis requested via comment"
+                # This would trigger the analysis workflow
+                gh workflow run multi-project-automation \
+                  --field operation=workspace-analysis \
+                  --field create_issues=true || true
+                ;;
+              "sync")
+                echo "Cross-project sync requested via comment"
+                gh workflow run multi-project-automation \
+                  --field operation=cross-project-sync \
+                  --field task_description="Synchronization requested via comment" || true
+                ;;
+              "audit")
+                echo "Dependency audit requested via comment"
+                gh workflow run multi-project-automation \
+                  --field operation=dependency-audit \
+                  --field task_description="Dependency audit requested via comment" || true
+                ;;
+            esac
+          fi
