@@ -16,9 +16,9 @@ class ClaudeCodeRunner:
     async def run_claude_command(self, prompt: str, options: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Execute Claude Code CLI in headless mode with proper error handling"""
 
-        # Build base command
+        # Build base command - use 'claude' instead of 'claude-code'
         cmd = [
-            "claude-code",
+            "claude",
             "-p",  # Headless mode
             "-",   # Read prompt from stdin
             "--output-format", "stream-json",
@@ -37,33 +37,51 @@ class ClaudeCodeRunner:
         # Build full prompt with context
         full_prompt = self._build_prompt_with_context(prompt)
 
-        try:
-            # Execute command with timeout
-            process = await asyncio.wait_for(
-                asyncio.create_subprocess_exec(
-                    *cmd,
-                    stdin=asyncio.subprocess.PIPE,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                ),
-                timeout=self.timeout
-            )
+        retry_count = options.get('retry_count', 0) if options else 0
+        max_retries = min(retry_count + 1, self.max_retries)
 
-            stdout, stderr = await process.communicate(input=full_prompt.encode())
+        for attempt in range(max_retries):
+            try:
+                # Execute command with timeout
+                process = await asyncio.wait_for(
+                    asyncio.create_subprocess_exec(
+                        *cmd,
+                        stdin=asyncio.subprocess.PIPE,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    ),
+                    timeout=self.timeout
+                )
 
-            # Check for errors
-            if process.returncode != 0:
-                error_output = stderr.decode() if stderr else "Unknown error"
-                raise RuntimeError(f"Claude Code CLI failed with return code {process.returncode}: {error_output}")
+                stdout, stderr = await process.communicate(input=full_prompt.encode())
 
-            # Parse JSON stream output
-            results = self._parse_json_stream(stdout.decode())
-            return results
+                # Check for errors
+                if process.returncode != 0:
+                    error_output = stderr.decode() if stderr else "Unknown error"
+                    if attempt < max_retries - 1:
+                        print(f"Attempt {attempt + 1} failed, retrying... Error: {error_output}", file=sys.stderr)
+                        await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                        continue
+                    raise RuntimeError(f"Claude Code CLI failed with return code {process.returncode}: {error_output}")
 
-        except asyncio.TimeoutError:
-            raise RuntimeError(f"Claude Code CLI command timed out after {self.timeout} seconds")
-        except FileNotFoundError:
-            raise RuntimeError("Claude Code CLI not found. Please ensure it's installed and in PATH")
+                # Parse JSON stream output
+                results = self._parse_json_stream(stdout.decode())
+                return results
+
+            except asyncio.TimeoutError:
+                if attempt < max_retries - 1:
+                    print(f"Attempt {attempt + 1} timed out, retrying...", file=sys.stderr)
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+                raise RuntimeError(f"Claude Code CLI command timed out after {self.timeout} seconds")
+            except FileNotFoundError:
+                raise RuntimeError("Claude Code CLI not found. Please ensure it's installed and in PATH")
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"Attempt {attempt + 1} failed with unexpected error, retrying: {e}", file=sys.stderr)
+                    await asyncio.sleep(2 ** attempt)
+                    continue
+                raise
 
     def _build_prompt_with_context(self, prompt: str) -> str:
         """Build prompt with project context if available"""

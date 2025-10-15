@@ -96,25 +96,48 @@ Usage: /refactor-code <file_path> <description>
 Description: Refactor code to improve quality, performance, or maintainability
 ```
 
+### `/generate-tests`
+Generate comprehensive tests for existing code.
+```markdown
+Usage: /generate-tests <file_path> [test_type]
+Description: Create unit, integration, and end-to-end tests with proper coverage
+```
+
+### `/add-feature`
+Implement new features following project architecture.
+```markdown
+Usage: /add-feature <feature_description> [--file <file_path>]
+Description: Design and implement new features with proper testing and documentation
+```
+
+### `/optimize-performance`
+Analyze and optimize code performance.
+```markdown
+Usage: /optimize-performance <target> [options]
+Description: Profile code and implement performance improvements
+```
+
+### `/security-audit`
+Perform comprehensive security audit and implement fixes.
+```markdown
+Usage: /security-audit [scope] [options]
+Description: Scan for vulnerabilities and implement security improvements
+```
+
 ## 📋 Prompt Templates
 
-### Issue Resolution Template
-Location: `.github/claude/prompts/templates/issue_resolution.md`
-- Analyzes issue requirements
-- Implements solution with tests
-- Creates comprehensive PR
+### Language-Specific Templates
+- **Python Fix**: `.github/claude/prompts/templates/python_fix.md`
+- **C++ Fix**: `.github/claude/prompts/templates/cpp_fix.md`
+- **JavaScript/TypeScript Fix**: `.github/claude/prompts/templates/javascript_fix.md`
+- **Go Fix**: `.github/claude/prompts/templates/go_fix.md`
+- **Rust Fix**: `.github/claude/prompts/templates/rust_fix.md`
+- **Multi-Language Analysis**: `.github/claude/prompts/templates/multi_language_analysis.md`
 
-### Bug Fix Template
-Location: `.github/claude/prompts/templates/bug_fix.md`
-- Debugs failing tests or CI
-- Identifies root cause
-- Implements targeted fixes
-
-### Code Review Template
-Location: `.github/claude/prompts/templates/code_review.md`
-- Comprehensive code analysis
-- Security vulnerability scanning
-- Best practices evaluation
+### General Templates
+- **Issue Resolution**: `.github/claude/prompts/templates/issue_resolution.md`
+- **Bug Fix**: `.github/claude/prompts/templates/bug_fix.md`
+- **Code Review**: `.github/claude/prompts/templates/code_review.md`
 
 ## 🔄 Workflow Integration
 
