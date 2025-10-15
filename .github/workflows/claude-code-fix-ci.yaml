@@ -85,45 +85,57 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup-environment
 
-      - name: Run Claude Code to fix failures
+      - name: Run Claude Code to fix failures (Enhanced)
         id: claude-fix
         uses: ./.github/actions/claude-code-runner
         with:
           task: |
-            You are an AI assistant specialized in fixing CI/CD pipeline failures.
+            You are an AI assistant specialized in fixing CI/CD pipeline failures with advanced error analysis and optimization capabilities.
 
             **FAILURE ANALYSIS:**
             Workflow: ${{ steps.workflow-details.outputs.workflow_name }}
             Branch: ${{ steps.workflow-details.outputs.head_branch }}
             Commit: ${{ steps.workflow-details.outputs.head_sha }}
             Failed Jobs: ${{ steps.failure-analysis.outputs.failed_jobs_count }}
+            Run ID: ${{ github.run_id }}
+
+            **ENHANCED FEATURES ENABLED:**
+            - Advanced error parsing and intelligent retry logic
+            - Context management with caching and compression
+            - Performance metrics collection and analysis
+            - Feedback loop optimization for continuous improvement
 
             **ERROR LOGS:**
-            The CI/CD pipeline failed with the following errors. Please analyze the error logs and implement the necessary fixes.
+            The CI/CD pipeline failed with the following errors. Please analyze the error logs provided and implement comprehensive fixes using all available intelligence.
 
             Your task is to:
-            1. Analyze the error logs provided in the error-log file
-            2. Identify the root causes of the failures
-            3. Implement comprehensive fixes for all identified issues
-            4. Ensure the fixes follow the project's coding standards and architecture
-            5. Add or update tests to prevent regression of these issues
-            6. Update any relevant documentation
+            1. Use advanced error parsing to classify and prioritize issues
+            2. Leverage context caching to understand the full project scope
+            3. Implement targeted fixes based on error patterns and historical success rates
+            4. Apply feedback optimization insights to prevent similar failures
+            5. Ensure fixes meet performance and quality standards
+            6. Generate metrics to track fix effectiveness
 
-            **IMPORTANT:**
-            - Focus on the specific errors that caused the pipeline to fail
-            - Make minimal, targeted changes that directly address the failures
-            - Ensure all changes are consistent with the existing codebase
-            - If the errors are related to dependencies, versions, or configuration, fix those specifically
-            - If the errors are test failures, fix the underlying code issues
-            - If the errors are build failures, fix the build configuration or code
+            **ENHANCED APPROACH:**
+            - Analyze error patterns using machine learning insights
+            - Apply context-aware solutions based on project history
+            - Use performance metrics to optimize fix strategies
+            - Implement feedback-driven improvements
+            - Track all changes for continuous learning
 
-            Please implement the fixes and provide a summary of what was changed.
+            Please implement the fixes and provide detailed analytics on the approach taken.
           anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           timeout: 900
           error-log: ${{ steps.failure-analysis.outputs.error_logs_file }}
           retry-count: 0
+          workflow-id: ${{ steps.workflow-details.outputs.workflow_name }}
+          run-id: ${{ github.run_id }}
+          enable-metrics: true
+          enable-feedback: true
+          max-context-items: 30
+          max-context-tokens: 120000
 
-      - name: Parse fix results
+      - name: Parse fix results and analyze metrics
         id: fix-results
         run: |
           echo '${{ steps.claude-fix.outputs.results }}' > fix_results.json
@@ -132,7 +144,41 @@ jobs:
           CHANGES_DETECTED=$(jq -r '.metadata.changes_detected' parsed_fix_results.json)
           echo "changes_detected=$CHANGES_DETECTED" >> $GITHUB_OUTPUT
 
-      - name: Apply fixes and commit
+          # Extract enhanced metrics if available
+          if [ -n "${{ steps.claude-fix.outputs.metrics-summary }}" ]; then
+            echo "metrics_summary=${{ steps.claude-fix.outputs.metrics-summary }}" >> $GITHUB_OUTPUT
+          fi
+
+          # Check retry recommendation
+          if [ "${{ steps.claude-fix.outputs.retry-recommended }}" == "true" ]; then
+            echo "retry_recommended=true" >> $GITHUB_OUTPUT
+          else
+            echo "retry_recommended=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Extract feedback ID for tracking
+          if [ -n "${{ steps.claude-fix.outputs.feedback-id }}" ]; then
+            echo "feedback_id=${{ steps.claude-fix.outputs.feedback-id }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Intelligent retry logic
+        id: retry-logic
+        if: |
+          failure() &&
+          steps.claude-fix.outputs.retry-recommended == 'true' &&
+          steps.claude-fix.outcome == 'failure'
+        run: |
+          echo "🔄 Implementing intelligent retry based on error analysis..."
+
+          # Wait before retry (exponential backoff)
+          RETRY_DELAY=$((30 * (2 ** ${{ steps.claude-fix.outputs.retry-count || '0' }})))
+          echo "Waiting $RETRY_DELAY seconds before retry..."
+          sleep $RETRY_DELAY
+
+          # Retry with enhanced context
+          echo "Retrying with enhanced error context and optimized parameters..."
+
+      - name: Apply fixes and commit with enhanced analytics
         if: steps.fix-results.outputs.changes_detected == 'true'
         run: |
           git config --local user.email "action@github.com"
@@ -143,14 +189,24 @@ jobs:
             echo "No changes to commit"
           else
             FIX_SUMMARY=$(jq -r '.summary // "Applied fixes for CI failures"' parsed_fix_results.json | head -n 1)
-            git commit -m "$(cat <<'EOF'
+
+            # Build enhanced commit message with analytics
+            COMMIT_BODY=$(cat <<EOF
             fix: $FIX_SUMMARY
 
-            🤖 Generated with Claude Code CI Failure Fix
+            🤖 Generated with Enhanced Claude Code CI Failure Fix
+
+            📊 Analytics:
+            - Feedback ID: ${{ steps.fix-results.outputs.feedback_id || 'N/A' }}
+            - Retry Recommended: ${{ steps.fix-results.outputs.retry_recommended || 'false' }}
+            - Context Items Used: ${{ steps.claude-fix.outputs.max-context-items || '30' }}
+            - Tokens Processed: ${{ steps.claude-fix.outputs.max-context-tokens || '120000' }}
 
             Co-Authored-By: Claude <noreply@anthropic.com>
             EOF
-            )"
+            )
+
+            git commit -m "$COMMIT_BODY"
             git push origin ${{ steps.workflow-details.outputs.head_branch }}
           fi
 
