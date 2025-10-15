@@ -86,7 +86,7 @@ class ClaudeCodeRunner:
     async def run_claude_command(self, prompt, options=None):
         """Claude Code CLI를 headless 모드로 실행"""
         cmd = [
-            "claude-code",
+            "claude",
             "-p",  # Headless mode
             "-",   # stdin에서 프롬프트 읽기
             "--output-format", "stream-json",
