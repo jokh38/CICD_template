@@ -41,6 +41,13 @@ def copy_claude_md():
 def initialize_git():
     print("📦 Initializing git repository...")
     run_command("git init")
+
+    # Configure git user if not already configured
+    if not run_command("git config user.name", check=False):
+        run_command('git config user.name "Template User"')
+    if not run_command("git config user.email", check=False):
+        run_command('git config user.email "template@example.com"')
+
     run_command("git add .")
     run_command('git commit -m "Initial commit from template"')
 
@@ -114,10 +121,12 @@ def main():
             # Only remove AI workflow files, keep docs/CLAUDE.md for general use
             if os.path.exists(".github/workflows/ai-workflow.yaml"):
                 os.remove(".github/workflows/ai-workflow.yaml")
+                run_command("git add .github/workflows/ai-workflow.yaml")
 
         if "{{ cookiecutter.license }}" == "None":
             if os.path.exists("LICENSE"):
                 os.remove("LICENSE")
+                run_command("git add LICENSE")
 
         # Remove unused build system files
         if "{{ cookiecutter.build_system }}" == "cmake":

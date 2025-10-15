@@ -54,7 +54,9 @@ create_project() {
     echo -e "${GREEN}Creating $language project...${NC}"
 
     if [ -n "$project_name" ]; then
-        cookiecutter "$template_dir" --no-input project_name="$project_name"
+        # Extract just the directory name from full path for project_name
+        local basename_project=$(basename "$project_name")
+        cookiecutter "$template_dir" --no-input project_name="$basename_project" output_dir="$(dirname "$project_name")"
     else
         cookiecutter "$template_dir"
     fi

@@ -43,6 +43,13 @@ def initialize_git():
     """Initialize git repository."""
     print("📦 Initializing git repository...")
     run_command("git init")
+
+    # Configure git user if not already configured
+    if not run_command("git config user.name", check=False):
+        run_command('git config user.name "Template User"')
+    if not run_command("git config user.email", check=False):
+        run_command('git config user.email "template@example.com"')
+
     run_command("git add .")
     run_command('git commit -m "Initial commit from template"')
 
@@ -61,13 +68,24 @@ def install_dependencies():
     if run_command(f"{venv_pip} install --upgrade pip", check=False):
         print("   ✓ pip upgraded")
 
-    # Install project with dev dependencies
-    if run_command(f"{venv_pip} install -e .[dev]", check=False):
-        print("   ✓ Project and dev dependencies installed")
-        return True
-    else:
-        print("   ⚠️  Failed to install dependencies")
-        return False
+    # Install basic dev dependencies individually to avoid dependency conflicts
+    dev_packages = ["pytest", "pytest-cov", "ruff", "mypy", "pre-commit"]
+    installed_packages = []
+
+    for package in dev_packages:
+        if run_command(f"{venv_pip} install {package}", check=False):
+            print(f"   ✓ {package} installed")
+            installed_packages.append(package)
+        else:
+            print(f"   ⚠️  Failed to install {package}")
+
+    # Try to install project with dev dependencies as fallback
+    if len(installed_packages) < len(dev_packages):
+        print("   🔄 Attempting to install project dependencies...")
+        if run_command(f"{venv_pip} install -e .[dev]", check=False):
+            print("   ✓ Project dependencies installed")
+
+    return len(installed_packages) > 0
 
 def install_precommit():
     """Install pre-commit hooks."""
@@ -126,6 +144,7 @@ def main():
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
             if os.path.exists(".github/workflows/ai-workflow.yaml"):
                 os.remove(".github/workflows/ai-workflow.yaml")
+                run_command("git add .github/workflows/ai-workflow.yaml")
 
         # Remove license if None
         if "{{ cookiecutter.license }}" == "None":
