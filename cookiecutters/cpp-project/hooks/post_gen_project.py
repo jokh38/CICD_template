@@ -32,15 +32,21 @@ def setup_claude_context():
         with open(source_path, 'r', encoding='utf-8') as src:
             content = src.read()
 
+        # Get actual cookiecutter values
+        project_name = "{{ cookiecutter.project_name }}"
+        project_description = "{{ cookiecutter.project_description }}"
+        cpp_standard = "{{ cookiecutter.cpp_standard }}"
+
         # Replace cookiecutter variables with actual project values
         replacements = {
-            '{{cookiecutter.project_name}}': '{{ cookiecutter.project_name }}',
-            '{{cookiecutter.project_description}}': '{{ cookiecutter.project_description }}',
-            '{{cookiecutter.cpp_standard}}': '{{ cookiecutter.cpp_standard }}',
+            '{{cookiecutter.project_name}}': project_name,
+            '{{cookiecutter.project_description}}': project_description,
+            '{{cookiecutter.cpp_standard}}': cpp_standard,
+            '{{cookiecutter.python_version}}': f"C++ {cpp_standard}",  # Handle Python version reference for C++ projects
         }
 
-        for template_var, cookiecutter_var in replacements.items():
-            content = content.replace(template_var, cookiecutter_var)
+        for template_var, actual_value in replacements.items():
+            content = content.replace(template_var, actual_value)
 
         # Write the customized file
         with open(target_path, 'w', encoding='utf-8') as dst:
@@ -54,8 +60,9 @@ def setup_claude_context():
 
 def copy_claude_md():
     """Copy CLAUDE.md from docs/ directory (legacy function - deprecated)."""
-    print("⚠️  Legacy docs/CLAUDE.md copy skipped - file moved to .github/claude/CLAUDE.md")
     # This function is deprecated since docs/CLAUDE.md was moved to .github/claude/CLAUDE.md
+    # No output needed to avoid user confusion
+    pass
 
 def initialize_git():
     print("📦 Initializing git repository...")
@@ -95,6 +102,7 @@ def setup_build_directory():
     os.makedirs("build", exist_ok=True)
 
 def print_next_steps():
+    project_name = "{{ cookiecutter.project_name }}"
     project_slug = "{{ cookiecutter.project_slug }}"
     build_system = "{{ cookiecutter.build_system }}"
     use_ninja = "{{ cookiecutter.use_ninja }}"
@@ -102,14 +110,14 @@ def print_next_steps():
     print("\n" + "="*60)
     print("✅ Project created!")
     print("="*60)
-    print(f"\n📁 Project: {project_slug}")
+    print(f"\n📁 Project: {project_name}")
     print(f"🔨 Build: {build_system}")
 
     print("\n🚀 Quick Start - Validate Your Environment:")
     print("   bash setup-scripts/linux/validation/run-validation.sh")
 
     print("\n📋 Next Steps:")
-    print("1. cd {{ cookiecutter.project_slug }}")
+    print(f"1. cd {project_slug}")
 
     if build_system == "cmake":
         gen = "-G Ninja" if use_ninja == "yes" else ""
@@ -122,14 +130,18 @@ def print_next_steps():
         print("4. meson test -C build")
 
     print("\n🔧 Additional Validation Options:")
-    print("   • Comprehensive: bash setup-scripts/total_run.sh --validate-only")
-    print("   • Final: bash setup-scripts/total_run.sh --final-validation")
+    print("   • Comprehensive: bash setup-scripts/total_run.sh --validate-only (requires sudo)")
+    print("   • Final: bash setup-scripts/total_run.sh --final-validation (requires sudo)")
 
     print("\n✅ Pre-commit hooks are installed and ready to use!")
     print("\n🔗 Create GitHub repository and push:")
     print("   1. Create a new repository on GitHub")
     print("   2. git remote add origin <your-github-repo-url>")
-    print("   3. git push -u origin main\n")
+    print("   3. git push -u origin main")
+
+    print("\n📋 Environment Setup:")
+    print("⚠️  Note: Full development environment setup requires sudo privileges")
+    print("   Run: sudo bash setup-scripts/total_run.sh")
 
 def main():
     try:

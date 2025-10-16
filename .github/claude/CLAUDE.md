@@ -4,7 +4,7 @@
 
 **Project**: {{cookiecutter.project_name}}
 **Description**: {{cookiecutter.project_description}}
-**Language**: Python {{cookiecutter.python_version}} (or C++ {{cookiecutter.cpp_standard}})
+**Language**: {% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}
 
 ## Development Standards
 

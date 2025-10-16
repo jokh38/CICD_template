@@ -33,16 +33,21 @@ def setup_claude_context():
         with open(source_path, 'r', encoding='utf-8') as src:
             content = src.read()
 
+        # Get actual cookiecutter values
+        project_name = "{{ cookiecutter.project_name }}"
+        project_description = "{{ cookiecutter.project_description }}"
+        python_version = "{{ cookiecutter.python_version }}"
+
         # Replace cookiecutter variables with actual project values
         replacements = {
-            '{{cookiecutter.project_name}}': '{{ cookiecutter.project_name }}',
-            '{{cookiecutter.project_description}}': '{{ cookiecutter.project_description }}',
-            '{{cookiecutter.python_version}}': '{{ cookiecutter.python_version }}',
-            '{{cookiecutter.cpp_standard}}': '{{ cookiecutter.cpp_standard }}',  # Will be empty for Python projects
+            '{{cookiecutter.project_name}}': project_name,
+            '{{cookiecutter.project_description}}': project_description,
+            '{{cookiecutter.python_version}}': python_version,
+            '{{cookiecutter.cpp_standard}}': '',  # Will be empty for Python projects
         }
 
-        for template_var, cookiecutter_var in replacements.items():
-            content = content.replace(template_var, cookiecutter_var)
+        for template_var, actual_value in replacements.items():
+            content = content.replace(template_var, actual_value)
 
         # Write the customized file
         with open(target_path, 'w', encoding='utf-8') as dst:
@@ -56,8 +61,9 @@ def setup_claude_context():
 
 def copy_claude_md():
     """Copy CLAUDE.md from docs/ directory (legacy function - deprecated)."""
-    print("⚠️  Legacy docs/CLAUDE.md copy skipped - file moved to .github/claude/CLAUDE.md")
     # This function is deprecated since docs/CLAUDE.md was moved to .github/claude/CLAUDE.md
+    # No output needed to avoid user confusion
+    pass
 
 def initialize_git():
     """Initialize git repository."""
@@ -120,6 +126,7 @@ def install_precommit():
 
 def print_next_steps():
     """Print next steps for user."""
+    project_name = "{{ cookiecutter.project_name }}"
     project_slug = "{{ cookiecutter.project_slug }}"
     runner_type = "{{ cookiecutter.runner_type }}"
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
@@ -127,12 +134,12 @@ def print_next_steps():
     print("\n" + "="*60)
     print("✅ Project created successfully!")
     print("="*60)
-    print(f"\n📁 Project: {project_slug}")
+    print(f"\n📁 Project: {project_name}")
     print(f"🏃 Runner: {runner_type}")
     print(f"🤖 AI Workflow: {use_ai}")
 
     print("\n📋 Next Steps:")
-    print("1. cd {{ cookiecutter.project_slug }}")
+    print(f"1. cd {project_slug}")
     print("2. source .venv/bin/activate")
     print("3. pytest  # Run tests")
     print("4. ruff check .  # Lint code")
@@ -144,7 +151,7 @@ def print_next_steps():
     print("\n🔗 Create GitHub repository and push:")
     print("   1. Create a new repository on GitHub")
     print("   2. git remote add origin <your-github-repo-url>")
-    print("   3. git push -u origin main\n")
+    print("   3. git push -u origin main")
 
 def main():
     """Main post-generation logic."""
