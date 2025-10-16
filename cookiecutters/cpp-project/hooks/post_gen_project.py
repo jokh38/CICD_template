@@ -15,35 +15,74 @@ def run_command(cmd, check=True):
         return False
 
 def setup_claude_context():
-    """Copy and customize CLAUDE.md for new projects."""
+    """Copy entire .github/claude/ directory and customize CLAUDE.md for new projects."""
     print("• Setting up Claude AI context...")
 
     # Ensure .github/claude directory exists
     claude_dir = ".github/claude"
     os.makedirs(claude_dir, exist_ok=True)
 
-    # Define source and target paths - use multiple possible paths
-    possible_source_paths = [
+    # Define source directory paths - use multiple possible paths
+    possible_source_dirs = [
         # Try relative path from current directory (most reliable)
-        os.path.join(os.getcwd(), "..", "..", ".github", "claude", "CLAUDE.md"),
+        os.path.join(os.getcwd(), "..", "..", ".github", "claude"),
         # Try from script directory
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".github", "claude", "CLAUDE.md"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".github", "claude"),
         # Try absolute path fallback
-        "/home/jokh38/apps/CICD_template/.github/claude/CLAUDE.md"
+        "/home/jokh38/apps/CICD_template/.github/claude"
     ]
 
-    source_path = None
-    for path in possible_source_paths:
+    source_claude_dir = None
+    for path in possible_source_dirs:
         if os.path.exists(path):
-            source_path = path
+            source_claude_dir = path
             break
 
-    target_path = os.path.join(claude_dir, "CLAUDE.md")
+    if not source_claude_dir:
+        print("   ⚠️  Source .github/claude/ directory not found")
+        print(f"   Tried paths: {possible_source_dirs}")
+        return False
 
-    if source_path and os.path.exists(source_path):
-        # Read the template
-        with open(source_path, 'r', encoding='utf-8') as src:
-            content = src.read()
+    # Copy entire .github/claude/ directory structure
+    import shutil
+    copied_files = []
+
+    try:
+        # Walk through source directory and copy all files
+        for root, dirs, files in os.walk(source_claude_dir):
+            # Calculate relative path from source_claude_dir
+            rel_path = os.path.relpath(root, source_claude_dir)
+            target_dir = os.path.join(claude_dir, rel_path) if rel_path != '.' else claude_dir
+
+            # Create target directory if it doesn't exist
+            os.makedirs(target_dir, exist_ok=True)
+
+            for file in files:
+                source_file = os.path.join(root, file)
+                target_file = os.path.join(target_dir, file)
+
+                # Copy file
+                shutil.copy2(source_file, target_file)
+                copied_files.append(os.path.relpath(target_file))
+
+                # Customize CLAUDE.md if this is the file
+                if file == "CLAUDE.md":
+                    customize_claude_md(target_file)
+
+        print(f"   • Copied {len(copied_files)} AI workflow files to .github/claude/")
+        print("   • Commands, prompts, and documentation ready")
+        return True
+
+    except Exception as e:
+        print(f"   ❌ Error copying .github/claude/ directory: {e}")
+        return False
+
+def customize_claude_md(claude_md_path):
+    """Customize CLAUDE.md file with project-specific values."""
+    try:
+        # Read the file
+        with open(claude_md_path, 'r', encoding='utf-8') as f:
+            content = f.read()
 
         # Get actual cookiecutter values from the environment
         project_name = "{{ cookiecutter.project_name }}"
@@ -68,14 +107,13 @@ def setup_claude_context():
         )
 
         # Write the customized file
-        with open(target_path, 'w', encoding='utf-8') as dst:
-            dst.write(content)
+        with open(claude_md_path, 'w', encoding='utf-8') as f:
+            f.write(content)
 
-        print("   • CLAUDE.md customized and placed in .github/claude/")
         return True
-    else:
-        print("   ⚠️  Source CLAUDE.md template not found")
-        print(f"   Tried paths: {possible_source_paths}")
+
+    except Exception as e:
+        print(f"   ⚠️  Error customizing CLAUDE.md: {e}")
         return False
 
 def copy_claude_md():
