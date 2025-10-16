@@ -14,7 +14,8 @@ create_cpp_test_project() {
     echo -e "${GREEN}Creating test C++ project to verify installation...${NC}"
 
     TEST_DIR="/tmp/cpp-test-project"
-    sudo -u "$RUNNER_USER" bash <<EOF
+
+    # Create test project directory structure
     mkdir -p "$TEST_DIR"/{src,tests,cmake,.github/workflows}
     cd "$TEST_DIR"
 
@@ -131,7 +132,7 @@ add_library(calculator_lib
 
 target_include_directories(calculator_lib
     PUBLIC
-        \${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # Executable
@@ -214,21 +215,24 @@ GITIGNORE
     git add .
     git commit -m "Initial project setup with AI workflow
 
-    - Created basic C++ project structure
-    - Added AI workflow integration (.github/workflows/ai-workflow.yaml)
-    - Included source files, tests, and CMake configuration
-    - Added code formatting configurations (.clang-format, .clang-tidy)
-    - Set up .gitignore for C++ development
+- Created basic C++ project structure
+- Added AI workflow integration (.github/workflows/ai-workflow.yaml)
+- Included source files, tests, and CMake configuration
+- Added code formatting configurations (.clang-format, .clang-tidy)
+- Set up .gitignore for C++ development
 
-    🤖 Generated with C++ development tools setup
+🤖 Generated with C++ development tools setup
     "
 
     # Copy global configurations to project
-    cp ~/.clang-format .
-    cp ~/.clang-tidy .
+    if [ -f ~/.clang-format ]; then
+        cp ~/.clang-format .
+    fi
+    if [ -f ~/.clang-tidy ]; then
+        cp ~/.clang-tidy .
+    fi
 
     echo "Test project created at $TEST_DIR"
-EOF
 
     echo -e "${GREEN}✅ C++ test project created${NC}"
 }
@@ -237,7 +241,7 @@ create_python_test_project() {
     echo -e "${GREEN}Creating test Python project to verify installation...${NC}"
 
     TEST_DIR="/tmp/python-test-project"
-    sudo -u "$RUNNER_USER" bash <<EOF
+
     # Create test project
     mkdir -p "$TEST_DIR"
     cd "$TEST_DIR"
@@ -261,13 +265,12 @@ PY_FILE
 
     # Create test file
     cat > tests/test_main.py << 'PY_TEST'
-import pytest
 from test_project.main import hello, add
 
-def test_hello():
+def test_hello() -> None:
     assert hello("World") == "Hello, World!"
 
-def test_add():
+def test_add() -> None:
     assert add(2, 3) == 5
     assert add(-1, 1) == 0
 PY_TEST
@@ -467,17 +470,16 @@ GITIGNORE
     git add .
     git commit -m "Initial project setup with AI workflow
 
-    - Created basic Python project structure
-    - Added AI workflow integration (.github/workflows/ai-workflow.yaml)
-    - Included source files, tests, and pyproject.toml configuration
-    - Set up .gitignore for Python development
-    - Configured ruff, pytest, and mypy
+- Created basic Python project structure
+- Added AI workflow integration (.github/workflows/ai-workflow.yaml)
+- Included source files, tests, and pyproject.toml configuration
+- Set up .gitignore for Python development
+- Configured ruff, pytest, and mypy
 
-    🤖 Generated with Python development tools setup
+🤖 Generated with Python development tools setup
     "
 
     echo "Test project created at $TEST_DIR"
-EOF
 
     echo -e "${GREEN}✅ Python test project created${NC}"
 }
