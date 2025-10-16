@@ -49,12 +49,10 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup C++ Environment
-        uses: jokh38/cpp-dev-setup@v1
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          cpp-standard: {{cookiecutter.cpp_standard}}
-          build-system: {{cookiecutter.build_system}}
-          use-ninja: {{cookiecutter.use_ninja}}
+          python-version: '3.11'
 
       - name: Install Claude Code CLI
         run: |
@@ -80,11 +78,21 @@ jobs:
 
       - name: Setup project environment
         run: |
+          {% if cookiecutter.python_version %}
+          # Python project setup
+          python -m pip install --upgrade pip
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+          elif [ -f "pyproject.toml" ]; then
+            pip install -e .
+          fi
+          {% elif cookiecutter.cpp_standard %}
           # C++ project setup
           {% if cookiecutter.build_system == "cmake" %}
-          cmake -B build -DCMAKE_BUILD_TYPE=Debug{% if cookiecutter.use_ninja == "yes" %} -G Ninja{% endif %}
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug
           {% else %}
           meson setup build
+          {% endif %}
           {% endif %}
 
       - name: Run Claude Code
@@ -106,9 +114,7 @@ Please analyze the codebase and implement refactoring improvements:
 5. Create atomic, complete changes
 
 Project: {{cookiecutter.project_name}}
-Language: C++{{cookiecutter.cpp_standard}}
-Build System: {{cookiecutter.build_system | capitalize}}
-Testing: {{cookiecutter.testing_framework | upper}}"
+Language: {% if cookiecutter.python_version %}Python {{cookiecutter.python_version}}{% else %}C++{{cookiecutter.cpp_standard}}{% endif %}"
               ;;
             "fix-bug")
               PROMPT="Fix the following bug: $DESCRIPTION
@@ -121,9 +127,7 @@ Please analyze the codebase and implement a fix:
 5. Ensure the fix doesn't break existing functionality
 
 Project: {{cookiecutter.project_name}}
-Language: C++{{cookiecutter.cpp_standard}}
-Build System: {{cookiecutter.build_system | capitalize}}
-Testing: {{cookiecutter.testing_framework | upper}}"
+Language: {% if cookiecutter.python_version %}Python {{cookiecutter.python_version}}{% else %}C++{{cookiecutter.cpp_standard}}{% endif %}"
               ;;
             "add-feature")
               PROMPT="Implement the following feature: $DESCRIPTION
@@ -136,9 +140,7 @@ Please analyze the codebase and implement the new feature:
 5. Follow the project's existing patterns
 
 Project: {{cookiecutter.project_name}}
-Language: C++{{cookiecutter.cpp_standard}}
-Build System: {{cookiecutter.build_system | capitalize}}
-Testing: {{cookiecutter.testing_framework | upper}}"
+Language: {% if cookiecutter.python_version %}Python {{cookiecutter.python_version}}{% else %}C++{{cookiecutter.cpp_standard}}{% endif %}"
               ;;
             "generate-tests")
               PROMPT="Generate tests for: $DESCRIPTION
@@ -151,9 +153,7 @@ Please analyze the codebase and create comprehensive tests:
 5. Follow testing best practices
 
 Project: {{cookiecutter.project_name}}
-Language: C++{{cookiecutter.cpp_standard}}
-Build System: {{cookiecutter.build_system | capitalize}}
-Testing: {{cookiecutter.testing_framework | upper}}"
+Language: {% if cookiecutter.python_version %}Python {{cookiecutter.python_version}}{% else %}C++{{cookiecutter.cpp_standard}}{% endif %}"
               ;;
             *)
               PROMPT="General task: $DESCRIPTION
@@ -166,9 +166,7 @@ Please analyze the codebase and implement the requested changes:
 5. Create atomic, complete changes
 
 Project: {{cookiecutter.project_name}}
-Language: C++{{cookiecutter.cpp_standard}}
-Build System: {{cookiecutter.build_system | capitalize}}
-Testing: {{cookiecutter.testing_framework | upper}}"
+Language: {% if cookiecutter.python_version %}Python {{cookiecutter.python_version}}{% else %}C++{{cookiecutter.cpp_standard}}{% endif %}"
               ;;
           esac
 
@@ -185,6 +183,15 @@ Testing: {{cookiecutter.testing_framework | upper}}"
 
       - name: Validate changes
         run: |
+          {% if cookiecutter.python_version %}
+          # Python validation
+          if command -v ruff &> /dev/null; then
+            ruff check . --fix --exit-zero || true
+          fi
+          if command -v pytest &> /dev/null; then
+            pytest --tb=short --exit-zero || true
+          fi
+          {% elif cookiecutter.cpp_standard %}
           # C++ validation
           {% if cookiecutter.build_system == "cmake" %}
           cmake --build build --config Debug || true
@@ -192,6 +199,7 @@ Testing: {{cookiecutter.testing_framework | upper}}"
           {% else %}
           meson compile -C build || true
           meson test -C build --verbose || true
+          {% endif %}
           {% endif %}
 
       - name: Commit and push changes
@@ -246,11 +254,6 @@ This PR contains automated changes generated by Claude Code AI.
 - Automated code implementation based on the task requirements
 - Follows project coding standards and best practices
 - Includes appropriate tests and documentation
-
-**Technical Details:**
-- **Language:** C++{{cookiecutter.cpp_standard}}
-- **Build System:** {{cookiecutter.build_system | capitalize}}
-- **Testing:** {{cookiecutter.testing_framework | upper}}
 
 **Next Steps:**
 1. Review the generated changes
