@@ -10,5 +10,6 @@
     "enable_cache": ["yes", "no"],
     "use_ninja": ["yes", "no"],
     "testing_framework": ["gtest", "catch2", "doctest"],
+    "use_ai_workflow": ["yes", "no"],
     "license": ["MIT", "BSD-3-Clause", "Apache-2.0", "GPL-3.0", "None"]
 }
