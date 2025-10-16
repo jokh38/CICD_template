@@ -86,6 +86,9 @@ def print_next_steps():
     print(f"\n📁 Project: {project_slug}")
     print(f"🔨 Build: {build_system}")
 
+    print("\n🚀 Quick Start - Validate Your Environment:")
+    print("   bash setup-scripts/linux/validation/run-validation.sh")
+
     print("\n📋 Next Steps:")
     print("1. cd {{ cookiecutter.project_slug }}")
 
@@ -98,6 +101,10 @@ def print_next_steps():
         print("2. meson setup build")
         print("3. meson compile -C build")
         print("4. meson test -C build")
+
+    print("\n🔧 Additional Validation Options:")
+    print("   • Comprehensive: bash setup-scripts/total_run.sh --validate-only")
+    print("   • Final: bash setup-scripts/total_run.sh --final-validation")
 
     print("\n✅ Pre-commit hooks are installed and ready to use!")
     print("\n🔗 Add remote:")
