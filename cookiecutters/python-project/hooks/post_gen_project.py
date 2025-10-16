@@ -121,9 +121,10 @@ def print_next_steps():
         print("5. Review docs/CLAUDE.md for AI assistant")
 
     print("\n✅ All dependencies are installed and ready to use!")
-    print("\n🔗 Add remote:")
-    print("   git remote add origin <your-repo-url>")
-    print("   git push -u origin main\n")
+    print("\n🔗 Create GitHub repository and push:")
+    print("   1. Create a new repository on GitHub")
+    print("   2. git remote add origin <your-github-repo-url>")
+    print("   3. git push -u origin main\n")
 
 def main():
     """Main post-generation logic."""

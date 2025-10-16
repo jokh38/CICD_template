@@ -107,8 +107,10 @@ def print_next_steps():
     print("   • Final: bash setup-scripts/total_run.sh --final-validation")
 
     print("\n✅ Pre-commit hooks are installed and ready to use!")
-    print("\n🔗 Add remote:")
-    print("   git remote add origin <repo-url>\n")
+    print("\n🔗 Create GitHub repository and push:")
+    print("   1. Create a new repository on GitHub")
+    print("   2. git remote add origin <your-github-repo-url>")
+    print("   3. git push -u origin main\n")
 
 def main():
     try:
