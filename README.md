@@ -31,6 +31,60 @@ bash scripts/create-project.sh cpp
 bash scripts/create-project.sh cpp /home/user/my-fast-library
 ```
 
+### 🛠️ Development Environment Setup
+
+For complete development environment setup with all tools and configurations:
+
+#### Linux (sudo required)
+
+```bash
+# Full installation (recommended)
+sudo bash setup-scripts/total_run.sh
+
+# Basic tools only (system deps, compilers, build tools)
+sudo bash setup-scripts/total_run.sh --basic
+
+# C++ tools only
+sudo bash setup-scripts/total_run.sh --cpp-only
+
+# Python tools only
+sudo bash setup-scripts/total_run.sh --python-only
+
+# Run validation only
+sudo bash setup-scripts/total_run.sh --validate-only
+
+# Final comprehensive validation
+sudo bash setup-scripts/total_run.sh --final-validation
+
+# Show help
+bash setup-scripts/total_run.sh --help
+```
+
+#### Windows (PowerShell Administrator)
+
+```powershell
+# Full installation (recommended)
+.\setup-scripts\total_run.ps1
+
+# Basic tools only
+.\setup-scripts\total_run.ps1 -Basic
+
+# C++ tools only
+.\setup-scripts\total_run.ps1 -CppOnly
+
+# Python tools only
+.\setup-scripts\total_run.ps1 -PythonOnly
+
+# Run validation only
+.\setup-scripts\total_run.ps1 -ValidateOnly
+
+# Final comprehensive validation
+.\setup-scripts\total_run.ps1 -FinalValidation
+
+# Show help
+.\setup-scripts\total_run.ps1 -Help
+```
+
 ## 📁 Project Structure
 
 ```
@@ -128,7 +182,38 @@ jobs:
       enable-coverage: true
 ```
 
-### 3. Reusable Workflows
+### 3. Development Environment Setup
+
+**Complete development environment orchestration with validation:**
+
+**Linux Setup (`total_run.sh`):**
+- System dependencies and core tools
+- Multiple compiler support (GCC, Clang)
+- Build tools (CMake, Ninja, Meson)
+- C++ development tools (sccache, GoogleTest, clang-format)
+- Python development tools (Ruff, pytest, mypy, pre-commit)
+- Git configuration and aliases
+- AI workflow templates
+- Comprehensive validation and testing
+
+**Windows Setup (`total_run.ps1`):**
+- Visual Studio Build Tools and compilers
+- Chocolatey package management
+- CMake and Ninja build tools
+- sccache for compilation caching
+- Python development environment
+- Git configuration with Windows optimizations
+- Code formatting configurations
+- Final validation and health checks
+
+**Key Features:**
+- **Modular installation**: Install only what you need
+- **Comprehensive validation**: Test all tools and configurations
+- **Performance optimization**: sccache, parallel builds, optimized settings
+- **Cross-platform**: Consistent experience across Linux and Windows
+- **AI-ready**: Pre-configured AI workflow templates
+
+### 4. Reusable Workflows
 
 Centralized CI/CD workflows that can be referenced across all projects:
 
@@ -142,14 +227,14 @@ jobs:
       run-coverage: true
 ```
 
-### 4. Composite Actions
+### 5. Composite Actions
 
 Reusable action components:
 - `setup-python-cache`: Python environment with dependency caching
 - `setup-cpp-cache`: C++ build tools with sccache
 - `monitor-ci`: CI status monitoring for automation
 
-### 4. Configuration Management
+### 6. Configuration Management
 
 Shared, version-controlled configurations:
 - Ruff configuration (Python)
@@ -158,6 +243,26 @@ Shared, version-controlled configurations:
 - CMake templates
 
 ## 📖 Usage Examples
+
+### Development Environment Setup
+
+**Linux:**
+```bash
+# Complete development environment setup
+sudo bash setup-scripts/total_run.sh
+
+# After setup, validate your environment
+bash setup-scripts/total_run.sh --validate-only
+```
+
+**Windows:**
+```powershell
+# Complete development environment setup (Administrator)
+.\setup-scripts\total_run.ps1
+
+# After setup, validate your environment
+.\setup-scripts\total_run.ps1 -ValidateOnly
+```
 
 ### Python Project
 
@@ -319,8 +424,13 @@ bash scripts/sync-templates.sh cpp /path/to/existing-project
 **📖 Comprehensive Guides:**
 - [Quick Start Guide](docs/manuals/QUICK_START.md) - Get started in 5 minutes
 - [Cookiecutter Guide](docs/manuals/COOKIECUTTER_GUIDE.md) - Template system deep dive
+- **[Development Environment Setup](setup-scripts/README.md)** - Complete environment setup with validation
 - **[C++ Linux Runner Guide](docs/manuals/CPP_LINUX_RUNNER_GUIDE.md)** - Advanced C++ CI/CD workflow
 - [Troubleshooting](docs/manuals/TROUBLESHOOTING.md) - Common issues and solutions
+
+**🔧 Setup Script Documentation:**
+- [Linux Setup Scripts](setup-scripts/linux/README.md) - Linux-specific setup and configuration
+- [Windows Setup Scripts](setup-scripts/windows/README.md) - Windows-specific setup and configuration
 
 **🔧 Development Plan:**
 See `0.DEV_PLAN.md` for the complete development plan covering:
