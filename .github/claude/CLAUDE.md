@@ -1,206 +1,143 @@
-# Claude AI Assistant Context
+# AI Assistant Workflow Guide
 
-## 🚀 Project Overview
-This is an AI-powered CI/CD template repository that demonstrates advanced automation workflows using Claude Code CLI. The project showcases automated development processes including CI failure fixes, code reviews, and issue resolution.
+## Project Overview
 
-## 🏗️ Project Structure
-```
-.
-├── .github/
-│   ├── workflows/                 # GitHub Actions workflows
-│   │   ├── claude-code-pr-automation.yaml    # Main automation workflow
-│   │   ├── claude-code-fix-ci.yaml           # CI failure auto-fix
-│   │   └── claude-code-review.yaml           # Automated PR reviews
-│   ├── actions/                   # Reusable GitHub Actions
-│   │   ├── claude-code-runner/    # Claude Code CLI integration
-│   │   └── setup-environment/     # Environment setup
-│   └── claude/                    # Claude AI configuration
-│       ├── CLAUDE.md              # This context file
-│       ├── commands/              # Custom slash commands
-│       └── prompts/               # Prompt templates
-├── docs/                          # Documentation
-├── templates/                     # Project templates (Python, C++, etc.)
-└── scripts/                       # Utility scripts
-```
+**Project**: {{cookiecutter.project_name}}
+**Description**: {{cookiecutter.project_description}}
+**Language**: Python {{cookiecutter.python_version}} (or C++ {{cookiecutter.cpp_standard}})
 
-## 🎯 Automation Capabilities
+## Development Standards
 
-### 1. Issue-Driven Development
-- **Trigger**: Label issues with `ai-automate`
-- **Capability**: Analyze requirements, implement features, create PRs
-- **Example**: Add `ai-automate` label to a feature request
-
-### 2. CI Failure Auto-Fix
-- **Trigger**: Failed CI/CD workflows
-- **Capability**: Analyze failures, implement fixes, re-run validation
-- **Example**: Test failures automatically trigger debugging and fixes
-
-### 3. Automated Code Reviews
-- **Trigger**: Pull request creation/updates
-- **Capability**: Comprehensive code analysis, security checks, best practices
-- **Example**: PRs automatically get detailed AI reviews
-
-## 🔧 Development Guidelines
-
-### Code Quality Standards
-- **Python**: Use `ruff` for linting, `pytest` for testing, `mypy` for type checking
-- **C++**: Use `clang-format`, `cmake` for builds, `ctest` for testing
-- **Node.js**: Use `eslint`, `prettier`, `npm test`
-- **General**: Follow language-specific best practices and conventions
-
-### Testing Requirements
-- All new functionality must include comprehensive tests
-- Test coverage should be maintained or improved
-- Integration tests for workflow automation
-- Mock external dependencies appropriately
-
-### Documentation Standards
-- Update README.md for user-facing changes
-- Document new automation capabilities
-- Include examples in documentation
-- Maintain API documentation for any new endpoints
-
-## 🛡️ Security and Best Practices
-
-### Security Guidelines
-- Never commit secrets or API keys
-- Use GitHub Secrets for sensitive data
-- Validate all external inputs
-- Follow principle of least privilege
-
-### Git Workflow
-- Create atomic, complete commits
-- Use conventional commit message format
-- Ensure all commits pass quality gates
-- Include documentation in the same commit as code changes
-
-### Claude Code Integration
-- Use headless mode (`-p` flag) for automation
-- Leverage `--output-format stream-json` for structured output
-- Include project context via CLAUDE.md
-- Handle timeouts and errors gracefully
-
-## 🎨 Custom Slash Commands
-
-### `/fix-issue`
-Analyzes and resolves GitHub issues automatically.
-```markdown
-Usage: /fix-issue <issue_number>
-Description: Implement the requested changes from a GitHub issue
-```
-
-### `/refactor-code`
-Refactors existing code following best practices.
-```markdown
-Usage: /refactor-code <file_path> <description>
-Description: Refactor code to improve quality, performance, or maintainability
-```
-
-### `/generate-tests`
-Generate comprehensive tests for existing code.
-```markdown
-Usage: /generate-tests <file_path> [test_type]
-Description: Create unit, integration, and end-to-end tests with proper coverage
-```
-
-### `/add-feature`
-Implement new features following project architecture.
-```markdown
-Usage: /add-feature <feature_description> [--file <file_path>]
-Description: Design and implement new features with proper testing and documentation
-```
-
-### `/optimize-performance`
-Analyze and optimize code performance.
-```markdown
-Usage: /optimize-performance <target> [options]
-Description: Profile code and implement performance improvements
-```
-
-### `/security-audit`
-Perform comprehensive security audit and implement fixes.
-```markdown
-Usage: /security-audit [scope] [options]
-Description: Scan for vulnerabilities and implement security improvements
-```
-
-## 📋 Prompt Templates
-
-### Language-Specific Templates
-- **Python Fix**: `.github/claude/prompts/templates/python_fix.md`
-- **C++ Fix**: `.github/claude/prompts/templates/cpp_fix.md`
-- **JavaScript/TypeScript Fix**: `.github/claude/prompts/templates/javascript_fix.md`
-- **Go Fix**: `.github/claude/prompts/templates/go_fix.md`
-- **Rust Fix**: `.github/claude/prompts/templates/rust_fix.md`
-- **Multi-Language Analysis**: `.github/claude/prompts/templates/multi_language_analysis.md`
-
-### General Templates
-- **Issue Resolution**: `.github/claude/prompts/templates/issue_resolution.md`
-- **Bug Fix**: `.github/claude/prompts/templates/bug_fix.md`
-- **Code Review**: `.github/claude/prompts/templates/code_review.md`
-
-## 🔄 Workflow Integration
-
-### Environment Setup
-The `.github/actions/setup-environment` action automatically:
-- Installs Claude Code CLI
-- Sets up language-specific tools
-- Configures Git environment
-- Creates necessary directories
-
-### Error Handling
-- Timeouts: Configurable per workflow (default 5-10 minutes)
-- Retries: Automatic retry logic for transient failures
-- Fallbacks: Manual intervention notifications when automation fails
-- Logging: Comprehensive logging for debugging
-
-### Quality Gates
-- Pre-commit hooks for code formatting
-- Automated testing in CI/CD
-- Code coverage requirements
-- Security scanning integration
-
-## 📊 Metrics and Monitoring
-
-### Automation Metrics
-- CI failure resolution time
-- Code review turnaround time
-- Issue resolution rate
-- PR merge time reduction
-
-### Success Indicators
-- Reduced manual intervention
-- Improved code quality
-- Faster development cycles
-- Consistent documentation
-
-## 🚨 Important Notes
-
-### For Claude AI Assistant
-1. **Always** read and understand the existing codebase before making changes
-2. **Never** break backward compatibility without explicit justification
-3. **Always** include tests for new functionality
-4. **Never** commit secrets or sensitive information
-5. **Always** follow the project's established patterns and conventions
-6. **Never** make assumptions about external dependencies without verification
-
-### For Human Developers
-1. Review AI-generated changes before merging
-2. Monitor automation workflows for unusual behavior
-3. Maintain security best practices
-4. Provide feedback to improve automation quality
-5. Override automation when human judgment is required
-
-## 🎯 Current Context
-- **Repository Type**: CI/CD Template with AI Automation
-- **Primary Languages**: Python, C++, Node.js (multi-language support)
-- **Automation Level**: Advanced (issue-driven, CI auto-fix, code reviews)
-- **Target Users**: Development teams seeking workflow automation
-- **Quality Focus**: High (comprehensive testing, documentation, security)
+- **Code Quality**: Follow Ruff (Python) or clang-format/clang-tidy (C++) rules
+- **Testing**: All new features must include **Unit Tests**
+- **Atomic Commit**: Code, tests, and documentation changes must always be handled in a single commit
 
 ---
 
-## 🤖 Last Updated
-This context file is automatically maintained by the AI automation workflows. Last update: 2024
+## 🚀 AI AUTOMATED PR CREATION WORKFLOW (Core Automation Guidelines)
 
-*Generated by Claude Code AI Automation System*
+### Goal
+Receive development requests through external commands (e.g., Issue Comments), generate and validate code, and **automatically create the final Pull Request**.
+
+### AI Automated PR Creation Steps (Step-by-Step Flow)
+
+AI strictly follows these 5-step processes when receiving requests:
+
+| Step | Responsibility | Detail |
+| :--- | :--- | :--- |
+| **1. Command Analysis** | `Issue/PR Comment` | Accurately extract requested **task type** (`add-feature`, `fix-issue`) and **detailed requirements** |
+| **2. Code & Test Generation** | `src/`, `tests/` | Implement code matching requirements and **simultaneously** write unit tests (`pytest` or `gtest` based) |
+| **3. Local Quality Validation** | `pre-commit` Hooks | **Immediately after code generation**, ensure passing the following quality gates in **local environment**: <br> - **Formatting**: `ruff format --check` or `clang-format --dry-run`<br> - **Linting/Analysis**: `ruff check` or `clang-tidy`<br> - **Testing**: `pytest tests/` or `ctest --test-dir build` |
+| **4. Atomic Commit** | `git commit` | Bundle all changes including code and test files into a **single atomic commit** |
+| **5. PR Creation & Completion** | `git push` & `gh pr create` | Push commit to new feature branch, **automatically create Pull Request** to main branch, then complete task |
+
+### AI Command Protocol (Command Protocol)
+
+To trigger AI workflow, include the following commands in Issue or PR Comment:
+
+| Command | Function |
+| :--- | :--- |
+| `/claude add-feature` | Add new feature code and Unit Tests |
+| `/claude fix-issue` | Fix bugs and add Regression Tests |
+| `/claude refactor-code` | Improve existing code according to quality standards |
+
+---
+
+### ⚠️ AI Development Responsibilities (CRITICAL INVARIANTS)
+
+* **NEVER** hardcode `secrets` or API keys when generating code
+* **ALWAYS** follow architecture rules specified in `ARCHITECTURE_INVARIANTS.md` (e.g., no circular dependencies)
+* **PR creation success** is the final success metric for AI automation tasks
+
+---
+
+## 📁 Project Structure Reference
+```
+{{cookiecutter.project_name}}/
+├── .github/
+│   ├── workflows/                 # GitHub Actions for automation
+│   │   ├── claude-code-pr-automation.yaml    # AI PR creation workflow
+│   │   ├── claude-code-fix-ci.yaml           # CI failure auto-fix
+│   │   └── claude-code-review.yaml           # Automated PR reviews
+│   └── claude/                    # Claude AI configuration
+│       ├── CLAUDE.md              # This context file
+│       ├── commands/              # AI command templates
+│       └── prompts/               # Language-specific templates
+├── src/                           # Source code directory
+├── tests/                         # Unit test directory
+├── docs/                          # Documentation
+└── scripts/                       # Utility scripts
+```
+
+## 🛡️ Security Guidelines
+- **NEVER** hardcode secrets or API keys in code
+- **ALWAYS** use GitHub Secrets to manage sensitive data
+- **ALWAYS** validate external inputs and follow principle of least privilege
+
+---
+
+## 🔄 CICD_template Integration Plan
+
+### Template Integration Strategy
+This `CLAUDE.md` file serves as a master template for all projects created using the CICD_template cookiecutter. When a new project is generated, this file will be automatically copied and customized with project-specific variables.
+
+### Implementation Steps
+
+#### 1. Cookiecutter Hook Integration
+```python
+# In cookiecutter/hooks/post_gen_project.py
+def setup_claude_context():
+    """Copy and customize CLAUDE.md for new projects"""
+    template_file = Path('.github/claude/CLAUDE.md')
+    if template_file.exists():
+        # Replace cookiecutter variables with actual project values
+        content = template_file.read_text()
+        content = content.replace('{{cookiecutter.project_name}}', '{{ cookiecutter.project_name }}')
+        content = content.replace('{{cookiecutter.project_description}}', '{{ cookiecutter.project_description }}')
+        # ... more variable replacements
+        template_file.write_text(content)
+```
+
+#### 2. Project-Specific Customization
+When creating new projects, the following variables will be automatically replaced:
+- `{{cookiecutter.project_name}}` → Actual project name
+- `{{cookiecutter.project_description}}` → Project description
+- `{{cookiecutter.python_version}}` → Python version (if applicable)
+- `{{cookiecutter.cpp_standard}}` → C++ standard (if applicable)
+
+#### 3. Workflow Integration
+- GitHub Actions workflows will reference this CLAUDE.md for AI context
+- All AI automation commands will follow the protocols defined here
+- New projects inherit the complete AI automation workflow immediately
+
+#### 4. Validation and Testing
+```bash
+# After project creation, validate the setup
+claude --model haiku --help
+ls -la .github/claude/
+cat .github/claude/CLAUDE.md | grep "{{cookiecutter"  # Should return empty
+```
+
+### Benefits of This Approach
+
+1. **Consistency**: All projects follow the same AI automation standards
+2. **Immediate Setup**: New projects are AI-ready from creation
+3. **Maintainability**: Single source of truth for AI workflow guidelines
+4. **Scalability**: Easy to update AI workflows across all projects
+5. **Quality Assurance**: Built-in validation and quality gates
+
+### Usage Example
+
+```bash
+# Create new project with AI automation
+cookiecutter https://github.com/your-org/CICD_template
+
+# Project is immediately ready for AI automation
+cd your-new-project
+echo "/claude add-feature Add user authentication" > feature_request.txt
+# AI will use the customized CLAUDE.md for context and guidelines
+```
+
+---
+
+*This document is maintained by the Claude Code AI automation system and automatically customized for each new project.*

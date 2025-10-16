@@ -14,8 +14,47 @@ def run_command(cmd, check=True):
         print(f"Error: {e}")
         return False
 
+def setup_claude_context():
+    """Copy and customize CLAUDE.md for new projects."""
+    print("📋 Setting up Claude AI context...")
+
+    # Ensure .github/claude directory exists
+    claude_dir = ".github/claude"
+    os.makedirs(claude_dir, exist_ok=True)
+
+    # Define source and target paths
+    template_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+    source_path = os.path.join(template_root, ".github", "claude", "CLAUDE.md")
+    target_path = os.path.join(claude_dir, "CLAUDE.md")
+
+    if os.path.exists(source_path):
+        # Read the template
+        with open(source_path, 'r', encoding='utf-8') as src:
+            content = src.read()
+
+        # Replace cookiecutter variables with actual project values
+        replacements = {
+            '{{cookiecutter.project_name}}': '{{ cookiecutter.project_name }}',
+            '{{cookiecutter.project_description}}': '{{ cookiecutter.project_description }}',
+            '{{cookiecutter.python_version}}': '',  # Empty for C++ projects
+            '{{cookiecutter.cpp_standard}}': '{{ cookiecutter.cpp_standard }}',
+        }
+
+        for template_var, cookiecutter_var in replacements.items():
+            content = content.replace(template_var, cookiecutter_var)
+
+        # Write the customized file
+        with open(target_path, 'w', encoding='utf-8') as dst:
+            dst.write(content)
+
+        print("   ✓ CLAUDE.md customized and placed in .github/claude/")
+        return True
+    else:
+        print("   ⚠️  Source CLAUDE.md template not found")
+        return False
+
 def copy_claude_md():
-    """Copy CLAUDE.md from docs/ directory."""
+    """Copy CLAUDE.md from docs/ directory (legacy function)."""
     print("📋 Copying CLAUDE.md from template docs...")
 
     # Define paths
@@ -114,7 +153,10 @@ def print_next_steps():
 
 def main():
     try:
-        # Copy the main CLAUDE.md from template docs
+        # Setup Claude AI context with template variables
+        setup_claude_context()
+
+        # Copy the main CLAUDE.md from template docs (legacy)
         copy_claude_md()
 
         # Remove the template CLAUDE.md if it exists
