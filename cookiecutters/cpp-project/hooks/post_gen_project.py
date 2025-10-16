@@ -42,11 +42,17 @@ def setup_claude_context():
             '{{cookiecutter.project_name}}': project_name,
             '{{cookiecutter.project_description}}': project_description,
             '{{cookiecutter.cpp_standard}}': cpp_standard,
-            '{{cookiecutter.python_version}}': f"C++ {cpp_standard}",  # Handle Python version reference for C++ projects
         }
 
         for template_var, actual_value in replacements.items():
             content = content.replace(template_var, actual_value)
+
+        # Handle Jinja2 conditionals for C++ projects
+        # Replace the conditional block with C++ specific content
+        content = content.replace(
+            '{% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}',
+            f'C++ {cpp_standard}'
+        )
 
         # Write the customized file
         with open(target_path, 'w', encoding='utf-8') as dst:
