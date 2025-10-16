@@ -8,6 +8,7 @@ param(
     [switch]$PythonOnly,
     [switch]$NoValidation,
     [switch]$ValidateOnly,
+    [switch]$FinalValidation,
     [switch]$Cleanup,
     [switch]$DryRun,
     [string]$RunnerUser = "github-runner"
@@ -63,6 +64,7 @@ OPTIONS:
     -PythonOnly              Install only Python development tools
     -NoValidation            Skip validation tests
     -ValidateOnly            Run validation tests only
+    -FinalValidation         Run final comprehensive validation only
     -Cleanup                 Clean up test projects
     -DryRun                  Show what would be executed without running
     -RunnerUser <user>       Specify runner user (default: github-runner)
@@ -73,6 +75,7 @@ EXAMPLES:
     .\total_run.ps1 -CppOnly             # C++ tools only
     .\total_run.ps1 -PythonOnly          # Python tools only
     .\total_run.ps1 -ValidateOnly        # Run validation tests
+    .\total_run.ps1 -FinalValidation     # Run final comprehensive validation only
     .\total_run.ps1 -Cleanup             # Clean up test projects
     .\total_run.ps1 -DryRun              # Show what would be executed
 
@@ -86,7 +89,7 @@ function Test-Administrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-# Function to run a script with error handling
+# Function to run a script with error handling and output suppression
 function Invoke-SetupScript {
     param(
         [string]$ScriptPath,
@@ -100,7 +103,6 @@ function Invoke-SetupScript {
     }
 
     Write-Status "Running: $Description"
-    Write-Status "Executing: $ScriptPath"
 
     if ($DryRun) {
         Write-Status "[DRY RUN] Would execute: $ScriptPath $($Arguments -join ' ')"
@@ -108,16 +110,22 @@ function Invoke-SetupScript {
     }
 
     try {
-        $process = Start-Process -FilePath "powershell.exe" -ArgumentList "-File", $ScriptPath, "-RunnerUser", $RunnerUser, $Arguments -Wait -PassThru -WindowStyle Hidden
+        # Run script with suppressed output, redirect all streams to null
+        $process = Start-Process -FilePath "powershell.exe" -ArgumentList "-File", $ScriptPath, "-RunnerUser", $RunnerUser, $Arguments -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput "$env:TEMP\setup-out.log" -RedirectStandardError "$env:TEMP\setup-err.log"
+
+        # Clean up log files
+        Remove-Item "$env:TEMP\setup-out.log" -ErrorAction SilentlyContinue
+        Remove-Item "$env:TEMP\setup-err.log" -ErrorAction SilentlyContinue
+
         if ($process.ExitCode -eq 0) {
-            Write-Success "Completed: $Description"
+            Write-Success "✓ $Description"
             return $true
         } else {
-            Write-Error-Output "Failed: $Description (Exit code: $($process.ExitCode))"
+            Write-Error-Output "✗ $Description"
             return $false
         }
     } catch {
-        Write-Error-Output "Failed to execute script: $($_.Exception.Message)"
+        Write-Error-Output "✗ $Description"
         return $false
     }
 }
@@ -185,6 +193,19 @@ function Set-Configurations {
     return $true
 }
 
+# Function to setup AI workflows
+function Set-AIWorkflows {
+    Write-Status "Setting up AI workflow templates..."
+
+    $aiWorkflowScript = "$WindowsDir\config\setup-ai-workflows.ps1"
+    if (Test-Path $aiWorkflowScript) {
+        return (Invoke-SetupScript -ScriptPath $aiWorkflowScript -Description "AI Workflow Templates")
+    } else {
+        Write-Warning "AI workflow setup script not found: $aiWorkflowScript"
+        return $true  # Don't fail if AI workflows are not available
+    }
+}
+
 # Function to create test projects
 function New-TestProjects {
     if ($Validate) {
@@ -195,6 +216,37 @@ function New-TestProjects {
         Write-Warning "Test project creation not implemented for Windows yet"
     }
     return $true
+}
+
+# Function to run final comprehensive validation
+function Invoke-FinalValidation {
+    Write-Status "Running final comprehensive validation..."
+
+    if ($DryRun) {
+        Write-Status "[DRY RUN] Would run final validation"
+        return $true
+    }
+
+    # Run final validation script without output suppression to show detailed results
+    $finalValidationScript = Join-Path $WindowsDir "validation\final-validation.ps1"
+    if (Test-Path $finalValidationScript) {
+        try {
+            $result = & powershell.exe -File $finalValidationScript
+            if ($LASTEXITCODE -eq 0) {
+                Write-Success "✅ Final validation completed successfully"
+                return $true
+            } else {
+                Write-Error-Output "❌ Final validation failed"
+                return $false
+            }
+        } catch {
+            Write-Error-Output "❌ Final validation failed: $($_.Exception.Message)"
+            return $false
+        }
+    } else {
+        Write-Warning "Final validation script not found: $finalValidationScript"
+        return $false
+    }
 }
 
 # Function to run validation
@@ -268,12 +320,17 @@ function Show-Summary {
         Write-Host "  ✓ Python formatting configurations"
     }
 
+    if ($InstallAll -or $InstallCpp -or $InstallPython) {
+        Write-Host "  ✓ AI workflow templates"
+    }
+
     Write-Host ""
     Write-Host "Next Steps:"
     Write-Host "  1. Restart PowerShell to apply environment changes"
-    Write-Host "  2. Test the installation with your projects"
-    Write-Host "  3. Use the provided aliases for common tasks"
-    Write-Host "  4. Git is configured and ready for use"
+    Write-Host "  2. To install GitHub Actions runner, run the script install-runner-windows.ps1"
+    Write-Host "  3. Test the installation with your projects"
+    Write-Host "  4. Use the provided aliases for common tasks"
+    Write-Host "  5. Git is configured and ready for use"
     Write-Host ""
     Write-Host "Configuration files created in:"
     Write-Host "  - ~/.gitconfig (Git configuration)"
@@ -328,6 +385,20 @@ function Main {
         $Script:InstallCpp = $false
         $Script:InstallPython = $false
         $Script:Validate = $true
+    }
+
+    if ($FinalValidation) {
+        $Script:InstallAll = $false
+        $Script:InstallBasic = $false
+        $Script:InstallCpp = $false
+        $Script:InstallPython = $false
+        $Script:Validate = $false
+        $result = Invoke-FinalValidation
+        if ($result) {
+            exit 0
+        } else {
+            exit 1
+        }
     }
 
     if ($Help) {
@@ -387,11 +458,22 @@ function Main {
                 if (-not (Set-Configurations)) {
                     throw "Configuration setup failed"
                 }
+
+                if (-not (Set-AIWorkflows)) {
+                    throw "AI workflow setup failed"
+                }
             }
 
             # Test projects and validation
             New-TestProjects
             Invoke-Validation
+
+            # Run final comprehensive validation if not in dry-run mode
+            if (-not $DryRun) {
+                if (-not (Invoke-FinalValidation)) {
+                    throw "Final validation failed"
+                }
+            }
 
             if (-not $DryRun) {
                 Show-Summary

@@ -52,6 +52,7 @@ OPTIONS:
     --python-only           Install only Python development tools
     --no-validation         Skip validation tests
     --validate-only         Run validation tests only
+    --final-validation      Run final comprehensive validation only
     --cleanup               Clean up test projects
     --dry-run               Show what would be executed without running
 
@@ -61,12 +62,13 @@ EXAMPLES:
     $0 --cpp-only           # C++ tools only
     $0 --python-only        # Python tools only
     $0 --validate-only      # Run validation tests
+    $0 --final-validation   # Run final comprehensive validation only
     $0 --cleanup            # Clean up test projects
 
 EOF
 }
 
-# Function to run a script with error handling
+# Function to run a script with error handling and output suppression
 run_script() {
     local script_path="$1"
     local description="$2"
@@ -79,17 +81,18 @@ run_script() {
     fi
 
     print_status "Running: $description"
-    print_status "Executing: $script_path ${script_args[*]}"
 
     if [ "$DRY_RUN" = "true" ]; then
         print_status "[DRY RUN] Would execute: $script_path ${script_args[*]}"
         return 0
     fi
 
-    if bash "$script_path" "${script_args[@]}"; then
-        print_success "Completed: $description"
+    # Run script with suppressed output, only show success/failure
+    if bash "$script_path" "${script_args[@]}" > /dev/null 2>&1; then
+        print_success "✓ $description"
+        return 0
     else
-        print_error "Failed: $description"
+        print_error "✗ $description"
         return 1
     fi
 }
@@ -161,6 +164,25 @@ run_validation() {
     fi
 }
 
+# Function to run final comprehensive validation
+run_final_validation() {
+    print_status "Running final comprehensive validation..."
+
+    if [ "$DRY_RUN" = "true" ]; then
+        print_status "[DRY RUN] Would run final validation"
+        return 0
+    fi
+
+    # Run final validation script without output suppression to show detailed results
+    if bash "$LINUX_DIR/validation/final-validation.sh"; then
+        print_success "✅ Final validation completed successfully"
+        return 0
+    else
+        print_error "❌ Final validation failed"
+        return 1
+    fi
+}
+
 # Function to cleanup
 cleanup() {
     print_status "Cleaning up..."
@@ -199,9 +221,10 @@ print_summary() {
     echo ""
     echo "Next Steps:"
     echo "  1. Log out and log back in to apply environment changes"
-    echo "  2. Test the installation with your projects"
-    echo "  3. Use the provided aliases for common tasks"
-    echo "  4. Git is configured and ready for use"
+    echo "  2. To install GitHub Actions runner, run the script install-runner-linux.sh"
+    echo "  3. Test the installation with your projects"
+    echo "  4. Use the provided aliases for common tasks"
+    echo "  5. Git is configured and ready for use"
     echo ""
     echo "Configuration files created in:"
     echo "  - ~/.gitconfig (Git configuration)"
@@ -265,6 +288,15 @@ main() {
                 VALIDATE="true"
                 shift
                 ;;
+            --final-validation)
+                INSTALL_ALL="false"
+                INSTALL_BASIC="false"
+                INSTALL_CPP="false"
+                INSTALL_PYTHON="false"
+                VALIDATE="false"
+                run_final_validation
+                exit $?
+                ;;
             --cleanup)
                 cleanup
                 exit 0
@@ -324,6 +356,11 @@ main() {
     fi
 
     run_validation
+
+    # Run final comprehensive validation if not in dry-run mode
+    if [ "$DRY_RUN" != "true" ]; then
+        run_final_validation
+    fi
 
     # Remove the cleanup trap if we reached here successfully
     trap - EXIT
