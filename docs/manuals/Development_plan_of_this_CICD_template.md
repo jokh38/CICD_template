@@ -197,7 +197,7 @@ def print_next_steps():
     print("3. pip install -e .[dev]")
     
     if use_ai == "yes":
-        print("4. Review docs/CLAUDE.md for AI assistant")
+        print("4. Review .github/claude/CLAUDE.md for AI assistant")
     
     print("\n🔗 Add remote:")
     print("   git remote add origin <your-repo-url>")
@@ -212,7 +212,7 @@ def main():
         
         # Remove AI workflow if not needed
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            for f in ["docs/CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
+            for f in [".github/claude/CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
                 if os.path.exists(f):
                     os.remove(f)
         
@@ -324,7 +324,7 @@ def main():
         
         # Cleanup
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            for f in ["docs/CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
+            for f in [".github/claude/CLAUDE.md", ".github/workflows/ai-workflow.yaml"]:
                 if os.path.exists(f):
                     os.remove(f)
         

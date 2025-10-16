@@ -55,28 +55,9 @@ def setup_claude_context():
         return False
 
 def copy_claude_md():
-    """Copy CLAUDE.md from docs/ directory (legacy function)."""
-    print("📋 Copying CLAUDE.md from template docs...")
-
-    # Define paths
-    source_claude = "docs/CLAUDE.md"
-    target_claude = "docs/CLAUDE.md"
-
-    # Ensure docs directory exists
-    os.makedirs("docs", exist_ok=True)
-
-    # Copy the main CLAUDE.md from the template root docs/
-    template_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    source_path = os.path.join(template_root, "docs", "CLAUDE.md")
-
-    if os.path.exists(source_path):
-        with open(source_path, 'r') as src:
-            content = src.read()
-        with open(target_claude, 'w') as dst:
-            dst.write(content)
-        print("   ✓ CLAUDE.md copied to docs/")
-    else:
-        print("   ⚠️  Source CLAUDE.md not found, keeping template version")
+    """Copy CLAUDE.md from docs/ directory (legacy function - deprecated)."""
+    print("⚠️  Legacy docs/CLAUDE.md copy skipped - file moved to .github/claude/CLAUDE.md")
+    # This function is deprecated since docs/CLAUDE.md was moved to .github/claude/CLAUDE.md
 
 def initialize_git():
     """Initialize git repository."""
@@ -157,7 +138,7 @@ def print_next_steps():
     print("4. ruff check .  # Lint code")
 
     if use_ai == "yes":
-        print("5. Review docs/CLAUDE.md for AI assistant")
+        print("5. Review .github/claude/CLAUDE.md for AI assistant")
 
     print("\n✅ All dependencies are installed and ready to use!")
     print("\n🔗 Create GitHub repository and push:")

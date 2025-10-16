@@ -72,7 +72,7 @@ create_project() {
     echo "1. Install requirements by using setup-scripts/total_run.sh"
     echo "   Run: sudo bash $SCRIPT_DIR/../setup-scripts/total_run.sh"
     echo "2. Navigate to your project directory and start development"
-    echo "3. Check docs/CLAUDE.md for AI assistant integration details"
+    echo "3. Check .github/claude/CLAUDE.md for AI assistant integration details"
 }
 
 main() {
