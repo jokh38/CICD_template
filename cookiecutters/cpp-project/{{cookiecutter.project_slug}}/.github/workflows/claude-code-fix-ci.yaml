@@ -17,7 +17,7 @@ permissions:
   pull-requests: write
 
 env:
-  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY {{\' }}{% endraw %}\'}}
+  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY }}{% endraw %}
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
 
 jobs:
@@ -29,16 +29,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: {% raw %}{{ secrets.GITHUB_TOKEN {{\' }}{% endraw %}\'}}
+          token: {% raw %}{{ secrets.GITHUB_TOKEN }}{% endraw %}
           fetch-depth: 0
 
       - name: Get workflow run details
         id: workflow-details
         run: |
-          WORKFLOW_RUN_ID="{% raw %}{{ github.event.workflow_run.id || github.event.inputs.workflow_run_id {{\' }}{% endraw %}\'}}"
+          WORKFLOW_RUN_ID="{% raw %}{{ github.event.workflow_run.id || github.event.inputs.workflow_run_id }}{% endraw %}"
 
           # Get workflow run details
-          WORKFLOW_INFO=$(gh api repos/{% raw %}{{ github.repository {{\' }}{% endraw %}\'}}/actions/runs/$WORKFLOW_RUN_ID)
+          WORKFLOW_INFO=$(gh api repos/{% raw %}{{ github.repository }}{% endraw %}"/actions/runs/$WORKFLOW_RUN_ID)
 
           echo "workflow_name=$(echo "$WORKFLOW_INFO" | jq -r '.name')" >> $GITHUB_OUTPUT
           echo "head_branch=$(echo "$WORKFLOW_INFO" | jq -r '.head_branch')" >> $GITHUB_OUTPUT
@@ -48,10 +48,10 @@ jobs:
       - name: Get failed jobs and logs
         id: failure-analysis
         run: |
-          WORKFLOW_RUN_ID="{% raw %}{{ steps.workflow-details.outputs.workflow_run_id {{\' }}{% endraw %}\'}}"
+          WORKFLOW_RUN_ID="{% raw %}{{ steps.workflow-details.outputs.workflow_run_id }}{% endraw %}"
 
           # Get all jobs for the workflow run
-          JOBS=$(gh api repos/{% raw %}{{ github.repository {{\' }}{% endraw %}\'}}/actions/runs/$WORKFLOW_RUN_ID/jobs)
+          JOBS=$(gh api repos/{% raw %}{{ github.repository }}{% endraw %}"/actions/runs/$WORKFLOW_RUN_ID/jobs)
 
           # Extract failed jobs and their logs
           FAILED_JOBS=$(echo "$JOBS" | jq -r '.jobs[] | select(.conclusion == "failure") | {name: .name, html_url: .html_url, id: .id}')
@@ -63,7 +63,7 @@ jobs:
           ERROR_LOGS=""
           for job_id in $(echo "$FAILED_JOBS" | jq -r '.id'); do
             echo "Getting logs for job $job_id..."
-            JOB_LOGS=$(gh api repos/{% raw %}{{ github.repository {{\' }}{% endraw %}\'}}/actions/jobs/$job_id/logs --accept "application/vnd.github.v3+json")
+            JOB_LOGS=$(gh api repos/{% raw %}{{ github.repository }}{% endraw %}"/actions/jobs/$job_id/logs --accept "application/vnd.github.v3+json")
             ERROR_LOGS="$ERROR_LOGS
 
             === Job ID: $job_id ===
@@ -78,8 +78,8 @@ jobs:
 
       - name: Switch to failed branch
         run: |
-          git checkout {% raw %}{{ steps.workflow-details.outputs.head_branch {{\' }}{% endraw %}\'}}
-          git pull origin {% raw %}{{ steps.workflow-details.outputs.head_branch {{\' }}{% endraw %}\'}}
+          git checkout {% raw %}{{ steps.workflow-details.outputs.head_branch }}{% endraw %}
+          git pull origin {% raw %}{{ steps.workflow-details.outputs.head_branch }}{% endraw %}
 
       - name: Setup environment
         uses: actions/setup-python@v4
@@ -92,29 +92,19 @@ jobs:
 
       - name: Setup project environment
         run: |
-          {% if cookiecutter.python_version %}
-          # Python project setup
-          python -m pip install --upgrade pip
-          if [ -f "requirements.txt" ]; then
-            pip install -r requirements.txt
-          elif [ -f "pyproject.toml" ]; then
-            pip install -e .
-          fi
-          {% elif cookiecutter.cpp_standard %}
           # C++ project setup
           {% if cookiecutter.build_system == "cmake" %}
           cmake -B build -DCMAKE_BUILD_TYPE=Debug
           {% else %}
           meson setup build
           {% endif %}
-          {% endif %}
 
       - name: Run Claude Code to fix failures
         id: claude-fix
         run: |
-          WORKFLOW_NAME="{% raw %}{{ steps.workflow-details.outputs.workflow_name {{\' }}{% endraw %}\'}}"
-          BRANCH="{% raw %}{{ steps.workflow-details.outputs.head_branch {{\' }}{% endraw %}\'}}"
-          FAILED_JOBS="{% raw %}{{ steps.failure-analysis.outputs.failed_jobs_count {{\' }}{% endraw %}\'}}"
+          WORKFLOW_NAME="{% raw %}{{ steps.workflow-details.outputs.workflow_name }}{% endraw %}"
+          BRANCH="{% raw %}{{ steps.workflow-details.outputs.head_branch }}{% endraw %}"
+          FAILED_JOBS="{% raw %}{{ steps.failure-analysis.outputs.failed_jobs_count }}{% endraw %}"
 
           FIX_PROMPT="You are an AI assistant specialized in fixing CI/CD pipeline failures.
 
@@ -122,7 +112,7 @@ jobs:
 Workflow: $WORKFLOW_NAME
 Branch: $BRANCH
 Failed Jobs: $FAILED_JOBS
-Run ID: {% raw %}{{ github.run_id {{\' }}{% endraw %}\'}}
+Run ID: {% raw %}{{ github.run_id }}{% endraw %}
 
 **ERROR LOGS:**
 The CI/CD pipeline failed with the following errors. Please analyze the error logs provided and implement comprehensive fixes.
@@ -138,12 +128,10 @@ Please analyze the CI failure logs and implement fixes:
 4. **CI Compatibility**: Ensure changes will pass the CI pipeline
 
 **PROJECT CONTEXT:**
-This is a {% if cookiecutter.python_version %}Python {{cookiecutter.python_version{{\'}}\'}}{% else %}C++{{cookiecutter.cpp_standard{{\'}}\'}}{% endif %} project named {{cookiecutter.project_name{{\'}}\'}} with description: {{cookiecutter.project_description{{\'}}\'}}.
+This is a C++{{ cookiecutter.cpp_standard }} project named {{ cookiecutter.project_name }} with description: {{ cookiecutter.project_description }}.
 
 **Build System:**
-{% if cookiecutter.python_version %}
-- Python with standard tooling (pytest, ruff, mypy)
-{% elif cookiecutter.build_system == "cmake" %}
+{% if cookiecutter.build_system == "cmake" %}
 - CMake build system
 {% else %}
 - Meson build system
@@ -174,7 +162,7 @@ Please implement the fixes and provide a summary of changes made."
 
             git add -A
 
-            FIX_SUMMARY="Fix CI failures in {% raw %}{{ steps.workflow-details.outputs.workflow_name {{\' }}{% endraw %}\'}}"
+            FIX_SUMMARY="Fix CI failures in {% raw %}{{ steps.workflow-details.outputs.workflow_name }}{% endraw %}"
             if [ -f "fix_results.json" ]; then
               FIX_SUMMARY=$(cat fix_results.json | head -n 1)
             fi
@@ -185,7 +173,7 @@ Please implement the fixes and provide a summary of changes made."
 
 Co-Authored-By: Claude <noreply@anthropic.com>"
 
-            git push origin {% raw %}{{ steps.workflow-details.outputs.head_branch {{\' }}{% endraw %}\'}}
+            git push origin {% raw %}{{ steps.workflow-details.outputs.head_branch }}{% endraw %}
 
             echo "Changes committed and pushed"
           fi
@@ -194,8 +182,8 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
         if: steps.claude-fix.outputs.results != ''
         run: |
           # Trigger the same workflow that failed to validate the fixes
-          gh workflow run "{% raw %}{{ steps.workflow-details.outputs.workflow_name {{\' }}{% endraw %}\'}}" \
-            --ref "{% raw %}{{ steps.workflow-details.outputs.head_branch {{\' }}{% endraw %}\'}}"
+          gh workflow run "{% raw %}{{ steps.workflow-details.outputs.workflow_name }}{% endraw %}"" \
+            --ref "{% raw %}{{ steps.workflow-details.outputs.head_branch }}{% endraw %}""
 
       - name: Create fix PR if on main branch
         if: |
@@ -203,22 +191,22 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
           steps.workflow-details.outputs.head_branch == 'main'
         run: |
           # Create a new branch for the fixes
-          FIX_BRANCH="ci-fix-{% raw %}{{ github.run_number {{\' }}{% endraw %}\'}}"
+          FIX_BRANCH="ci-fix-{% raw %}{{ github.run_number }}{% endraw %}""
           git checkout -b $FIX_BRANCH
           git push origin $FIX_BRANCH
 
           # Create PR
-          PR_TITLE="🤖 CI Failure Fix: {% raw %}{{ steps.workflow-details.outputs.workflow_name {{\' }}{% endraw %}\'}}"
+          PR_TITLE="🤖 CI Failure Fix: {% raw %}{{ steps.workflow-details.outputs.workflow_name }}{% endraw %}"
           PR_BODY=$(cat <<EOF
           ## 🛠️ Automated CI Failure Fix
 
-          This PR contains automated fixes for failures in the `{% raw %}{{ steps.workflow-details.outputs.workflow_name {{\' }}{% endraw %}\'}}` workflow.
+          This PR contains automated fixes for failures in the `{% raw %}{{ steps.workflow-details.outputs.workflow_name }}{% endraw %}` workflow.
 
           **Original Failure:**
-          - Workflow Run: [#{% raw %}{{ steps.workflow-details.outputs.workflow_run_id {{\' }}{% endraw %}\'}}]({% raw %}{{ github.server_url {{\' }}{% endraw %}\'}}/{% raw %}{{ github.repository {{\' }}{% endraw %}\'}}/actions/runs/{% raw %}{{ steps.workflow-details.outputs.workflow_run_id {{\' }}{% endraw %}\'}})
-          - Branch: `{% raw %}{{ steps.workflow-details.outputs.head_branch {{\' }}{% endraw %}\'}}`
-          - Commit: `{% raw %}{{ steps.workflow-details.outputs.head_sha {{\' }}{% endraw %}\'}}`
-          - Failed Jobs: {% raw %}{{ steps.failure-analysis.outputs.failed_jobs_count {{\' }}{% endraw %}\'}}
+          - Workflow Run: [#{% raw %}{{ steps.workflow-details.outputs.workflow_run_id }}{% endraw %}]({% raw %}{{ github.server_url }}{% endraw %}/{% raw %}{{ github.repository }}{% endraw %}/actions/runs/{% raw %}{{ steps.workflow-details.outputs.workflow_run_id }}{% endraw %})
+          - Branch: `{% raw %}{{ steps.workflow-details.outputs.head_branch }}{% endraw %}"`
+          - Commit: `{% raw %}{{ steps.workflow-details.outputs.head_sha }}{% endraw %}"`
+          - Failed Jobs: {% raw %}{{ steps.failure-analysis.outputs.failed_jobs_count }}{% endraw %}
 
           **Applied Fixes:**
           $(cat fix_results.json | sed 's/^/- /')

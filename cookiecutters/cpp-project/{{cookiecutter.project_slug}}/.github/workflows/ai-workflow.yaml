@@ -31,7 +31,7 @@ permissions:
   pull-requests: write
 
 env:
-  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY {{\' }}{% endraw %}\'}}
+  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY }}{% endraw %}
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
 
 jobs:
@@ -47,14 +47,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: {% raw %}{{ secrets.GITHUB_TOKEN {{\' }}{% endraw %}\'}}
+          token: {% raw %}{{ secrets.GITHUB_TOKEN }}{% endraw %}
 
       - name: Setup C++ Environment
         uses: jokh38/cpp-dev-setup@v1
         with:
-          cpp-standard: {{cookiecutter.cpp_standard{{\'}}\'}}
-          build-system: {{cookiecutter.build_system{{\'}}\'}}
-          use-ninja: {{cookiecutter.use_ninja{{\'}}\'}}
+          cpp-standard: {{ cookiecutter.cpp_standard }}
+          build-system: {{ cookiecutter.build_system }}
+          use-ninja: {{ cookiecutter.use_ninja }}
 
       - name: Install Claude Code CLI
         run: |
@@ -63,16 +63,16 @@ jobs:
       - name: Determine task
         id: task
         run: |
-          if [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "workflow_dispatch" ]; then
-            TASK_TYPE="{% raw %}{{ github.event.inputs.task_type {{\' }}{% endraw %}\'}}"
-            TASK_DESCRIPTION="{% raw %}{{ github.event.inputs.task_description {{\' }}{% endraw %}\'}}"
-          elif [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "workflow_run" ]; then
+          if [ "{% raw %}{{ github.event_name }}{% endraw %}"" == "workflow_dispatch" ]; then
+            TASK_TYPE="{% raw %}{{ github.event.inputs.task_type }}{% endraw %}"
+            TASK_DESCRIPTION="{% raw %}{{ github.event.inputs.task_description }}{% endraw %}""
+          elif [ "{% raw %}{{ github.event_name }}{% endraw %}"" == "workflow_run" ]; then
             TASK_TYPE="fix-ci-failure"
             TASK_DESCRIPTION="Fix CI/CD pipeline failures that occurred in the previous workflow run"
           else
             # Extract task from issue or comment
             TASK_TYPE="general"
-            TASK_DESCRIPTION="{% raw %}{{ github.event.issue.title || github.event.comment.body {{\' }}{% endraw %}\'}}"
+            TASK_DESCRIPTION="{% raw %}{{ github.event.issue.title || github.event.comment.body }}{% endraw %}""
           fi
 
           echo "task_type=$TASK_TYPE" >> $GITHUB_OUTPUT
@@ -90,8 +90,8 @@ jobs:
       - name: Run Claude Code
         id: claude
         run: |
-          TASK_TYPE="{% raw %}{{ steps.task.outputs.task_type {{\' }}{% endraw %}\'}}"
-          DESCRIPTION="{% raw %}{{ steps.task.outputs.task_description {{\' }}{% endraw %}\'}}"
+          TASK_TYPE="{% raw %}{{ steps.task.outputs.task_type }}{% endraw %}""
+          DESCRIPTION="{% raw %}{{ steps.task.outputs.task_description }}{% endraw %}""
 
           # Build prompt based on task type
           case "$TASK_TYPE" in
@@ -105,10 +105,10 @@ Please analyze the codebase and implement refactoring improvements:
 4. Update documentation if needed
 5. Create atomic, complete changes
 
-Project: {{cookiecutter.project_name{{\'}}\'}}
-Language: C++{{cookiecutter.cpp_standard{{\'}}\'}}
-Build System: {{cookiecutter.build_system | capitalize{{\'}}\'}}
-Testing: {{cookiecutter.testing_framework | upper{{\'}}\'}}"
+Project: {{ cookiecutter.project_name }}
+Language: C++{{ cookiecutter.cpp_standard }}
+Build System: {{ cookiecutter.build_system | capitalize }}
+Testing: {{ cookiecutter.testing_framework | upper }}
               ;;
             "fix-bug")
               PROMPT="Fix the following bug: $DESCRIPTION
@@ -120,10 +120,10 @@ Please analyze the codebase and implement a fix:
 4. Update documentation if needed
 5. Ensure the fix doesn't break existing functionality
 
-Project: {{cookiecutter.project_name{{\'}}\'}}
-Language: C++{{cookiecutter.cpp_standard{{\'}}\'}}
-Build System: {{cookiecutter.build_system | capitalize{{\'}}\'}}
-Testing: {{cookiecutter.testing_framework | upper{{\'}}\'}}"
+Project: {{ cookiecutter.project_name }}
+Language: C++{{ cookiecutter.cpp_standard }}
+Build System: {{ cookiecutter.build_system | capitalize }}
+Testing: {{ cookiecutter.testing_framework | upper }}
               ;;
             "add-feature")
               PROMPT="Implement the following feature: $DESCRIPTION
@@ -135,10 +135,10 @@ Please analyze the codebase and implement the new feature:
 4. Update documentation
 5. Follow the project's existing patterns
 
-Project: {{cookiecutter.project_name{{\'}}\'}}
-Language: C++{{cookiecutter.cpp_standard{{\'}}\'}}
-Build System: {{cookiecutter.build_system | capitalize{{\'}}\'}}
-Testing: {{cookiecutter.testing_framework | upper{{\'}}\'}}"
+Project: {{ cookiecutter.project_name }}
+Language: C++{{ cookiecutter.cpp_standard }}
+Build System: {{ cookiecutter.build_system | capitalize }}
+Testing: {{ cookiecutter.testing_framework | upper }}
               ;;
             "generate-tests")
               PROMPT="Generate tests for: $DESCRIPTION
@@ -150,10 +150,10 @@ Please analyze the codebase and create comprehensive tests:
 4. Ensure high test coverage
 5. Follow testing best practices
 
-Project: {{cookiecutter.project_name{{\'}}\'}}
-Language: C++{{cookiecutter.cpp_standard{{\'}}\'}}
-Build System: {{cookiecutter.build_system | capitalize{{\'}}\'}}
-Testing: {{cookiecutter.testing_framework | upper{{\'}}\'}}"
+Project: {{ cookiecutter.project_name }}
+Language: C++{{ cookiecutter.cpp_standard }}
+Build System: {{ cookiecutter.build_system | capitalize }}
+Testing: {{ cookiecutter.testing_framework | upper }}
               ;;
             *)
               PROMPT="General task: $DESCRIPTION
@@ -165,10 +165,10 @@ Please analyze the codebase and implement the requested changes:
 4. Update documentation if needed
 5. Create atomic, complete changes
 
-Project: {{cookiecutter.project_name{{\'}}\'}}
-Language: C++{{cookiecutter.cpp_standard{{\'}}\'}}
-Build System: {{cookiecutter.build_system | capitalize{{\'}}\'}}
-Testing: {{cookiecutter.testing_framework | upper{{\'}}\'}}"
+Project: {{ cookiecutter.project_name }}
+Language: C++{{ cookiecutter.cpp_standard }}
+Build System: {{ cookiecutter.build_system | capitalize }}
+Testing: {{ cookiecutter.testing_framework | upper }}
               ;;
           esac
 
@@ -207,8 +207,8 @@ Testing: {{cookiecutter.testing_framework | upper{{\'}}\'}}"
             git add -A
 
             # Create commit message
-            TASK_TYPE="{% raw %}{{ steps.task.outputs.task_type {{\' }}{% endraw %}\'}}"
-            DESCRIPTION="{% raw %}{{ steps.task.outputs.task_description {{\' }}{% endraw %}\'}}"
+            TASK_TYPE="{% raw %}{{ steps.task.outputs.task_type }}{% endraw %}""
+            DESCRIPTION="{% raw %}{{ steps.task.outputs.task_description }}{% endraw %}""
             COMMIT_MSG="AI ($TASK_TYPE): $DESCRIPTION
 
 🤖 Generated with Claude Code AI Automation
@@ -227,13 +227,13 @@ Co-Authored-By: Claude <noreply@anthropic.com>"
           # Check if we're on main branch
           if [ "$(git branch --show-current)" = "main" ]; then
             # Create a new branch for the changes
-            PR_BRANCH="ai-automation-{% raw %}{{ github.run_number {{\' }}{% endraw %}\'}}"
+            PR_BRANCH="ai-automation-{% raw %}{{ github.run_number }}{% endraw %}""
             git checkout -b $PR_BRANCH
             git push origin $PR_BRANCH
 
             # Create PR
-            TASK_TYPE="{% raw %}{{ steps.task.outputs.task_type {{\' }}{% endraw %}\'}}"
-            DESCRIPTION="{% raw %}{{ steps.task.outputs.task_description {{\' }}{% endraw %}\'}}"
+            TASK_TYPE="{% raw %}{{ steps.task.outputs.task_type }}{% endraw %}""
+            DESCRIPTION="{% raw %}{{ steps.task.outputs.task_description }}{% endraw %}""
             PR_TITLE="AI Automation: $TASK_TYPE"
             PR_BODY="## 🤖 AI-Generated Pull Request
 
@@ -248,9 +248,9 @@ This PR contains automated changes generated by Claude Code AI.
 - Includes appropriate tests and documentation
 
 **Technical Details:**
-- **Language:** C++{{cookiecutter.cpp_standard{{\'}}\'}}
-- **Build System:** {{cookiecutter.build_system | capitalize{{\'}}\'}}
-- **Testing:** {{cookiecutter.testing_framework | upper{{\'}}\'}}
+- **Language:** C++{{ cookiecutter.cpp_standard }}
+- **Build System:** {{ cookiecutter.build_system | capitalize }}
+- **Testing:** {{ cookiecutter.testing_framework | upper }}
 
 **Next Steps:**
 1. Review the generated changes
@@ -281,19 +281,19 @@ This PR contains automated changes generated by Claude Code AI.
 
 I've analyzed your request and implemented the necessary changes.
 
-**Task Type:** {% raw %}{{ steps.task.outputs.task_type {{\' }}{% endraw %}\'}}
-**Description:** {% raw %}{{ steps.task.outputs.task_description {{\' }}{% endraw %}\'}}
+**Task Type:** {% raw %}{{ steps.task.outputs.task_type }}{% endraw %}"
+**Description:** {% raw %}{{ steps.task.outputs.task_description }}{% endraw %}"
 
-The AI assistant has processed your request and created changes. [View the changes]({% raw %}{{ github.server_url {{\' }}{% endraw %}\'}}/{% raw %}{{ github.repository {{\' }}{% endraw %}\'}}/pull/{% raw %}{{ steps.pr.outputs.pr_number || '#' {{\' }}{% endraw %}\'}}).
+The AI assistant has processed your request and created changes. [View the changes]({% raw %}{{ github.server_url }}{% endraw %}/{% raw %}{{ github.repository }}{% endraw %}/pull/{% raw %}{{ steps.pr.outputs.pr_number || '#' }}{% endraw %})
 
 ---
 
 Generated with Claude Code AI Automation"
 
-          if [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "issues" ]; then
-            gh issue comment {% raw %}{{ github.event.issue.number {{\' }}{% endraw %}\'}} --body "$COMMENT_BODY"
-          elif [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "issue_comment" ]; then
-            gh issue comment {% raw %}{{ github.event.issue.number {{\' }}{% endraw %}\'}} --body "$COMMENT_BODY"
+          if [ "{% raw %}{{ github.event_name }}{% endraw %}"" == "issues" ]; then
+            gh issue comment {% raw %}{{ github.event.issue.number }}{% endraw %}" --body "$COMMENT_BODY"
+          elif [ "{% raw %}{{ github.event_name }}{% endraw %}"" == "issue_comment" ]; then
+            gh issue comment {% raw %}{{ github.event.issue.number }}{% endraw %}" --body "$COMMENT_BODY"
           fi
 
       - name: Handle failures
@@ -309,10 +309,10 @@ The automated process encountered an error. Please review the logs and manually 
 
 Generated with Claude Code AI Automation"
 
-          if [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "issues" ] || [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "issue_comment" ]; then
-            if [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "issues" ]; then
-              gh issue comment {% raw %}{{ github.event.issue.number {{\' }}{% endraw %}\'}} --body "$COMMENT_BODY"
-            elif [ "{% raw %}{{ github.event_name {{\' }}{% endraw %}\'}}" == "issue_comment" ]; then
-              gh issue comment {% raw %}{{ github.event.issue.number {{\' }}{% endraw %}\'}} --body "$COMMENT_BODY"
+          if [ "{% raw %}{{ github.event_name }}{% endraw %}" == "issues" ] || [ "{% raw %}{{ github.event_name }}{% endraw %}" == "issue_comment" ]; then
+            if [ "{% raw %}{{ github.event_name }}{% endraw %}" == "issues" ]; then
+              gh issue comment {% raw %}{{ github.event.issue.number }}{% endraw %} --body "$COMMENT_BODY"
+            elif [ "{% raw %}{{ github.event_name }}{% endraw %}" == "issue_comment" ]; then
+              gh issue comment {% raw %}{{ github.event.issue.number }}{% endraw %} --body "$COMMENT_BODY"
             fi
           fi

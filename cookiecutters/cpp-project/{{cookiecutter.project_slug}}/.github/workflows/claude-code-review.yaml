@@ -15,7 +15,7 @@ permissions:
   pull-requests: write
 
 env:
-  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY {{\' }}{% endraw %}\'}}
+  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY }}{% endraw %}
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
 
 jobs:
@@ -29,13 +29,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: {% raw %}{{ secrets.GITHUB_TOKEN {{\' }}{% endraw %}\'}}
+          token: {% raw %}{{ secrets.GITHUB_TOKEN }}{% endraw %}
           fetch-depth: 0
 
       - name: Get PR details
         id: pr-details
         run: |
-          PR_NUMBER="{% raw %}{{ '{{' {{\' }}{% endraw %}\'}} github.event.pull_request.number || github.event.inputs.pr_number {{'{{\'}}\'}}' {{\'}}\'}}"
+          PR_NUMBER="{% raw %}{{ github.event.pull_request.number || github.event.inputs.pr_number }}{% endraw %}""
 
           # Get PR details
           PR_INFO=$(gh pr view $PR_NUMBER --json title,body,baseRefName,headRefName,author,files,commits)
@@ -64,8 +64,8 @@ jobs:
       - name: Get diff content
         id: diff-content
         run: |
-          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number {{\' }}{% endraw %}\'}}"
-          BASE_BRANCH="{% raw %}{{ steps.pr-details.outputs.base_branch {{\' }}{% endraw %}\'}}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
+          BASE_BRANCH="{% raw %}{{ steps.pr-details.outputs.base_branch }}{% endraw %}"
 
           # Get the diff
           git fetch origin $BASE_BRANCH
@@ -77,13 +77,13 @@ jobs:
       - name: Run Claude Code review
         id: claude-review
         run: |
-          PR_TITLE="{% raw %}{{ steps.pr-details.outputs.pr_title {{\' }}{% endraw %}\'}}"
-          PR_BODY="{% raw %}{{ steps.pr-details.outputs.pr_body {{\' }}{% endraw %}\'}}"
-          AUTHOR="{% raw %}{{ steps.pr-details.outputs.author {{\' }}{% endraw %}\'}}"
-          FILES_CHANGED="{% raw %}{{ steps.pr-details.outputs.files_changed {{\' }}{% endraw %}\'}}"
-          COMMITS_COUNT="{% raw %}{{ steps.pr-details.outputs.commits_count {{\' }}{% endraw %}\'}}"
-          BASE_BRANCH="{% raw %}{{ steps.pr-details.outputs.base_branch {{\' }}{% endraw %}\'}}"
-          HEAD_BRANCH="{% raw %}{{ steps.pr-details.outputs.head_branch {{\' }}{% endraw %}\'}}"
+          PR_TITLE="{% raw %}{{ steps.pr-details.outputs.pr_title }}{% endraw %}"
+          PR_BODY="{% raw %}{{ steps.pr-details.outputs.pr_body }}{% endraw %}"
+          AUTHOR="{% raw %}{{ steps.pr-details.outputs.author }}{% endraw %}"
+          FILES_CHANGED="{% raw %}{{ steps.pr-details.outputs.files_changed }}{% endraw %}"
+          COMMITS_COUNT="{% raw %}{{ steps.pr-details.outputs.commits_count }}{% endraw %}"
+          BASE_BRANCH="{% raw %}{{ steps.pr-details.outputs.base_branch }}{% endraw %}"
+          HEAD_BRANCH="{% raw %}{{ steps.pr-details.outputs.head_branch }}{% endraw %}"
 
           REVIEW_PROMPT="You are an expert code reviewer conducting a thorough review of a Pull Request.
 
@@ -149,7 +149,7 @@ Please provide your review in markdown format with:
 Focus on being constructive and providing actionable feedback.
 
 **Project Context:**
-This is a C++{{cookiecutter.cpp_standard{{\'}}\'}} project named {{cookiecutter.project_name{{\'}}\'}} with description: {{cookiecutter.project_description{{\'}}\'}}."
+This is a C++{{ cookiecutter.cpp_standard }} project named {{ cookiecutter.project_name }} with description: {{ cookiecutter.project_description }}."
 
           # Execute Claude Code review
           claude -p "$REVIEW_PROMPT" --timeout 600 > review_results.json 2>review_error.log || {
@@ -164,11 +164,11 @@ This is a C++{{cookiecutter.cpp_standard{{\'}}\'}} project named {{cookiecutter.
 
       - name: Post review comment
         run: |
-          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number {{\' }}{% endraw %}\'}}"
-          PR_TITLE="{% raw %}{{ steps.pr-details.outputs.pr_title {{\' }}{% endraw %}\'}}"
-          AUTHOR="{% raw %}{{ steps.pr-details.outputs.author {{\' }}{% endraw %}\'}}"
-          FILES_CHANGED="{% raw %}{{ steps.pr-details.outputs.files_changed {{\' }}{% endraw %}\'}}"
-          REVIEW_RESULTS="{% raw %}{{ steps.claude-review.outputs.results {{\' }}{% endraw %}\'}}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
+          PR_TITLE="{% raw %}{{ steps.pr-details.outputs.pr_title }}{% endraw %}"
+          AUTHOR="{% raw %}{{ steps.pr-details.outputs.author }}{% endraw %}"
+          FILES_CHANGED="{% raw %}{{ steps.pr-details.outputs.files_changed }}{% endraw %}"
+          REVIEW_RESULTS="{% raw %}{{ steps.claude-review.outputs.results }}{% endraw %}"
 
           # Create review comment
           REVIEW_COMMENT=$(cat <<EOF
@@ -197,7 +197,7 @@ This is a C++{{cookiecutter.cpp_standard{{\'}}\'}} project named {{cookiecutter.
       - name: Check for critical issues
         id: critical-check
         run: |
-          REVIEW_RESULTS="{% raw %}{{ steps.claude-review.outputs.results {{\' }}{% endraw %}\'}}"
+          REVIEW_RESULTS="{% raw %}{{ steps.claude-review.outputs.results }}{% endraw %}"
 
           # Check for critical issues that should block merge
           if echo "$REVIEW_RESULTS" | grep -i -E "(critical|security|blocker|breaking change|do not merge)" > /dev/null; then
@@ -209,19 +209,19 @@ This is a C++{{cookiecutter.cpp_standard{{\'}}\'}} project named {{cookiecutter.
       - name: Add blocking label if critical issues
         if: steps.critical-check.outputs.critical_issues == 'true'
         run: |
-          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number {{\' }}{% endraw %}\'}}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
           gh pr edit $PR_NUMBER --add-label "needs-changes,ai-review-blocked"
 
       - name: Add approval label if no critical issues
         if: steps.critical-check.outputs.critical_issues == 'false'
         run: |
-          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number {{\' }}{% endraw %}\'}}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
           gh pr edit $PR_NUMBER --add-label "ai-review-approved"
 
       - name: Handle review failures
         if: failure()
         run: |
-          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number {{\' }}{% endraw %}\'}}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
 
           FAILURE_COMMENT=$(cat <<'EOF'
           ## ❌ AI Review Failed
