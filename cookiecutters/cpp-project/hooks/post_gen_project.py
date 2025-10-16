@@ -22,17 +22,30 @@ def setup_claude_context():
     claude_dir = ".github/claude"
     os.makedirs(claude_dir, exist_ok=True)
 
-    # Define source and target paths
-    template_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    source_path = os.path.join(template_root, ".github", "claude", "CLAUDE.md")
+    # Define source and target paths - use multiple possible paths
+    possible_source_paths = [
+        # Try relative path from current directory (most reliable)
+        os.path.join(os.getcwd(), "..", "..", ".github", "claude", "CLAUDE.md"),
+        # Try from script directory
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".github", "claude", "CLAUDE.md"),
+        # Try absolute path fallback
+        "/home/jokh38/apps/CICD_template/.github/claude/CLAUDE.md"
+    ]
+
+    source_path = None
+    for path in possible_source_paths:
+        if os.path.exists(path):
+            source_path = path
+            break
+
     target_path = os.path.join(claude_dir, "CLAUDE.md")
 
-    if os.path.exists(source_path):
+    if source_path and os.path.exists(source_path):
         # Read the template
         with open(source_path, 'r', encoding='utf-8') as src:
             content = src.read()
 
-        # Get actual cookiecutter values
+        # Get actual cookiecutter values from the environment
         project_name = "{{ cookiecutter.project_name }}"
         project_description = "{{ cookiecutter.project_description }}"
         cpp_standard = "{{ cookiecutter.cpp_standard }}"
@@ -62,6 +75,7 @@ def setup_claude_context():
         return True
     else:
         print("   ⚠️  Source CLAUDE.md template not found")
+        print(f"   Tried paths: {possible_source_paths}")
         return False
 
 def copy_claude_md():
