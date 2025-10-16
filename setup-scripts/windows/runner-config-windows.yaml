@@ -39,7 +39,7 @@ runner:
 development_tools:
   python:
     # Default Python version
-    version: "3.11"
+    version: "3.10"
 
     # Pre-installed packages
     packages:
@@ -127,7 +127,7 @@ development_tools:
 
 # sccache Configuration (Compilation Cache)
 sccache:
-  version: "0.7.7"
+  version: "0.11.0"
   install_path: "C:\\sccache"
   cache_size: "10G"
   max_frame_files: 10000
@@ -199,7 +199,7 @@ environment:
 
     # Python settings
     - name: "PYTHONPATH"
-      value: "{{ user_profile }}\\AppData\\Roaming\\Python\\Python311\\site-packages"
+      value: "{{ user_profile }}\\AppData\\Roaming\\Python\\Python310\\site-packages"
     - name: "PIP_DISABLE_PIP_VERSION_CHECK"
       value: "1"
 

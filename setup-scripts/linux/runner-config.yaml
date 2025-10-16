@@ -107,7 +107,7 @@ cpp:
 
 # sccache Configuration (Compilation Cache)
 sccache:
-  version: "0.7.7"
+  version: "0.11.0"
   cache_size: "10G"
   max_frame_files: 10000
   idle_timeout: 7200  # 2 hours

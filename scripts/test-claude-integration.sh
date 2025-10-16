@@ -56,7 +56,7 @@ test_python_project() {
         project_name="$PYTHON_PROJECT_NAME" \
         project_description="A test Python project for CLAUDE.md integration" \
         project_slug="test-python-project" \
-        python_version="3.11" \
+        python_version="3.10" \
         author_name="Test Author" \
         author_email="test@example.com" \
         license="MIT" \
@@ -106,7 +106,7 @@ test_python_project() {
         fi
 
         # Check for Python version
-        if grep -q "Python 3.11" ".github/claude/CLAUDE.md"; then
+        if grep -q "Python 3.10" ".github/claude/CLAUDE.md"; then
             print_status $GREEN "✅ Python version properly inserted"
         else
             print_status $RED "❌ Python version not found in CLAUDE.md"
