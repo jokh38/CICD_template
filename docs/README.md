@@ -75,7 +75,7 @@ Welcome to the comprehensive documentation for the GitHub Actions CI/CD Template
 
 | Script | Purpose |
 |--------|---------|
-| `create-project.sh` | One-command project creation |
+| `create-project.sh` | One-command project creation with optional GitHub repo |
 | `sync-templates.sh` | Update existing projects |
 | `verify-setup.sh` | Validate installation |
 | `test-templates.sh` | Integration testing |
@@ -91,8 +91,8 @@ Welcome to the comprehensive documentation for the GitHub Actions CI/CD Template
 # Install dependencies
 pip install cookiecutter
 
-# Create project
-bash scripts/create-project.sh python my-new-project
+# Create project (with automatic GitHub repo creation)
+bash scripts/create-project.sh python my-new-project --github
 
 # Start development
 cd my-new-project
@@ -192,8 +192,8 @@ cd github-cicd-templates
 # 3. Verify setup
 bash scripts/verify-setup.sh
 
-# 4. Create first project
-bash scripts/create-project.sh python my-first-project
+# 4. Create first project (with optional GitHub repo creation)
+bash scripts/create-project.sh python my-first-project --github
 ```
 
 ### Self-Hosted Runner Setup (Optional)

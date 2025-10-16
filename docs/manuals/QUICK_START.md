@@ -132,7 +132,24 @@ git add README.md
 git commit -m "Update README"
 ```
 
-#### 7. Push to GitHub
+#### 7. Push to GitHub (Optional - use automated method)
+
+**Option A: Automated GitHub Repository Creation (Recommended)**
+
+If you have the GitHub CLI (`gh`) installed and authenticated:
+
+```bash
+# Create project and GitHub repository in one command
+bash scripts/create-project.sh python /home/user/my-awesome-api --github
+```
+
+This will automatically:
+- Create the GitHub repository
+- Add the remote origin
+- Push your code to GitHub
+- Provide the repository URL
+
+**Option B: Manual GitHub Repository Setup**
 
 ```bash
 # Add your remote repository
@@ -143,6 +160,8 @@ git push -u origin main
 ```
 
 The CI/CD workflow will run automatically on GitHub Actions!
+
+*Note: Install GitHub CLI with: `curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg`*
 
 ---
 
@@ -223,7 +242,16 @@ clang-format -i src/*.cpp include/*.hpp
 pre-commit run --all-files
 ```
 
-#### 8. Push to GitHub
+#### 8. Push to GitHub (Optional - use automated method)
+
+**Option A: Automated GitHub Repository Creation (Recommended)**
+
+```bash
+# Create project and GitHub repository in one command
+bash scripts/create-project.sh cpp /home/user/my-fast-library --github
+```
+
+**Option B: Manual GitHub Repository Setup**
 
 ```bash
 git remote add origin https://github.com/YOUR-USERNAME/my-fast-library.git
@@ -682,6 +710,10 @@ rm -rf build && cmake -B build -G Ninja
 # Create project with absolute path
 bash scripts/create-project.sh python /home/user/my-project
 bash scripts/create-project.sh cpp /home/user/my-project
+
+# Create project and GitHub repository automatically
+bash scripts/create-project.sh python /home/user/my-project --github
+bash scripts/create-project.sh cpp /home/user/my-project --github
 
 # Sync configs (use absolute path)
 bash scripts/sync-templates.sh python /home/user/existing-project
