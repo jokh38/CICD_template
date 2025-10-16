@@ -1,18 +1,64 @@
 #!/usr/bin/env python
-"""Post-generation hook for Python project."""
+"""Post-generation hook for C++ project."""
 
 import os
 import subprocess
 import sys
 
 def run_command(cmd, check=True):
-    """Run shell command."""
     try:
         result = subprocess.run(cmd, shell=True, check=check,
                                 capture_output=True, text=True)
         return result.returncode == 0
     except subprocess.CalledProcessError as e:
         print(f"Error: {e}")
+        return False
+
+def process_workflow_files():
+    """Process GitHub workflow files to handle GitHub Actions syntax conflicts."""
+    print("• Processing GitHub workflow files...")
+
+    workflows_dir = ".github/workflows"
+    if not os.path.exists(workflows_dir):
+        print("   • No workflows directory found")
+        return True
+
+    import re
+    processed_files = []
+
+    try:
+        for root, dirs, files in os.walk(workflows_dir):
+            for file in files:
+                if file.endswith(('.yaml', '.yml')):
+                    workflow_file = os.path.join(root, file)
+
+                    # Read the workflow file
+                    with open(workflow_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    # Fix GitHub Actions expressions that were escaped for Jinja2
+                    # Convert {{'{{'}} ... {{'}}'}} back to ${{ ... }}
+                    pattern = r"\{\{'\{\{\}([^}]+?)\{\{'\}\}'\}\}"
+                    content = re.sub(pattern, r'${{\1}}', content)
+
+                    # Handle any remaining cookiecutter variables
+                    content = content.replace('{{cookiecutter.cpp_standard}}', '{{ cookiecutter.cpp_standard }}')
+                    content = content.replace('{{cookiecutter.build_system}}', '{{ cookiecutter.build_system }}')
+                    content = content.replace('{{cookiecutter.use_ninja}}', '{{ cookiecutter.use_ninja }}')
+                    content = content.replace('{{cookiecutter.project_name}}', '{{ cookiecutter.project_name }}')
+                    content = content.replace('{{cookiecutter.testing_framework}}', '{{ cookiecutter.testing_framework | upper }}')
+
+                    # Write the processed file back
+                    with open(workflow_file, 'w', encoding='utf-8') as f:
+                        f.write(content)
+
+                    processed_files.append(workflow_file)
+
+        print(f"   • Processed {len(processed_files)} workflow files")
+        return True
+
+    except Exception as e:
+        print(f"   ❌ Error processing workflow files: {e}")
         return False
 
 def setup_claude_context():
@@ -23,9 +69,9 @@ def setup_claude_context():
     claude_dir = ".github/claude"
     os.makedirs(claude_dir, exist_ok=True)
 
-    # Define source directory paths - try multiple approaches
+    # Define source directory paths - use multiple possible paths
     possible_source_dirs = [
-        # Try from current working directory (most reliable after cookiecutter)
+        # Try relative path from current directory (most reliable)
         os.path.join(os.getcwd(), "..", "..", ".github", "claude"),
         # Try from script directory
         os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".github", "claude"),
@@ -85,26 +131,19 @@ def customize_claude_md(claude_md_path):
         with open(claude_md_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Get actual cookiecutter values
-        project_name = "{{ cookiecutter.project_name }}"
-        project_description = "{{ cookiecutter.project_description }}"
-        python_version = "{{ cookiecutter.python_version }}"
-
         # Replace cookiecutter variables with actual project values
+        # These should be already replaced by cookiecutter, but handle any remaining ones
         replacements = {
-            '{{cookiecutter.project_name}}': project_name,
-            '{{cookiecutter.project_description}}': project_description,
-            '{{cookiecutter.python_version}}': python_version,
+            '{{cookiecutter.project_name}}': '{{ cookiecutter.project_name }}',
+            '{{cookiecutter.project_description}}': '{{ cookiecutter.project_description }}',
+            '{{cookiecutter.cpp_standard}}': '{{ cookiecutter.cpp_standard }}',
+            '{{cookiecutter.build_system}}': '{{ cookiecutter.build_system | capitalize }}',
+            '{{cookiecutter.testing_framework}}': '{{ cookiecutter.testing_framework | upper }}',
+            '{{cookiecutter.use_ninja}}': '{{ cookiecutter.use_ninja }}',
         }
 
         for template_var, actual_value in replacements.items():
             content = content.replace(template_var, actual_value)
-
-        # Handle Jinja2 conditionals for Python projects
-        content = content.replace(
-            '{% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}',
-            f'Python {python_version}'
-        )
 
         # Write the customized file
         with open(claude_md_path, 'w', encoding='utf-8') as f:
@@ -153,7 +192,6 @@ def copy_claude_md():
         return False
 
 def initialize_git():
-    """Initialize git repository."""
     print("• Initializing git repository...")
     run_command("git init")
 
@@ -165,40 +203,6 @@ def initialize_git():
 
     run_command("git add .")
     run_command('git commit -m "Initial commit from template"')
-
-def create_venv():
-    """Create virtual environment."""
-    print("• Creating virtual environment...")
-    python_version = "{{ cookiecutter.python_version }}"
-    run_command(f"python{python_version} -m venv .venv")
-
-def install_dependencies():
-    """Install project dependencies including dev dependencies."""
-    print("• Installing project dependencies...")
-    venv_pip = ".venv/bin/pip"
-
-    # Upgrade pip first
-    if run_command(f"{venv_pip} install --upgrade pip", check=False):
-        print("   • pip upgraded")
-
-    # Install basic dev dependencies individually to avoid dependency conflicts
-    dev_packages = ["pytest", "pytest-cov", "ruff", "mypy", "pre-commit"]
-    installed_packages = []
-
-    for package in dev_packages:
-        if run_command(f"{venv_pip} install {package}", check=False):
-            print(f"   • {package} installed")
-            installed_packages.append(package)
-        else:
-            print(f"   ⚠️  Failed to install {package}")
-
-    # Try to install project with dev dependencies as fallback
-    if len(installed_packages) < len(dev_packages):
-        print("   • Attempting to install project dependencies...")
-        if run_command(f"{venv_pip} install -e .[dev]", check=False):
-            print("   • Project dependencies installed")
-
-    return len(installed_packages) > 0
 
 def install_git_hooks():
     """Install Git hooks instead of pre-commit."""
@@ -254,31 +258,48 @@ def install_git_hooks():
 
     return True
 
+def setup_build_directory():
+    print("• Creating build directory...")
+    os.makedirs("build", exist_ok=True)
+
 def print_next_steps():
-    """Print next steps for user."""
-    project_name = "{{ cookiecutter.project_name }}"
-    project_slug = "{{ cookiecutter.project_slug }}"
-    use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
-    use_ai = "{{ cookiecutter.use_ai_workflow }}"
+    project_name = "{{cookiecutter.project_name}}"
+    project_slug = "{{cookiecutter.project_slug}}"
+    build_system = "{{cookiecutter.build_system}}"
+    use_ninja = "{{cookiecutter.use_ninja}}"
+    use_git_hooks = "{{cookiecutter.use_git_hooks}}"
+    use_ai = "{{cookiecutter.use_ai_workflow}}"
 
     print("\n" + "="*60)
     print("✅ Project created!")
     print("="*60)
     print(f"\n• Project: {project_name}")
+    print(f"• Build: {build_system}")
     print(f"• Git Hooks: {use_git_hooks}")
     print(f"• AI Workflow: {use_ai}")
 
-    print("\n• Next Steps:")
+    print("\n• Quick Start:")
     print(f"  1. cd {project_slug}")
-    print("  2. source .venv/bin/activate")
-    print("  3. git commit -m 'Initial changes'  # Git hooks will run automatically")
-    print("  4. pytest  # Run tests")
-    print("  5. ruff check .  # Lint code")
+    print("  2. mkdir build && cd build")
+    if build_system == "cmake":
+        print("  3. cmake ..")
+        print("  4. make")
+    else:
+        print("  3. meson setup")
+        print("  4. ninja")
+    print("  5. ctest  # Run tests")
+
+    print("  6. git commit -m 'Initial changes'  # Git hooks will run automatically")
 
     if use_ai == "yes":
-        print("  6. Review .github/claude/CLAUDE.md for AI assistant")
+        print("  7. Review .github/claude/CLAUDE.md for AI assistant")
 
-    print("\n• All dependencies are installed and ready to use!")
+    print("\n• Environment Setup:")
+    print("  Note: Install required development tools:")
+    print("  - C++ compiler (g++ or clang++)")
+    print("  - CMake or Meson")
+    print("  - clang-format, clang-tidy")
+
     if use_git_hooks == "yes":
         print("• Git hooks are installed and will run automatically on commit")
     else:
@@ -290,7 +311,6 @@ def print_next_steps():
     print("  3. git push -u origin main")
 
 def main():
-    """Main post-generation logic."""
     try:
         # Setup Claude AI context with template variables
         setup_claude_context()
@@ -299,21 +319,29 @@ def main():
         copy_claude_md()
 
         initialize_git()
-        create_venv()
-        install_dependencies()
         install_git_hooks()
+        setup_build_directory()
 
-        # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
-        if "{{ cookiecutter.use_ai_workflow }}" == "no":
+        # Cleanup
+        if "{{cookiecutter.use_ai_workflow}}" == "no":
+            # Only remove AI workflow files, keep docs/CLAUDE.md for general use
             if os.path.exists(".github/claude"):
                 import shutil
                 shutil.rmtree(".github/claude")
                 run_command("git add .github/claude")
 
-        # Remove license if None
-        if "{{ cookiecutter.license }}" == "None":
+        if "{{cookiecutter.license}}" == "None":
             if os.path.exists("LICENSE"):
                 os.remove("LICENSE")
+                run_command("git add LICENSE")
+
+        # Remove unused build system files
+        if "{{cookiecutter.build_system}}" == "cmake":
+            if os.path.exists("meson.build"):
+                os.remove("meson.build")
+        else:
+            if os.path.exists("CMakeLists.txt"):
+                os.remove("CMakeLists.txt")
 
         print_next_steps()
 

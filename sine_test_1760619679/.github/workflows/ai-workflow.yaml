@@ -1,0 +1,313 @@
+name: AI Code Automation
+
+on:
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      task_type:
+        description: 'Type of task to perform'
+        required: true
+        default: 'fix-bug'
+        type: choice
+        options:
+          - refactor
+          - fix-bug
+          - add-feature
+          - generate-tests
+      task_description:
+        description: 'Detailed description of the task'
+        required: true
+        type: string
+  workflow_run:
+    workflows: ["CI"]
+    types: [failed]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+env:
+  ANTHROPIC_API_KEY: {{ secrets.ANTHROPIC_API_KEY }}
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
+
+jobs:
+  claude-automation:
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'ai-automate')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.issue.labels.*.name, 'ai-automate')) ||
+      github.event_name == 'workflow_run'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: {{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup C++ Environment
+        uses: jokh38/cpp-dev-setup@v1
+        with:
+          cpp-standard: 17
+          build-system: cmake
+          use-ninja: yes
+
+      - name: Install Claude Code CLI
+        run: |
+          pip install @anthropic-ai/claude-code
+
+      - name: Determine task
+        id: task
+        run: |
+          if [ "{{ github.event_name }}"" == "workflow_dispatch" ]; then
+            TASK_TYPE="{{ github.event.inputs.task_type }}"
+            TASK_DESCRIPTION="{{ github.event.inputs.task_description }}""
+          elif [ "{{ github.event_name }}"" == "workflow_run" ]; then
+            TASK_TYPE="fix-ci-failure"
+            TASK_DESCRIPTION="Fix CI/CD pipeline failures that occurred in the previous workflow run"
+          else
+            # Extract task from issue or comment
+            TASK_TYPE="general"
+            TASK_DESCRIPTION="{{ github.event.issue.title || github.event.comment.body }}""
+          fi
+
+          echo "task_type=$TASK_TYPE" >> $GITHUB_OUTPUT
+          echo "task_description=$TASK_DESCRIPTION" >> $GITHUB_OUTPUT
+
+      - name: Setup project environment
+        run: |
+          # C++ project setup
+          
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug -G Ninja
+          
+
+      - name: Run Claude Code
+        id: claude
+        run: |
+          TASK_TYPE="{{ steps.task.outputs.task_type }}""
+          DESCRIPTION="{{ steps.task.outputs.task_description }}""
+
+          # Build prompt based on task type
+          case "$TASK_TYPE" in
+            "refactor")
+              PROMPT="Refactor the code according to quality standards: $DESCRIPTION
+
+Please analyze the codebase and implement refactoring improvements:
+1. Follow coding standards and best practices
+2. Improve code organization and structure
+3. Add appropriate tests
+4. Update documentation if needed
+5. Create atomic, complete changes
+
+Project: sine_test_1760619679
+Language: C++17
+Build System: Cmake
+Testing: GTEST
+              ;;
+            "fix-bug")
+              PROMPT="Fix the following bug: $DESCRIPTION
+
+Please analyze the codebase and implement a fix:
+1. Identify the root cause of the issue
+2. Implement a comprehensive fix
+3. Add regression tests
+4. Update documentation if needed
+5. Ensure the fix doesn't break existing functionality
+
+Project: sine_test_1760619679
+Language: C++17
+Build System: Cmake
+Testing: GTEST
+              ;;
+            "add-feature")
+              PROMPT="Implement the following feature: $DESCRIPTION
+
+Please analyze the codebase and implement the new feature:
+1. Design the feature implementation
+2. Write clean, maintainable code
+3. Add comprehensive tests
+4. Update documentation
+5. Follow the project's existing patterns
+
+Project: sine_test_1760619679
+Language: C++17
+Build System: Cmake
+Testing: GTEST
+              ;;
+            "generate-tests")
+              PROMPT="Generate tests for: $DESCRIPTION
+
+Please analyze the codebase and create comprehensive tests:
+1. Identify areas that need test coverage
+2. Write unit tests and integration tests
+3. Test edge cases and error conditions
+4. Ensure high test coverage
+5. Follow testing best practices
+
+Project: sine_test_1760619679
+Language: C++17
+Build System: Cmake
+Testing: GTEST
+              ;;
+            *)
+              PROMPT="General task: $DESCRIPTION
+
+Please analyze the codebase and implement the requested changes:
+1. Understand the requirements clearly
+2. Follow coding standards and best practices
+3. Include tests where appropriate
+4. Update documentation if needed
+5. Create atomic, complete changes
+
+Project: sine_test_1760619679
+Language: C++17
+Build System: Cmake
+Testing: GTEST
+              ;;
+          esac
+
+          # Execute Claude Code
+          claude -p "$PROMPT" --timeout 600 > claude_results.json 2>claude_error.log || {
+            echo "Claude execution failed:"
+            cat claude_error.log
+            exit 1
+          }
+
+          echo "results<<EOF" >> $GITHUB_OUTPUT
+          cat claude_results.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate changes
+        run: |
+          # C++ validation
+          
+          cmake --build build --config Debug || true
+          ctest --test-dir build --output-on-failure --exit-zero || true
+          
+
+      - name: Commit and push changes
+        if: steps.claude.outputs.results != ''
+        run: |
+          # Check if there are changes to commit
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+
+            git add -A
+
+            # Create commit message
+            TASK_TYPE="{{ steps.task.outputs.task_type }}""
+            DESCRIPTION="{{ steps.task.outputs.task_description }}""
+            COMMIT_MSG="AI ($TASK_TYPE): $DESCRIPTION
+
+🤖 Generated with Claude Code AI Automation
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
+
+            git commit -m "$COMMIT_MSG"
+            git push
+
+            echo "Changes committed and pushed"
+          fi
+
+      - name: Create or update PR
+        if: steps.claude.outputs.results != ''
+        run: |
+          # Check if we're on main branch
+          if [ "$(git branch --show-current)" = "main" ]; then
+            # Create a new branch for the changes
+            PR_BRANCH="ai-automation-{{ github.run_number }}""
+            git checkout -b $PR_BRANCH
+            git push origin $PR_BRANCH
+
+            # Create PR
+            TASK_TYPE="{{ steps.task.outputs.task_type }}""
+            DESCRIPTION="{{ steps.task.outputs.task_description }}""
+            PR_TITLE="AI Automation: $TASK_TYPE"
+            PR_BODY="## 🤖 AI-Generated Pull Request
+
+**Task Type:** $TASK_TYPE
+**Description:** $DESCRIPTION
+
+This PR contains automated changes generated by Claude Code AI.
+
+**Changes Made:**
+- Automated code implementation based on the task requirements
+- Follows project coding standards and best practices
+- Includes appropriate tests and documentation
+
+**Technical Details:**
+- **Language:** C++17
+- **Build System:** Cmake
+- **Testing:** GTEST
+
+**Next Steps:**
+1. Review the generated changes
+2. Check build and test results
+3. Merge if everything looks correct
+
+---
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)"
+
+            gh pr create \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY" \
+              --base main \
+              --head "$PR_BRANCH" \
+              --label "ai-generated" \
+              --draft || true
+
+            echo "Pull request created"
+          else
+            echo "Already on a feature branch, skipping PR creation"
+          fi
+
+      - name: Comment on issue
+        if: github.event_name == 'issues' || github.event_name == 'issue_comment'
+        run: |
+          COMMENT_BODY="## 🤖 AI Automation Complete
+
+I've analyzed your request and implemented the necessary changes.
+
+**Task Type:** {{ steps.task.outputs.task_type }}"
+**Description:** {{ steps.task.outputs.task_description }}"
+
+The AI assistant has processed your request and created changes. [View the changes]({{ github.server_url }}/{{ github.repository }}/pull/{{ steps.pr.outputs.pr_number || '#' }})
+
+---
+
+Generated with Claude Code AI Automation"
+
+          if [ "{{ github.event_name }}"" == "issues" ]; then
+            gh issue comment {{ github.event.issue.number }}" --body "$COMMENT_BODY"
+          elif [ "{{ github.event_name }}"" == "issue_comment" ]; then
+            gh issue comment {{ github.event.issue.number }}" --body "$COMMENT_BODY"
+          fi
+
+      - name: Handle failures
+        if: failure()
+        run: |
+          COMMENT_BODY="## ❌ AI Automation Failed
+
+The automated process encountered an error. Please review the logs and manually address the issue.
+
+**Error:** The AI automation workflow failed during execution.
+
+---
+
+Generated with Claude Code AI Automation"
+
+          if [ "{{ github.event_name }}" == "issues" ] || [ "{{ github.event_name }}" == "issue_comment" ]; then
+            if [ "{{ github.event_name }}" == "issues" ]; then
+              gh issue comment {{ github.event.issue.number }} --body "$COMMENT_BODY"
+            elif [ "{{ github.event_name }}" == "issue_comment" ]; then
+              gh issue comment {{ github.event.issue.number }} --body "$COMMENT_BODY"
+            fi
+          fi

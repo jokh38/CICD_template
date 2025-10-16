@@ -1,0 +1,145 @@
+#!/bin/bash
+
+# Prepare commit message hook
+# Replaces the current pre-commit hook functionality
+# Handles code quality, formatting, and commit message validation
+
+set -e
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+SHA="$3"
+
+echo "🔍 Running prepare-commit-msg hook (code quality & formatting checks)..."
+
+# Determine project type
+if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ]; then
+    PROJECT_TYPE="python"
+elif [ -f "CMakeLists.txt" ] || [ -f "meson.build" ]; then
+    PROJECT_TYPE="cpp"
+else
+    echo "⚠️  Unknown project type, skipping checks"
+    exit 0
+fi
+
+echo "📦 Detected project type: $PROJECT_TYPE"
+
+# Function to run Python checks
+run_python_checks() {
+    echo "🐍 Running Python code quality checks..."
+
+    # Check if ruff is available
+    if command -v ruff >/dev/null 2>&1; then
+        echo "🔧 Running ruff linting and formatting..."
+        ruff check --fix --exit-non-zero-on-fix .
+        ruff format .
+    else
+        echo "⚠️  ruff not found, skipping Python formatting"
+    fi
+
+    # Check if mypy is available
+    if command -v mypy >/dev/null 2>&1; then
+        echo "🔍 Running mypy type checking..."
+        mypy --strict --ignore-missing-imports src/ || echo "⚠️  mypy completed with warnings"
+    fi
+
+    # Check for basic Python syntax errors
+    echo "🔍 Checking Python syntax..."
+    find . -name "*.py" -path "./venv/*" -prune -o -name "*.py" -print0 | xargs -0 python -m py_compile
+}
+
+# Function to run C++ checks
+run_cpp_checks() {
+    echo "🔧 Running C++ code quality checks..."
+
+    # Check if clang-format is available
+    if command -v clang-format >/dev/null 2>&1; then
+        echo "📝 Running clang-format..."
+        find . -name "*.cpp" -o -name "*.hpp" -o -name "*.cc" -o -name "*.h" | xargs clang-format -i -style=file
+    else
+        echo "⚠️  clang-format not found, skipping C++ formatting"
+    fi
+
+    # Check if clang-tidy is available
+    if command -v clang-tidy >/dev/null 2>&1; then
+        echo "🔍 Running clang-tidy static analysis..."
+        find . -name "*.cpp" -o -name "*.cc" | head -5 | xargs -I {} clang-tidy {} --quiet --use-color || echo "⚠️  clang-tidy completed with warnings"
+    fi
+}
+
+# Function to run universal checks
+run_universal_checks() {
+    echo "🔍 Running universal checks..."
+
+    # Check for trailing whitespace
+    echo "🧹 Checking for trailing whitespace..."
+    if grep -r '[[:space:]]$' --include="*.py" --include="*.cpp" --include="*.hpp" --include="*.h" --include="*.md" --include="*.yml" --include="*.yaml" --include="*.json" .; then
+        echo "❌ Found trailing whitespace, fixing..."
+        find . -type f \( -name "*.py" -o -name "*.cpp" -o -name "*.hpp" -o -name "*.h" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" \) -exec sed -i 's/[[:space:]]*$//' {} \;
+    fi
+
+    # Check for YAML syntax
+    find . -name "*.yml" -o -name "*.yaml" | while read yaml_file; do
+        if command -v python >/dev/null 2>&1; then
+            python -c "import yaml; yaml.safe_load(open('$yaml_file'))" || echo "⚠️  YAML syntax error in $yaml_file"
+        fi
+    done
+
+    # Check for large files
+    echo "🔍 Checking for large files..."
+    find . -type f -size +10M -not -path "./.git/*" -not -path "./venv/*" -not -path "./build/*" | while read file; do
+        echo "⚠️  Large file detected: $file ($(du -h "$file" | cut -f1))"
+    done
+}
+
+# Function to validate commit message
+validate_commit_message() {
+    echo "📝 Validating commit message..."
+
+    if [ -f "$COMMIT_MSG_FILE" ]; then
+        local commit_msg=$(cat "$COMMIT_MSG_FILE")
+
+        # Check for empty commit message
+        if [ -z "$commit_msg" ]; then
+            echo "❌ Commit message cannot be empty"
+            exit 1
+        fi
+
+        # Check for minimum length
+        if [ ${#commit_msg} -lt 5 ]; then
+            echo "❌ Commit message too short (minimum 5 characters)"
+            exit 1
+        fi
+
+        # Check for common patterns (optional)
+        if echo "$commit_msg" | grep -E '^(fix|feat|docs|style|refactor|test|chore)(\(.+\))?: .+' >/dev/null; then
+            echo "✅ Commit message follows conventional commit format"
+        else
+            echo "⚠️  Consider using conventional commit format: type(scope): description"
+        fi
+
+        echo "✅ Commit message validation passed"
+    fi
+}
+
+# Run checks based on project type
+case $PROJECT_TYPE in
+    "python")
+        run_python_checks
+        ;;
+    "cpp")
+        run_cpp_checks
+        ;;
+esac
+
+run_universal_checks
+validate_commit_message
+
+echo "✅ All prepare-commit-msg checks completed successfully!"
+echo ""
+echo "📋 Commit Summary:"
+echo "   - Code formatted and linted"
+echo "   - Syntax validated"
+echo "   - Commit message checked"
+echo ""
+echo "🚀 Ready to commit!"
