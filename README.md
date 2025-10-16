@@ -39,6 +39,11 @@ github-cicd-templates/
 │   ├── python-project/      # Python template with Ruff
 │   └── cpp-project/         # C++ template with CMake/sccache
 │
+├── setup-scripts/           # Development environment setup
+│   ├── linux/
+│   │   └── validation/      # Validation scripts for testing tools
+│   └── total_run.sh         # Orchestration script with validation
+│
 ├── .github/
 │   ├── workflows/           # Reusable GitHub Actions workflows
 │   │   ├── python-ci-reusable.yaml
@@ -90,6 +95,7 @@ github-cicd-templates/
 - GoogleTest framework
 - Pre-commit hooks configured
 - GitHub Actions CI/CD ready
+- Built-in validation scripts for environment testing
 
 ### 2. Advanced C++ Linux Runner 🚀
 
@@ -179,8 +185,11 @@ ruff format .
 # Create project with absolute path (auto-installs pre-commit)
 bash scripts/create-project.sh cpp /home/user/my-library
 
-# Build and test
+# Validate your development environment
 cd /home/user/my-library
+bash setup-scripts/linux/validation/run-validation.sh
+
+# Build and test
 cmake -B build -G Ninja
 cmake --build build
 
@@ -188,7 +197,7 @@ cmake --build build
 ctest --test-dir build
 ```
 
-**Note:** Pre-commit is automatically installed and ready to use!
+**Note:** Pre-commit is automatically installed and ready to use! The validation script command is prominently displayed during project creation for easy reference.
 
 ### Using Reusable Workflows
 
