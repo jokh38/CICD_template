@@ -15,7 +15,7 @@ permissions:
   pull-requests: write
 
 env:
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+  ANTHROPIC_API_KEY: {% raw %}{{ secrets.ANTHROPIC_API_KEY }}{% endraw %}
   CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: true
 
 jobs:
@@ -29,13 +29,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: {% raw %}{{ secrets.GITHUB_TOKEN }}{% endraw %}
           fetch-depth: 0
 
       - name: Get PR details
         id: pr-details
         run: |
-          PR_NUMBER="${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
+          PR_NUMBER="{% raw %}{{ github.event.pull_request.number || github.event.inputs.pr_number }}{% endraw %}"
 
           # Get PR details
           PR_INFO=$(gh pr view $PR_NUMBER --json title,body,baseRefName,headRefName,author,files,commits)
@@ -64,8 +64,8 @@ jobs:
       - name: Get diff content
         id: diff-content
         run: |
-          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
-          BASE_BRANCH="${{ steps.pr-details.outputs.base_branch }}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
+          BASE_BRANCH="{% raw %}{{ steps.pr-details.outputs.base_branch }}{% endraw %}"
 
           # Get the diff
           git fetch origin $BASE_BRANCH
@@ -77,13 +77,13 @@ jobs:
       - name: Run Claude Code review
         id: claude-review
         run: |
-          PR_TITLE="${{ steps.pr-details.outputs.pr_title }}"
-          PR_BODY="${{ steps.pr-details.outputs.pr_body }}"
-          AUTHOR="${{ steps.pr-details.outputs.author }}"
-          FILES_CHANGED="${{ steps.pr-details.outputs.files_changed }}"
-          COMMITS_COUNT="${{ steps.pr-details.outputs.commits_count }}"
-          BASE_BRANCH="${{ steps.pr-details.outputs.base_branch }}"
-          HEAD_BRANCH="${{ steps.pr-details.outputs.head_branch }}"
+          PR_TITLE="{% raw %}{{ steps.pr-details.outputs.pr_title }}{% endraw %}"
+          PR_BODY="{% raw %}{{ steps.pr-details.outputs.pr_body }}{% endraw %}"
+          AUTHOR="{% raw %}{{ steps.pr-details.outputs.author }}{% endraw %}"
+          FILES_CHANGED="{% raw %}{{ steps.pr-details.outputs.files_changed }}{% endraw %}"
+          COMMITS_COUNT="{% raw %}{{ steps.pr-details.outputs.commits_count }}{% endraw %}"
+          BASE_BRANCH="{% raw %}{{ steps.pr-details.outputs.base_branch }}{% endraw %}"
+          HEAD_BRANCH="{% raw %}{{ steps.pr-details.outputs.head_branch }}{% endraw %}"
 
           REVIEW_PROMPT="You are an expert code reviewer conducting a thorough review of a Pull Request.
 
@@ -164,11 +164,11 @@ This is a {% if cookiecutter.python_version %}Python {{cookiecutter.python_versi
 
       - name: Post review comment
         run: |
-          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
-          PR_TITLE="${{ steps.pr-details.outputs.pr_title }}"
-          AUTHOR="${{ steps.pr-details.outputs.author }}"
-          FILES_CHANGED="${{ steps.pr-details.outputs.files_changed }}"
-          REVIEW_RESULTS="${{ steps.claude-review.outputs.results }}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
+          PR_TITLE="{% raw %}{{ steps.pr-details.outputs.pr_title }}{% endraw %}"
+          AUTHOR="{% raw %}{{ steps.pr-details.outputs.author }}{% endraw %}"
+          FILES_CHANGED="{% raw %}{{ steps.pr-details.outputs.files_changed }}{% endraw %}"
+          REVIEW_RESULTS="{% raw %}{{ steps.claude-review.outputs.results }}{% endraw %}"
 
           # Create review comment
           REVIEW_COMMENT=$(cat <<EOF
@@ -197,7 +197,7 @@ This is a {% if cookiecutter.python_version %}Python {{cookiecutter.python_versi
       - name: Check for critical issues
         id: critical-check
         run: |
-          REVIEW_RESULTS="${{ steps.claude-review.outputs.results }}"
+          REVIEW_RESULTS="{% raw %}{{ steps.claude-review.outputs.results }}{% endraw %}"
 
           # Check for critical issues that should block merge
           if echo "$REVIEW_RESULTS" | grep -i -E "(critical|security|blocker|breaking change|do not merge)" > /dev/null; then
@@ -209,19 +209,19 @@ This is a {% if cookiecutter.python_version %}Python {{cookiecutter.python_versi
       - name: Add blocking label if critical issues
         if: steps.critical-check.outputs.critical_issues == 'true'
         run: |
-          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
           gh pr edit $PR_NUMBER --add-label "needs-changes,ai-review-blocked"
 
       - name: Add approval label if no critical issues
         if: steps.critical-check.outputs.critical_issues == 'false'
         run: |
-          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
           gh pr edit $PR_NUMBER --add-label "ai-review-approved"
 
       - name: Handle review failures
         if: failure()
         run: |
-          PR_NUMBER="${{ steps.pr-details.outputs.pr_number }}"
+          PR_NUMBER="{% raw %}{{ steps.pr-details.outputs.pr_number }}{% endraw %}"
 
           FAILURE_COMMENT=$(cat <<'EOF'
           ## ❌ AI Review Failed
