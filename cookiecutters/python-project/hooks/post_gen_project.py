@@ -117,10 +117,40 @@ def customize_claude_md(claude_md_path):
         return False
 
 def copy_claude_md():
-    """Copy CLAUDE.md from docs/ directory (legacy function - deprecated)."""
-    # This function is deprecated since docs/CLAUDE.md was moved to .github/claude/CLAUDE.md
-    # No output needed to avoid user confusion
-    pass
+    """Copy HIVE_CLAUDE.md from docs/ directory as CLAUDE.md to project root."""
+    import shutil
+
+    print("• Setting up CLAUDE.md documentation...")
+
+    # Define possible source paths for HIVE_CLAUDE.md
+    possible_source_paths = [
+        # Try from current working directory (most reliable after cookiecutter)
+        os.path.join(os.getcwd(), "..", "..", "docs", "HIVE_CLAUDE.md"),
+        # Try from script directory
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "docs", "HIVE_CLAUDE.md"),
+        # Try absolute path fallback
+        "/home/jokh38/apps/CICD_template/docs/HIVE_CLAUDE.md"
+    ]
+
+    source_hive_claude = None
+    for path in possible_source_paths:
+        if os.path.exists(path):
+            source_hive_claude = path
+            break
+
+    if not source_hive_claude:
+        print("   ⚠️  Source HIVE_CLAUDE.md not found in docs/")
+        print(f"   Tried paths: {possible_source_paths}")
+        return False
+
+    try:
+        # Copy HIVE_CLAUDE.md as CLAUDE.md to project root
+        shutil.copy2(source_hive_claude, "CLAUDE.md")
+        print("   • CLAUDE.md copied to project root")
+        return True
+    except Exception as e:
+        print(f"   ❌ Error copying HIVE_CLAUDE.md: {e}")
+        return False
 
 def initialize_git():
     """Initialize git repository."""
@@ -216,12 +246,8 @@ def main():
         # Setup Claude AI context with template variables
         setup_claude_context()
 
-        # Copy the main CLAUDE.md from template docs (legacy)
+        # Copy HIVE_CLAUDE.md as CLAUDE.md to project root
         copy_claude_md()
-
-        # Remove the template CLAUDE.md if it exists
-        if os.path.exists("CLAUDE.md"):
-            os.remove("CLAUDE.md")
 
         initialize_git()
         create_venv()

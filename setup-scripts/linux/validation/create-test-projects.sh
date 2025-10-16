@@ -173,6 +173,18 @@ CMAKE_FILE
         cp ~/.config/templates/cpp/.github/workflows/ai-workflow.yaml .github/workflows/
     fi
 
+    # Copy HIVE_CLAUDE.md as CLAUDE.md to project root
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    TEMPLATE_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")")"
+    HIVE_CLAUDE_SOURCE="$TEMPLATE_ROOT/docs/HIVE_CLAUDE.md"
+
+    if [ -f "$HIVE_CLAUDE_SOURCE" ]; then
+        cp "$HIVE_CLAUDE_SOURCE" CLAUDE.md
+        echo "Copied HIVE_CLAUDE.md as CLAUDE.md to project root"
+    else
+        echo "Warning: HIVE_CLAUDE.md not found at $HIVE_CLAUDE_SOURCE"
+    fi
+
     # Initialize git repository
     echo "Initializing git repository..."
     git init
@@ -347,6 +359,18 @@ PYPROJECT
     # Copy AI workflow from template
     if [ -d ~/.config/templates/python/.github/workflows ]; then
         cp ~/.config/templates/python/.github/workflows/ai-workflow.yaml .github/workflows/
+    fi
+
+    # Copy HIVE_CLAUDE.md as CLAUDE.md to project root
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    TEMPLATE_ROOT="$(dirname "$(dirname "$(dirname "$(dirname "$SCRIPT_DIR")")")")"
+    HIVE_CLAUDE_SOURCE="$TEMPLATE_ROOT/docs/HIVE_CLAUDE.md"
+
+    if [ -f "$HIVE_CLAUDE_SOURCE" ]; then
+        cp "$HIVE_CLAUDE_SOURCE" CLAUDE.md
+        echo "Copied HIVE_CLAUDE.md as CLAUDE.md to project root"
+    else
+        echo "Warning: HIVE_CLAUDE.md not found at $HIVE_CLAUDE_SOURCE"
     fi
 
     # Initialize git repository
