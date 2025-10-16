@@ -269,7 +269,7 @@ test_helper_scripts() {
 
     # Test script functionality (dry run where possible)
     run_test "verify-setup.sh execution" \
-        "cd '$ROOT_DIR' && bash scripts/verify-setup.sh --no-color"
+        "cd '$ROOT_DIR' && bash scripts/verify-setup.sh"
 
     log "Helper script tests completed"
 }
