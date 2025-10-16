@@ -131,6 +131,20 @@ validate_system_tools() {
     echo -e "${GREEN}✅ System tools validation passed${NC}"
 }
 
+detect_available_validations() {
+    local available_validations=()
+
+    if [ -d "/tmp/cpp-test-project" ]; then
+        available_validations+=("cpp")
+    fi
+
+    if [ -d "/tmp/python-test-project" ]; then
+        available_validations+=("python")
+    fi
+
+    echo "${available_validations[@]}"
+}
+
 cleanup_test_projects() {
     echo -e "${GREEN}Cleaning up test projects...${NC}"
 
@@ -151,28 +165,53 @@ print_summary() {
     echo -e "${GREEN}✅ Validation complete!${NC}"
     echo -e "${GREEN}================================${NC}"
     echo ""
-    echo "All tools have been validated successfully."
-    echo "The runner is ready for C++ and Python development."
+    echo "Validated tools successfully."
+    echo "The runner is ready for development."
 }
 
 main() {
     case "${1:-}" in
         --cpp-only)
+            validate_system_tools
             validate_cpp_tools
+            print_summary
             ;;
         --python-only)
+            validate_system_tools
             validate_python_tools
+            print_summary
             ;;
         --system-only)
             validate_system_tools
+            print_summary
             ;;
         --cleanup)
             cleanup_test_projects
             ;;
         *)
+            # Auto-detect which validations to run based on available test projects
+            local available=($(detect_available_validations))
+
+            if [ ${#available[@]} -eq 0 ]; then
+                echo -e "${RED}No test projects found. Run create-test-projects.sh first.${NC}"
+                exit 1
+            fi
+
+            echo -e "${BLUE}Detected test projects: ${available[*]}${NC}"
+
             validate_system_tools
-            validate_cpp_tools
-            validate_python_tools
+
+            for validation in "${available[@]}"; do
+                case $validation in
+                    "cpp")
+                        validate_cpp_tools
+                        ;;
+                    "python")
+                        validate_python_tools
+                        ;;
+                esac
+            done
+
             print_summary
             ;;
     esac
