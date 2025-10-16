@@ -2,19 +2,30 @@
 
 ### Overview
 
-This system aims to control the entire development workflow using natural language commands through an AI assistant named `claude`. Users can instruct `claude` to perform all processes, including issue creation, code review, testing, building, PR creation, and merging, without directly interacting with GitHub.
+This system enables complete control of the development workflow through **GitHub labels** and **slash commands** that trigger automated AI workflows. Users can manage the entire development lifecycle—including issue creation, code review, testing, building, PR creation, and merging—by simply adding labels to issues or using specific commands in comments.
 
 ### System Architecture
 
-1.  **User**: Gives commands to `claude` in natural language.
-2.  **Claude (AI Assistant)**:
-    * Interprets user commands and translates them into GitHub actions.
-    * Triggers GitHub Actions workflows.
-    * Reports the results and logs back to the user.
-3.  **GitHub**:
-    * Executes workflows triggered by `claude`.
-    * Performs tasks such as source code storage, building, testing, and deployment.
-    * Returns the results of the actions to `claude`.
+1.  **User**: Triggers workflows by adding **GitHub labels** to issues or using **slash commands** in comments
+2.  **GitHub Actions**: Automatically detects labels/commands and triggers appropriate AI workflows
+3.  **Claude (AI Assistant)**:
+    * Executes development tasks based on triggered workflows
+    * Performs code analysis, building, testing, and PR management
+    * Reports results and logs back through GitHub comments
+4.  **CI/CD Pipeline**: Validates code quality and runs automated tests
+
+### Workflow Trigger Mechanisms
+
+The system supports two primary trigger methods:
+
+#### A. GitHub Labels (Automatic Trigger)
+- **`ai-automate`**: Triggers PR automation workflow
+- **`ai-assist`**: Triggers MCP-enhanced AI automation
+- **`skip-ai-review`**: Excludes PR from automatic AI review
+
+#### B. Slash Commands (Manual Trigger)
+- **`/claude <command>`**: Main AI automation commands
+- **`/workspace <command>`**: Multi-project management commands
 
 ### `.github/claude/CLAUDE.md`
 
@@ -22,90 +33,178 @@ The following is an example of a document that `claude` can use to understand an
 
 ---
 
-# Claude: An AI-Powered Guide to C++ Development Workflow
+# Claude: An AI-Powered Guide to Development Workflow
 
-This document describes how to manage the entire development lifecycle of a C++ project using the AI assistant `claude`. `claude` enhances development productivity by automating complex tasks such as code review, building, testing, and Pull Request (PR) creation through natural language commands.
+This document describes how to manage the entire development lifecycle using AI automation workflows. The system enhances development productivity by automating complex tasks such as code review, building, testing, and Pull Request (PR) creation through **GitHub labels** and **slash commands**.
 
 ## 1. Workflow Overview
 
-This project uses an automated workflow that combines a CI/CD pipeline based on GitHub Actions with the `claude` AI assistant.
+This project uses multiple automated workflows that combine CI/CD pipelines with AI automation:
 
-* **CI (Continuous Integration)**: Automatically builds and runs tests whenever code is pushed to the `main` branch or a PR is created. (`.github/workflows/ci.yaml`)
-* **AI Assistant**: You can invoke `claude` by mentioning `@claude` in an issue, PR, or comment. `claude` provides code analysis, builds, test execution, and a summary of the results. (`.github/workflows/ai-workflow.yaml`)
-* **Code Quality**: Automatically performs code styling and static analysis using `clang-format` and `clang-tidy` through `pre-commit` hooks. (`.pre-commit-config.yaml`)
+### Available AI Workflows
 
-## 2. How to Invoke Claude
+| Workflow File | Purpose | Trigger Conditions |
+| :--- | :--- | :--- |
+| **`claude-code-pr-automation.yaml`** | Main AI automation & PR creation | `ai-automate` label or `/claude` commands |
+| **`claude-code-fix-ci.yaml`** | Auto-fix CI failures | Failed CI workflows or manual dispatch |
+| **`claude-code-review.yaml`** | PR code review | PR events (excluded with `skip-ai-review` label) |
+| **`claude-code-mcp-enhanced.yaml`** | MCP-enhanced AI automation | `ai-assist` label or `/claude` commands |
+| **`multi-project-automation.yaml`** | Multi-project analysis | `/workspace` commands or scheduled runs |
 
-You can issue commands to `claude` by including the `@claude` keyword in a GitHub issue, PR, or comment.
+### Standard Development Workflows
+
+* **CI (Continuous Integration)**: Automatically builds and runs tests on code push to `main` or PR creation
+* **AI Automation**: Triggered by labels or commands to perform development tasks
+* **Code Quality**: Automatic styling and static analysis via pre-commit hooks
+
+## 2. How to Trigger AI Workflows
+
+### Method A: GitHub Labels (Automatic)
+
+Add one of these labels to an issue or PR:
+
+- **`ai-automate`**: Triggers the main PR automation workflow
+- **`ai-assist`**: Triggers MCP-enhanced automation with advanced features
+- **`skip-ai-review`**: Prevents automatic AI review on a PR
+
+### Method B: Slash Commands (Manual)
+
+Use these commands in issue or PR comments:
 
 **Example:**
+> `/claude add-feature 사용자 인증 기능을 추가할 것`
 
-> `@claude, please review the code in this PR and run the build and tests.`
+## 3. Available Commands
 
-## 3. Key Commands and Scenarios
+### A. `/claude` Commands (Main AI Automation)
 
-`claude` understands and executes the following natural language commands.
+These commands trigger the main AI automation workflows and can be used in issue or PR comments:
+
+| Command | Purpose | Example |
+| :--- | :--- | :--- |
+| **`/claude add-feature <내용>`** | Add new features and create tests | `/claude add-feature 사용자 프로필 조회 API를 추가할 것` |
+| **`/claude fix-issue <내용>`** | Fix bugs and add regression tests | `/claude fix-issue setup-scripts/linux/core/install-system-deps.sh의 오타를 수정할 것` |
+| **`/claude refactor-code <내용>`** | Refactor code according to quality standards | `/claude refactor-code src/utils.py의 로직을 간소화하고 타입 힌트를 적용할 것` |
+| **`/claude security-audit <내용>`** | Perform security audit (MCP Enhanced) | `/claude security-audit --secrets 명령을 실행하여 하드코딩된 비밀 키를 스캔할 것` |
+| **`/claude code-review <내용>`** | Perform code review (MCP Enhanced) | `/claude code-review 이 PR의 로직 오류와 성능 병목 지점을 집중적으로 검토할 것` |
+
+### B. `/workspace` Commands (Multi-Project Management)
+
+These commands are used for multi-project environment analysis and management:
+
+| Command | Purpose | Example |
+| :--- | :--- | :--- |
+| **`/workspace analyze`** | Analyze workspace structure and dependencies | `/workspace analyze. 전체 프로젝트의 종속성 그래프를 도식화하여 보고할 것.` |
+| **`/workspace sync`** | Sync common settings across projects | `/workspace sync. 모든 Python 프로젝트의 ruff.toml 설정 파일을 최신 템플릿으로 동기화할 것.` |
+| **`/workspace audit`** | Audit dependencies and security vulnerabilities | `/workspace audit. 모든 프로젝트의 종속성을 감사하고 취약점을 보고할 것.` |
+
+## 4. Common Usage Scenarios
 
 ### Scenario 1: New Feature Development
 
-1.  **Requesting Feature Implementation**
-    * **User**: `@claude, create an issue to add a user authentication feature and write the corresponding code.`
-    * **Claude**:
-        1.  Creates a new issue titled `feat: Add user authentication`.
-        2.  Creates a new branch (`feature/user-authentication`) to implement the feature.
-        3.  Generates and commits boilerplate code for the necessary files (e.g., `src/auth.cpp`, `include/auth.hpp`, `tests/auth_test.cpp`).
-        4.  Reports the progress to the user.
+1. **Using Labels (Automatic)**
+   - Create an issue and add the **`ai-automate`** label
+   - **System Action**: Automatically triggers feature implementation workflow
 
-2.  **Requesting Code Review and Testing**
-    * **User**: `@claude, review the code on the current branch and run the tests.`
-    * **Claude**:
-        1.  Performs static analysis using `clang-tidy` and `cppcheck`.
-        2.  Runs `ctest` to verify that all test cases pass.
-        3.  Summarizes the code review comments and test results and reports them to the user.
-
-3.  **Requesting PR Creation and Merging**
-    * **User**: `@claude, create a PR with the changes so far and merge it into the `main` branch.`
-    * **Claude**:
-        1.  Creates a PR from the current branch to the `main` branch.
-        2.  Confirms that all checks in the CI workflow have passed.
-        3.  If all checks pass, automatically merges the PR into the `main` branch.
-        4.  Provides a final report to the user upon completion.
+2. **Using Commands (Manual)**
+   - **User**: `/claude add-feature 사용자 인증 기능을 추가할 것`
+   - **System Action**:
+     1. Creates feature branch
+     2. Implements the requested feature
+     3. Generates appropriate tests
+     4. Creates PR for review
 
 ### Scenario 2: Bug Fixing
 
-1.  **Reporting and Requesting a Bug Fix**
-    * **User**: `@claude, there's a memory leak when logging in. Create an issue and fix it.`
-    * **Claude**:
-        1.  Creates an issue titled `fix: Memory leak on login`.
-        2.  Creates a `bugfix/login-memory-leak` branch.
-        3.  Analyzes the relevant code to identify the cause of the memory leak and proposes a fix.
-        4.  Commits the corrected code.
+1. **Using Labels (Automatic)**
+   - Create bug report and add the **`ai-assist`** label
+   - **System Action**: Triggers enhanced AI automation for bug analysis and fixing
 
-2.  **Verifying and Merging the Fix**
-    * **User**: `@claude, test if the fix is correct and merge it into `main`.`
-    * **Claude**:
-        1.  Adds a test case specifically for the memory leak.
-        2.  Runs the full test suite and build.
-        3.  After all checks pass, creates a PR and merges it into the `main` branch.
-        4.  Automatically closes the issue and reports to the user.
+2. **Using Commands (Manual)**
+   - **User**: `/claude fix-issue 로그인 시 메모리 누수 문제를 해결할 것`
+   - **System Action**:
+     1. Analyzes code to identify memory leak
+     2. Implements fix
+     3. Adds regression tests
+     4. Creates PR for validation
 
-### Command Summary
+### Scenario 3: Code Review
 
-| Category | Example Command | Claude's Action |
-| :--- | :--- | :--- |
-| **Issue/Branch** | `@claude, create an issue for [feature]` | Creates an issue, creates a feature branch. |
-| | `@claude, make a branch to fix [bug]` | Creates a bugfix branch. |
-| **Code Generation** | `@claude, write boilerplate for [class]` | Generates C++ class HPP/CPP files. |
-| | `@claude, add a test for [function]` | Adds a GTest-based test case. |
-| **Review/Test** | `@claude, review the code` | Performs static analysis, style checks, suggests improvements. |
-| | `@claude, build and test the project` | Runs CMake build and CTest. |
-| **PR/Merge** | `@claude, create a PR` | Creates a PR from the current branch to `main`. |
-| | `@claude, merge when all checks pass` | Auto-merges the PR upon successful CI completion. |
+1. **Automatic Review**
+   - Create PR without **`skip-ai-review`** label
+   - **System Action**: Automatically triggers code review workflow
 
-## 4. Principles for Interacting with Claude
+2. **Manual Review Request**
+   - **User**: `/claude code-review 이 PR의 성능 최적화 부분을 집중 검토할 것`
+   - **System Action**: Performs targeted code review and provides feedback
 
-* **Clear and Specific Instructions**: Provide clear instructions so that `claude` can understand the task accurately.
-* **Break Down Complex Tasks**: It is better to divide complex tasks into several steps and give instructions sequentially.
-* **Confirm Results**: Always check the results reported by `claude` (build logs, test results, etc.) before proceeding to the next step.
+### Scenario 4: CI Failure Auto-Fix
+
+- **Trigger**: Any CI workflow fails
+- **System Action**:
+  1. `claude-code-fix-ci.yaml` workflow automatically triggers
+  2. Analyzes failure logs
+  3. Implements fixes
+  4. Updates/creates PR
+  5. Re-runs CI to validate fixes
+
+## 5. Workflow Selection Guide
+
+Choose the appropriate workflow based on your needs:
+
+### For Standard Development Tasks
+- **Use**: `ai-automate` label or `/claude` commands
+- **Workflow**: `claude-code-pr-automation.yaml`
+- **Best for**: Feature development, bug fixes, code refactoring
+
+### For Advanced AI Capabilities
+- **Use**: `ai-assist` label
+- **Workflow**: `claude-code-mcp-enhanced.yaml`
+- **Best for**: Security audits, complex analysis, MCP integration
+
+### For Multi-Project Management
+- **Use**: `/workspace` commands
+- **Workflow**: `multi-project-automation.yaml`
+- **Best for**: Cross-project analysis, dependency management
+
+### For CI Issues
+- **Use**: Automatic (no action needed)
+- **Workflow**: `claude-code-fix-ci.yaml`
+- **Best for**: Auto-fixing build/test failures
+
+## 6. Best Practices
+
+### Using Labels Effectively
+- **`ai-automate`**: Use for standard development tasks that need full automation
+- **`ai-assist`**: Use when you need enhanced AI capabilities or MCP integration
+- **`skip-ai-review`**: Use only for PRs that don't need AI review (e.g., documentation fixes)
+
+### Writing Effective Commands
+- **Be Specific**: Include detailed requirements in your commands
+- **Use Examples**: Provide code examples or expected behavior when helpful
+- **Set Context**: Mention relevant files, modules, or dependencies
+
+### Monitoring Workflow Progress
+- Check GitHub Actions tab for workflow status
+- Review comments added by the AI assistant
+- Verify generated code and test results
+- Ensure all CI checks pass before merging
+
+## 7. Troubleshooting
+
+### Workflow Not Triggering
+- Verify label spelling matches exactly (`ai-automate`, `ai-assist`)
+- Check command syntax (`/claude <command>`)
+- Ensure workflow files exist in `.github/workflows/`
+
+### AI Assistant Not Responding
+- Check GitHub Actions logs for errors
+- Verify required permissions are granted
+- Ensure workflow secrets are configured
+
+### CI Auto-Fix Not Working
+- Check that `claude-code-fix-ci.yaml` is enabled
+- Verify workflow_run events are properly configured
+- Review failure logs for diagnostic information
 
 ---
