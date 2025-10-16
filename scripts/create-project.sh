@@ -62,18 +62,18 @@ create_project() {
         cookiecutter "$template_dir"
     fi
 
-    echo -e "${GREEN}✅ Project created successfully!${NC}"
+    echo -e "${GREEN}✅ Project created!${NC}"
     echo ""
-    echo -e "${YELLOW}🚀 AI-Enabled Project Features:${NC}"
-    echo "- AI workflow templates pre-configured"
-    echo "- GitHub Actions with AI automation ready"
-    echo "- Comprehensive documentation for AI development"
+    echo -e "${YELLOW}• AI-Enabled Project Features:${NC}"
+    echo "  - AI workflow templates pre-configured"
+    echo "  - GitHub Actions with AI automation ready"
+    echo "  - Comprehensive documentation for AI development"
     echo ""
-    echo -e "${YELLOW}Next Steps:${NC}"
-    echo "1. Navigate to your project directory and start development"
-    echo "2. Install requirements by using setup-scripts/total_run.sh (requires sudo)"
-    echo "   Run: sudo bash setup-scripts/total_run.sh"
-    echo "3. Check .github/claude/CLAUDE.md for AI assistant integration details"
+    echo -e "${YELLOW}• Next Steps:${NC}"
+    echo "  1. Navigate to your project directory and start development"
+    echo "  2. Install requirements by using setup-scripts/total_run.sh (requires sudo)"
+    echo "     Run: sudo bash setup-scripts/total_run.sh"
+    echo "  3. Check .github/claude/CLAUDE.md for AI assistant integration details"
 }
 
 main() {

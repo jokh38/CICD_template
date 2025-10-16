@@ -17,7 +17,7 @@ def run_command(cmd, check=True):
 
 def setup_claude_context():
     """Copy and customize CLAUDE.md for new projects."""
-    print("📋 Setting up Claude AI context...")
+    print("• Setting up Claude AI context...")
 
     # Ensure .github/claude directory exists
     claude_dir = ".github/claude"
@@ -53,7 +53,7 @@ def setup_claude_context():
         with open(target_path, 'w', encoding='utf-8') as dst:
             dst.write(content)
 
-        print("   ✓ CLAUDE.md customized and placed in .github/claude/")
+        print("   • CLAUDE.md customized and placed in .github/claude/")
         return True
     else:
         print("   ⚠️  Source CLAUDE.md template not found")
@@ -67,7 +67,7 @@ def copy_claude_md():
 
 def initialize_git():
     """Initialize git repository."""
-    print("📦 Initializing git repository...")
+    print("• Initializing git repository...")
     run_command("git init")
 
     # Configure git user if not already configured
@@ -81,18 +81,18 @@ def initialize_git():
 
 def create_venv():
     """Create virtual environment."""
-    print("🐍 Creating virtual environment...")
+    print("• Creating virtual environment...")
     python_version = "{{ cookiecutter.python_version }}"
     run_command(f"python{python_version} -m venv .venv")
 
 def install_dependencies():
     """Install project dependencies including dev dependencies."""
-    print("📦 Installing project dependencies...")
+    print("• Installing project dependencies...")
     venv_pip = ".venv/bin/pip"
 
     # Upgrade pip first
     if run_command(f"{venv_pip} install --upgrade pip", check=False):
-        print("   ✓ pip upgraded")
+        print("   • pip upgraded")
 
     # Install basic dev dependencies individually to avoid dependency conflicts
     dev_packages = ["pytest", "pytest-cov", "ruff", "mypy", "pre-commit"]
@@ -100,27 +100,27 @@ def install_dependencies():
 
     for package in dev_packages:
         if run_command(f"{venv_pip} install {package}", check=False):
-            print(f"   ✓ {package} installed")
+            print(f"   • {package} installed")
             installed_packages.append(package)
         else:
             print(f"   ⚠️  Failed to install {package}")
 
     # Try to install project with dev dependencies as fallback
     if len(installed_packages) < len(dev_packages):
-        print("   🔄 Attempting to install project dependencies...")
+        print("   • Attempting to install project dependencies...")
         if run_command(f"{venv_pip} install -e .[dev]", check=False):
-            print("   ✓ Project dependencies installed")
+            print("   • Project dependencies installed")
 
     return len(installed_packages) > 0
 
 def install_precommit():
     """Install pre-commit hooks."""
-    print("🔧 Installing pre-commit hooks...")
+    print("• Installing pre-commit hooks...")
     venv_precommit = ".venv/bin/pre-commit"
 
     if os.path.exists(venv_precommit):
         run_command(f"{venv_precommit} install")
-        print("   ✓ Pre-commit hooks installed")
+        pass  # Success, no message needed
     else:
         print("   ⚠️  pre-commit not found in virtual environment")
 
@@ -132,26 +132,26 @@ def print_next_steps():
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
     print("\n" + "="*60)
-    print("✅ Project created successfully!")
+    print("✅ Project created!")
     print("="*60)
-    print(f"\n📁 Project: {project_name}")
-    print(f"🏃 Runner: {runner_type}")
-    print(f"🤖 AI Workflow: {use_ai}")
+    print(f"\n• Project: {project_name}")
+    print(f"• Runner: {runner_type}")
+    print(f"• AI Workflow: {use_ai}")
 
-    print("\n📋 Next Steps:")
-    print(f"1. cd {project_slug}")
-    print("2. source .venv/bin/activate")
-    print("3. pytest  # Run tests")
-    print("4. ruff check .  # Lint code")
+    print("\n• Next Steps:")
+    print(f"  1. cd {project_slug}")
+    print("  2. source .venv/bin/activate")
+    print("  3. pytest  # Run tests")
+    print("  4. ruff check .  # Lint code")
 
     if use_ai == "yes":
-        print("5. Review .github/claude/CLAUDE.md for AI assistant")
+        print("  5. Review .github/claude/CLAUDE.md for AI assistant")
 
-    print("\n✅ All dependencies are installed and ready to use!")
-    print("\n🔗 Create GitHub repository and push:")
-    print("   1. Create a new repository on GitHub")
-    print("   2. git remote add origin <your-github-repo-url>")
-    print("   3. git push -u origin main")
+    print("\n• All dependencies are installed and ready to use!")
+    print("\n• Create GitHub repository and push:")
+    print("  1. Create a new repository on GitHub")
+    print("  2. git remote add origin <your-github-repo-url>")
+    print("  3. git push -u origin main")
 
 def main():
     """Main post-generation logic."""

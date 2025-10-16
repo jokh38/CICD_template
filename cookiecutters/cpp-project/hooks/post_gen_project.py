@@ -16,7 +16,7 @@ def run_command(cmd, check=True):
 
 def setup_claude_context():
     """Copy and customize CLAUDE.md for new projects."""
-    print("📋 Setting up Claude AI context...")
+    print("• Setting up Claude AI context...")
 
     # Ensure .github/claude directory exists
     claude_dir = ".github/claude"
@@ -71,7 +71,7 @@ def setup_claude_context():
         with open(target_path, 'w', encoding='utf-8') as dst:
             dst.write(content)
 
-        print("   ✓ CLAUDE.md customized and placed in .github/claude/")
+        print("   • CLAUDE.md customized and placed in .github/claude/")
         return True
     else:
         print("   ⚠️  Source CLAUDE.md template not found")
@@ -85,7 +85,7 @@ def copy_claude_md():
     pass
 
 def initialize_git():
-    print("📦 Initializing git repository...")
+    print("• Initializing git repository...")
     run_command("git init")
 
     # Configure git user if not already configured
@@ -99,13 +99,13 @@ def initialize_git():
 
 def install_precommit():
     """Install pre-commit tool and hooks."""
-    print("🔧 Installing pre-commit...")
+    print("• Installing pre-commit...")
 
     # Try to install pre-commit via pip (user level)
     if not run_command("which pre-commit", check=False):
         print("   Installing pre-commit via pip...")
         if run_command("pip install --user pre-commit", check=False):
-            print("   ✓ pre-commit installed")
+            print("   • pre-commit installed")
         else:
             print("   ⚠️  Failed to install pre-commit. Please install manually:")
             print("      pip install pre-commit")
@@ -113,12 +113,12 @@ def install_precommit():
 
     # Install pre-commit hooks
     if run_command("pre-commit install", check=False):
-        print("   ✓ Pre-commit hooks installed")
+        pass  # Success, no message needed
     else:
         print("   ⚠️  Failed to install pre-commit hooks")
 
 def setup_build_directory():
-    print("🏗️  Creating build directory...")
+    print("• Creating build directory...")
     os.makedirs("build", exist_ok=True)
 
 def print_next_steps():
@@ -130,38 +130,20 @@ def print_next_steps():
     print("\n" + "="*60)
     print("✅ Project created!")
     print("="*60)
-    print(f"\n📁 Project: {project_name}")
-    print(f"🔨 Build: {build_system}")
+    print(f"\n• Project: {project_name}")
+    print(f"• Build: {build_system}")
 
-    print("\n🚀 Quick Start - Validate Your Environment:")
-    print("   bash setup-scripts/linux/validation/run-validation.sh")
+    print("\n• Quick Start - Validate Your Environment:")
+    print("  bash setup-scripts/linux/validation/run-validation.sh")
 
-    print("\n📋 Next Steps:")
-    print(f"1. cd {project_slug}")
+    print("\n• Environment Setup:")
+    print("  Note: Full development environment setup requires sudo privileges")
+    print("  Run: sudo bash setup-scripts/total_run.sh")
 
-    if build_system == "cmake":
-        gen = "-G Ninja" if use_ninja == "yes" else ""
-        print(f"2. cmake -B build {gen}")
-        print("3. cmake --build build")
-        print("4. ctest --test-dir build")
-    else:
-        print("2. meson setup build")
-        print("3. meson compile -C build")
-        print("4. meson test -C build")
-
-    print("\n🔧 Additional Validation Options:")
-    print("   • Comprehensive: bash setup-scripts/total_run.sh --validate-only (requires sudo)")
-    print("   • Final: bash setup-scripts/total_run.sh --final-validation (requires sudo)")
-
-    print("\n✅ Pre-commit hooks are installed and ready to use!")
-    print("\n🔗 Create GitHub repository and push:")
-    print("   1. Create a new repository on GitHub")
-    print("   2. git remote add origin <your-github-repo-url>")
-    print("   3. git push -u origin main")
-
-    print("\n📋 Environment Setup:")
-    print("⚠️  Note: Full development environment setup requires sudo privileges")
-    print("   Run: sudo bash setup-scripts/total_run.sh")
+    print("\n• Create GitHub repository and push:")
+    print("  1. Create a new repository on GitHub")
+    print("  2. git remote add origin <your-github-repo-url>")
+    print("  3. git push -u origin main")
 
 def main():
     try:
