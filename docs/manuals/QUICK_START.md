@@ -64,6 +64,7 @@ bash scripts/create-project.sh python
 # - Project name: my-awesome-api
 # - Author name: Your Name
 # - Python version: 3.11
+# - AI workflow: yes (default, enables Claude integration)
 # - License: MIT
 # - etc.
 ```
@@ -149,6 +150,7 @@ The CI/CD workflow will run automatically on GitHub Actions!
 - ✅ Virtual environment created
 - ✅ All dev dependencies installed (ruff, pytest, mypy, pre-commit)
 - ✅ Pre-commit hooks installed and ready
+- ✅ AI workflow templates included (Claude integration ready)
 - ✅ Git repository initialized with initial commit
 
 ---
@@ -234,6 +236,7 @@ git push -u origin main
 - ✅ Git repository initialized with initial commit
 - ✅ Pre-commit tool installed
 - ✅ Pre-commit hooks installed and ready
+- ✅ AI workflow templates included (Claude integration ready)
 - ✅ Build directory created
 
 ---

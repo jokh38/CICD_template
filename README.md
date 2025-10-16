@@ -14,22 +14,24 @@ pip install cookiecutter
 ### Create a Python Project
 
 ```bash
-# Interactive mode
+# Interactive mode (AI workflow enabled by default)
 bash scripts/create-project.sh python
 
-# Non-interactive mode with absolute path
+# Non-interactive mode with absolute path (AI workflow enabled by default)
 bash scripts/create-project.sh python /home/user/my-awesome-project
 ```
 
 ### Create a C++ Project
 
 ```bash
-# Interactive mode
+# Interactive mode (AI workflow enabled by default)
 bash scripts/create-project.sh cpp
 
-# Non-interactive mode with absolute path
+# Non-interactive mode with absolute path (AI workflow enabled by default)
 bash scripts/create-project.sh cpp /home/user/my-fast-library
 ```
+
+> **🤖 AI-First Development**: All projects now include AI workflow templates by default, enabling AI-assisted code reviews, bug fixes, and feature development with Claude integration.
 
 ### 🛠️ Development Environment Setup
 
@@ -389,15 +391,17 @@ bash scripts/sync-templates.sh cpp /path/to/existing-project
 - `project_slug`: Package name (auto-generated)
 - `python_version`: Python version (3.10, 3.11, 3.12)
 - `runner_type`: self-hosted or github-hosted (default: self-hosted)
-- `use_ai_workflow`: Include AI workflow templates
+- `use_ai_workflow`: Include AI workflow templates (default: yes)
 - `license`: MIT, BSD-3-Clause, Apache-2.0, GPL-3.0, None
 
 **C++ (`cookiecutter.json`):**
 - `project_name`: Project display name
 - `cpp_standard`: C++ standard (17, 20, 23)
 - `build_system`: cmake or meson
-- `use_ninja`: Use Ninja build system
+- `use_ai_workflow`: Include AI workflow templates (default: yes)
+- `runner_type`: self-hosted or github-hosted (default: self-hosted)
 - `enable_cache`: Enable sccache
+- `use_ninja`: Use Ninja build system
 - `testing_framework`: gtest, catch2, doctest
 - `license`: MIT, BSD-3-Clause, Apache-2.0, GPL-3.0, None
 

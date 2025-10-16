@@ -121,7 +121,7 @@ When you run Cookiecutter for a Python project, you'll be prompted for:
 | `author_name` | Your name | `John Doe` | - |
 | `author_email` | Your email | `john@example.com` | - |
 | `python_version` | Python version | `3.11` | `3.10` |
-| `use_ai_workflow` | Include AI prompts | `yes` / `no` | `no` |
+| `use_ai_workflow` | Include AI prompts | `yes` / `no` | `yes` |
 | `runner_type` | CI runner type | `self-hosted` / `github-hosted` | `self-hosted` |
 | `include_docker` | Add Dockerfile | `yes` / `no` | `no` |
 | `license` | License type | `MIT`, `Apache-2.0`, etc. | `MIT` |
@@ -130,6 +130,8 @@ When you run Cookiecutter for a Python project, you'll be prompted for:
 - `project_slug` is auto-generated from `project_name`
 - Converts to lowercase
 - Replaces spaces and underscores with hyphens
+
+**🤖 AI Workflow Note:** AI workflow is enabled by default (`yes`), providing Claude integration for code reviews, bug fixes, and automated development assistance.
 
 ---
 
@@ -146,7 +148,7 @@ For C++ projects:
 | `author_email` | Your email | `jane@example.com` | - |
 | `cpp_standard` | C++ standard | `17`, `20`, `23` | `17` |
 | `build_system` | Build system | `cmake` / `meson` | `cmake` |
-| `use_ai_workflow` | Include AI prompts | `yes` / `no` | `no` |
+| `use_ai_workflow` | Include AI prompts | `yes` / `no` | `yes` |
 | `runner_type` | CI runner type | `self-hosted` / `github-hosted` | `self-hosted` |
 | `enable_cache` | Enable sccache | `yes` / `no` | `yes` |
 | `use_ninja` | Use Ninja | `yes` / `no` | `yes` |

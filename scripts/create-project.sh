@@ -63,10 +63,16 @@ create_project() {
 
     echo -e "${GREEN}✅ Project created successfully!${NC}"
     echo ""
+    echo -e "${YELLOW}🚀 AI-Enabled Project Features:${NC}"
+    echo "- AI workflow templates pre-configured"
+    echo "- GitHub Actions with AI automation ready"
+    echo "- Comprehensive documentation for AI development"
+    echo ""
     echo -e "${YELLOW}Next Steps:${NC}"
     echo "1. Install requirements by using setup-scripts/total_run.sh"
     echo "   Run: sudo bash $SCRIPT_DIR/../setup-scripts/total_run.sh"
     echo "2. Navigate to your project directory and start development"
+    echo "3. Check docs/CLAUDE.md for AI assistant integration details"
 }
 
 main() {
