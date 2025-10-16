@@ -65,7 +65,7 @@ create_project() {
     echo ""
     echo -e "${YELLOW}Next Steps:${NC}"
     echo "1. Install requirements by using setup-scripts/total_run.sh"
-    echo "   Run: bash ~/apps/CICD_template/setup-scripts/total_run.sh"
+    echo "   Run: sudo bash $SCRIPT_DIR/../setup-scripts/total_run.sh"
     echo "2. Navigate to your project directory and start development"
 }
 

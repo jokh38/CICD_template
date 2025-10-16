@@ -327,7 +327,7 @@ function Show-Summary {
     Write-Host ""
     Write-Host "Next Steps:"
     Write-Host "  1. Restart PowerShell to apply environment changes"
-    Write-Host "  2. To install GitHub Actions runner, run the script install-runner-windows.ps1"
+    Write-Host "  2. To install GitHub Actions runner, run: .\windows\install-runner-windows.ps1 (from setup-scripts directory)"
     Write-Host "  3. Test the installation with your projects"
     Write-Host "  4. Use the provided aliases for common tasks"
     Write-Host "  5. Git is configured and ready for use"
