@@ -14,6 +14,52 @@ def run_command(cmd, check=True):
         print(f"Error: {e}")
         return False
 
+def process_workflow_files():
+    """Process GitHub workflow files to handle GitHub Actions syntax conflicts."""
+    print("• Processing GitHub workflow files...")
+
+    workflows_dir = ".github/workflows"
+    if not os.path.exists(workflows_dir):
+        print("   • No workflows directory found")
+        return True
+
+    import re
+    processed_files = []
+
+    try:
+        for root, dirs, files in os.walk(workflows_dir):
+            for file in files:
+                if file.endswith(('.yaml', '.yml')):
+                    workflow_file = os.path.join(root, file)
+
+                    # Read the workflow file
+                    with open(workflow_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    # Fix GitHub Actions expressions that were escaped for Jinja2
+                    # Convert {{'{{'}} ... {{'}}'}} back to ${{ ... }}
+                    content = re.sub(r'\{\{\'\{\{\'\}\}([^}]+?)\{\{\'\}\}\'\}\}', r'${{\1}}', content)
+
+                    # Handle any remaining cookiecutter variables
+                    content = content.replace('{{cookiecutter.cpp_standard}}', '{{ cookiecutter.cpp_standard }}')
+                    content = content.replace('{{cookiecutter.build_system}}', '{{ cookiecutter.build_system }}')
+                    content = content.replace('{{cookiecutter.use_ninja}}', '{{ cookiecutter.use_ninja }}')
+                    content = content.replace('{{cookiecutter.project_name}}', '{{ cookiecutter.project_name }}')
+                    content = content.replace('{{cookiecutter.testing_framework}}', '{{ cookiecutter.testing_framework | upper }}')
+
+                    # Write the processed file back
+                    with open(workflow_file, 'w', encoding='utf-8') as f:
+                        f.write(content)
+
+                    processed_files.append(workflow_file)
+
+        print(f"   • Processed {len(processed_files)} workflow files")
+        return True
+
+    except Exception as e:
+        print(f"   ❌ Error processing workflow files: {e}")
+        return False
+
 def setup_claude_context():
     """Copy entire .github/claude/ directory and customize CLAUDE.md for new projects."""
     print("• Setting up Claude AI context...")
@@ -84,27 +130,19 @@ def customize_claude_md(claude_md_path):
         with open(claude_md_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Get actual cookiecutter values from the environment
-        project_name = "{{ cookiecutter.project_name }}"
-        project_description = "{{ cookiecutter.project_description }}"
-        cpp_standard = "{{ cookiecutter.cpp_standard }}"
-
         # Replace cookiecutter variables with actual project values
+        # These should be already replaced by cookiecutter, but handle any remaining ones
         replacements = {
-            '{{cookiecutter.project_name}}': project_name,
-            '{{cookiecutter.project_description}}': project_description,
-            '{{cookiecutter.cpp_standard}}': cpp_standard,
+            '{{cookiecutter.project_name}}': '{{ cookiecutter.project_name }}',
+            '{{cookiecutter.project_description}}': '{{ cookiecutter.project_description }}',
+            '{{cookiecutter.cpp_standard}}': '{{ cookiecutter.cpp_standard }}',
+            '{{cookiecutter.build_system}}': '{{ cookiecutter.build_system | capitalize }}',
+            '{{cookiecutter.testing_framework}}': '{{ cookiecutter.testing_framework | upper }}',
+            '{{cookiecutter.use_ninja}}': '{{ cookiecutter.use_ninja }}',
         }
 
         for template_var, actual_value in replacements.items():
             content = content.replace(template_var, actual_value)
-
-        # Handle Jinja2 conditionals for C++ projects
-        # Replace the conditional block with C++ specific content
-        content = content.replace(
-            '{% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}',
-            f'C++ {cpp_standard}'
-        )
 
         # Write the customized file
         with open(claude_md_path, 'w', encoding='utf-8') as f:
@@ -215,6 +253,9 @@ def print_next_steps():
 
 def main():
     try:
+        # Process GitHub workflow files to handle template variables
+        process_workflow_files()
+
         # Setup Claude AI context with template variables
         setup_claude_context()
 
