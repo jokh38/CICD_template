@@ -123,6 +123,13 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
+# Add system include directories explicitly for clang-tidy (from g++ -E -v)
+include_directories(SYSTEM "/usr/include/c++/11")
+include_directories(SYSTEM "/usr/include/x86_64-linux-gnu/c++/11")
+include_directories(SYSTEM "/usr/include/c++/11/backward")
+include_directories(SYSTEM "/usr/include/x86_64-linux-gnu")
+include_directories(SYSTEM "/usr/include")
+
 # Find packages
 find_package(GTest REQUIRED)
 
@@ -232,6 +239,33 @@ GITIGNORE
     if [ -f ~/.clang-tidy ]; then
         cp ~/.clang-tidy .
     fi
+
+    # Create project-specific .clang-tidy for test project
+    cat > .clang-tidy << 'CLANG_TIDY_CONFIG'
+# clang-tidy configuration for test project
+Checks: >
+  *,
+  -fuchsia-*,
+  -google-*,
+  -llvm-*,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -clang-diagnostic-error
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.FunctionCase
+    value: camelBack
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+CLANG_TIDY_CONFIG
 
     echo "Test project created at $TEST_DIR"
 

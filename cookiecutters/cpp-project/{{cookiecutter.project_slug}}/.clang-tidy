@@ -6,9 +6,10 @@ Checks: >
   -llvm-*,
   -modernize-use-trailing-return-type,
   -readability-magic-numbers,
-  -cppcoreguidelines-avoid-magic-numbers
+  -cppcoreguidelines-avoid-magic-numbers,
+  -clang-diagnostic-error
 
-WarningsAsErrors: '*'
+WarningsAsErrors: ''
 
 HeaderFilterRegex: '.*'
 

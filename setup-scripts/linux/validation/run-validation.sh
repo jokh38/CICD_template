@@ -54,9 +54,9 @@ validate_cpp_tools() {
     echo "Testing clang-format..."
     cd $TEST_DIR && clang-format --dry-run src/*.cpp src/*.h tests/*.cpp || echo "clang-format check completed with warnings"
 
-    # Test clang-tidy (less strict mode)
+    # Test clang-tidy (less strict mode with system includes)
     echo "Testing clang-tidy..."
-    cd $TEST_DIR && run-clang-tidy -p build src/*.cpp tests/*.cpp || echo "clang-tidy check completed with warnings"
+    cd $TEST_DIR && find src tests -name "*.cpp" -o -name "*.h" | xargs clang-tidy -p build --quiet --extra-arg=-isystem/usr/include/c++/11 --extra-arg=-isystem/usr/include/x86_64-linux-gnu/c++/11 --extra-arg=-isystem/usr/include/c++/11/backward --extra-arg=-isystem/usr/include/x86_64-linux-gnu --extra-arg=-isystem/usr/include || echo "clang-tidy check completed with warnings"
 
     echo -e "${GREEN}✅ C++ validation tests passed${NC}"
 }

@@ -18,7 +18,7 @@ repos:
         args: [--style=file]
 
       - id: clang-tidy
-        args: [-checks=*, --warnings-as-errors=*]
+        args: [-checks=*, -warnings-as-errors=*, --quiet, --use-color]
 
       - id: cppcheck
         args: [
