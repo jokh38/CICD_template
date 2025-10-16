@@ -36,7 +36,6 @@ def setup_claude_context():
         replacements = {
             '{{cookiecutter.project_name}}': '{{ cookiecutter.project_name }}',
             '{{cookiecutter.project_description}}': '{{ cookiecutter.project_description }}',
-            '{{cookiecutter.python_version}}': '',  # Empty for C++ projects
             '{{cookiecutter.cpp_standard}}': '{{ cookiecutter.cpp_standard }}',
         }
 

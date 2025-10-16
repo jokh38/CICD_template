@@ -83,14 +83,14 @@ jobs:
 
         # Prepare AI context
         CONTEXT_ARG=""
-        if [ -n "${{ steps.load-context.outputs.context_file }}" ]; then
-          CONTEXT_ARG="--system-prompt \"$(cat ${{ steps.load-context.outputs.context_file }})\""
+        if [ -n "{% raw %}{{ steps.load-context.outputs.context_file }}{% endraw %}" ]; then
+          CONTEXT_ARG="--system-prompt \"$(cat {% raw %}{{ steps.load-context.outputs.context_file }}{% endraw %})\""
         fi
 
         # Build the AI prompt based on command type
-        case "${{ steps.extract-command.outputs.command }}" in
+        case "{% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}" in
           "add-feature")
-            PROMPT="Implement the following feature: ${{ steps.extract-command.outputs.description }}
+            PROMPT="Implement the following feature: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
 Follow the AI AUTOMATED PR CREATION WORKFLOW:
 1. Analyze the feature requirements
@@ -103,10 +103,10 @@ Project: {% raw %}{{ github.repository }}{% endraw %}
 Language: C++{{cookiecutter.cpp_standard}}
 Build System: {{cookiecutter.build_system | capitalize}}
 Testing: {{cookiecutter.testing_framework | upper}}
-Context: ${{ steps.extract-command.outputs.description }}"
+Context: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}"
             ;;
           "fix-issue")
-            PROMPT="Fix the following issue: ${{ steps.extract-command.outputs.description }}
+            PROMPT="Fix the following issue: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
 Follow the AI AUTOMATED PR CREATION WORKFLOW:
 1. Analyze the issue requirements
@@ -119,10 +119,10 @@ Project: {% raw %}{{ github.repository }}{% endraw %}
 Language: C++{{cookiecutter.cpp_standard}}
 Build System: {{cookiecutter.build_system | capitalize}}
 Testing: {{cookiecutter.testing_framework | upper}}
-Issue: ${{ steps.extract-command.outputs.description }}"
+Issue: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}"
             ;;
           "refactor-code")
-            PROMPT="Refactor C++ code according to quality standards: ${{ steps.extract-command.outputs.description }}
+            PROMPT="Refactor C++ code according to quality standards: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
 Follow the AI AUTOMATED PR CREATION WORKFLOW:
 1. Analyze refactoring requirements
@@ -135,11 +135,11 @@ Project: {% raw %}{{ github.repository }}{% endraw %}
 Language: C++{{cookiecutter.cpp_standard}}
 Build System: {{cookiecutter.build_system | capitalize}}
 Testing: {{cookiecutter.testing_framework | upper}}
-Refactoring: ${{ steps.extract-command.outputs.description }}"
+Refactoring: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}"
             ;;
         esac
 
-        echo "Executing AI task with command: ${{ steps.extract-command.outputs.command }}"
+        echo "Executing AI task with command: {% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}"
 
         # Execute using Claude Code with Haiku model for efficiency
         claude --model haiku -p "$PROMPT" --output-format json > ai_result.json
@@ -154,7 +154,7 @@ Refactoring: ${{ steps.extract-command.outputs.description }}"
         fi
 
     - name: Create Pull Request
-      if: steps.ai-task.outputs.success == 'true'
+      if: {% raw %}{{ steps.ai-task.outputs.success == 'true' }}{% endraw %}
       run: |
         # Check if there are changes to commit
         if [ -n "$(git status --porcelain)" ]; then
@@ -163,19 +163,19 @@ Refactoring: ${{ steps.extract-command.outputs.description }}"
           git config --local user.name "GitHub Action"
 
           # Create feature branch
-          BRANCH_NAME="ai-${{ steps.extract-command.outputs.command }}-$(date +%s)"
+          BRANCH_NAME="ai-{% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}-$(date +%s)"
           git checkout -b $BRANCH_NAME
 
           # Add changes
           git add .
 
           # Create atomic commit
-          COMMIT_MSG="${{ steps.extract-command.outputs.command }}: ${{ steps.extract-command.outputs.description }}
+          COMMIT_MSG="{% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
           🤖 Generated with Claude Code AI Automation
 
-          - Command: /claude ${{ steps.extract-command.outputs.command }}
-          - Description: ${{ steps.extract-command.outputs.description }}
+          - Command: /claude {% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}
+          - Description: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
           - Model: haiku
           - Language: C++{{cookiecutter.cpp_standard}}"
 
@@ -186,14 +186,14 @@ Refactoring: ${{ steps.extract-command.outputs.description }}"
 
           # Create pull request
           gh pr create \
-            --title "AI ${{ steps.extract-command.outputs.command }}: ${{ steps.extract-command.outputs.description }}" \
+            --title "AI {% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}" \
             --body "## 🤖 AI-Generated Pull Request
 
 ### Command
-\`/claude ${{ steps.extract-command.outputs.command }}\`
+\`/claude {% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}\`
 
 ### Description
-${{ steps.extract-command.outputs.description }}
+{% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
 ### Changes
 This PR was automatically generated by Claude Code AI following the **AI AUTOMATED PR CREATION WORKFLOW**:
@@ -229,11 +229,11 @@ This PR was automatically generated by Claude Code AI following the **AI AUTOMAT
     - name: Comment on Issue/PR
       if: always()
       run: |
-        if [ "${{ steps.ai-task.outputs.success }}" == "true" ]; then
+        if [ "{% raw %}{{ steps.ai-task.outputs.success }}{% endraw %}" == "true" ]; then
           COMMENT="✅ **AI Task Completed Successfully**
 
-**Command**: \`/claude ${{ steps.extract-command.outputs.command }}\`
-**Description**: ${{ steps.extract-command.outputs.description }}
+**Command**: \`/claude {% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}\`
+**Description**: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
 The AI has analyzed your request and created a pull request with the C++ implementation.
 
@@ -251,8 +251,8 @@ The AI has analyzed your request and created a pull request with the C++ impleme
         else
           COMMENT="❌ **AI Task Failed**
 
-**Command**: \`/claude ${{ steps.extract-command.outputs.command }}\`
-**Description**: ${{ steps.extract-command.outputs.description }}
+**Command**: \`/claude {% raw %}{{ steps.extract-command.outputs.command }}{% endraw %}\`
+**Description**: {% raw %}{{ steps.extract-command.outputs.description }}{% endraw %}
 
 The AI encountered an error while processing your request. Please check the workflow logs for details.
 
