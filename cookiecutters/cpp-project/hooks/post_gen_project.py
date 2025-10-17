@@ -370,22 +370,7 @@ def print_next_steps():
     print("• Git Hooks: {}".format(use_git_hooks))
     print("• AI Workflow: {}".format(use_ai))
 
-    print("\n• Quick Start:")
-    print("  1. cd {}".format(project_slug))
-    print("  2. mkdir build && cd build")
-    if build_system == "cmake":
-        print("  3. cmake ..")
-        print("  4. make")
-    else:
-        print("  3. meson setup")
-        print("  4. ninja")
-    print("  5. ctest  # Run tests")
-
-    if use_ai == "yes":
-        print("  6. Review .github/claude/CLAUDE.md for AI assistant")
-        print("  7. claude mcp list  # Verify Serena MCP installation")
-        print("  8. See .serena/USAGE_GUIDE.md for Serena best practices")
-
+  
     if use_git_hooks == "yes":
         print("\n• Pre-commit hooks are installed and will run automatically on commit")
         print("• Pre-push hooks are installed and will run tests/dynamic analysis on push")

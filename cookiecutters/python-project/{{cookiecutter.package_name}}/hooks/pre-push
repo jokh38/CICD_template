@@ -1,0 +1,178 @@
+#!/bin/bash
+# Pre-push hook for Python projects - Testing and Dynamic Analysis
+# This hook runs comprehensive tests, security scanning, and type checking
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo -e "${BLUE}🔍 Pre-push Hook: Testing and Dynamic Analysis${NC}"
+echo "=================================================="
+
+# Check if we're in a Python project with virtual environment
+if [ ! -d ".venv" ]; then
+    echo -e "${YELLOW}⚠️  No .venv directory found. Attempting to activate system Python...${NC}"
+    PYTHON_CMD="python3"
+else
+    echo -e "${GREEN}✓ Virtual environment found${NC}"
+    PYTHON_CMD=".venv/bin/python3"
+    source .venv/bin/activate 2>/dev/null || true
+fi
+
+# Function to run command and check result
+run_check() {
+    local description="$1"
+    local command="$2"
+    local critical="${3:-true}"
+
+    echo -e "\n${BLUE}📋 $description${NC}"
+    echo "Running: $command"
+
+    if eval "$command"; then
+        echo -e "${GREEN}✅ $description - PASSED${NC}"
+        return 0
+    else
+        if [ "$critical" = "true" ]; then
+            echo -e "${RED}❌ $description - FAILED${NC}"
+            echo -e "${RED}Please fix the issues above before pushing.${NC}"
+            return 1
+        else
+            echo -e "${YELLOW}⚠️  $description - WARNING${NC}"
+            return 0
+        fi
+    fi
+}
+
+# Get changed files that are Python code
+PYTHON_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.py$' || true)
+
+if [ -z "$PYTHON_FILES" ]; then
+    echo -e "${YELLOW}📝 No Python files changed, running full test suite anyway...${NC}"
+else
+    echo -e "${GREEN}📝 Python files changed: $PYTHON_FILES${NC}"
+fi
+
+# 1. Install/update dependencies if needed
+echo -e "\n${BLUE}📦 Checking dependencies...${NC}"
+if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ]; then
+    if command -v pip &> /dev/null; then
+        echo "Installing/updating dependencies..."
+        if [ -f "pyproject.toml" ]; then
+            pip install -e .[dev] --quiet 2>/dev/null || echo "Dependencies installation completed with warnings"
+        else
+            pip install -r requirements.txt --quiet 2>/dev/null || echo "Dependencies installation completed with warnings"
+        fi
+    fi
+fi
+
+# 2. Run comprehensive type checking (strict mode)
+echo -e "\n${BLUE}🔍 Running comprehensive type checking...${NC}"
+if command -v mypy &> /dev/null; then
+    if run_check "Type Checking (mypy)" "mypy src/ --strict --show-error-codes --pretty" true; then
+        TYPE_CHECK_PASSED=true
+    else
+        TYPE_CHECK_PASSED=false
+    fi
+else
+    echo -e "${YELLOW}⚠️  mypy not found, skipping type checking${NC}"
+    echo "Install with: pip install mypy"
+    TYPE_CHECK_PASSED=true  # Don't fail the hook if mypy is not installed
+fi
+
+# 3. Run test suite with coverage
+echo -e "\n${BLUE}🧪 Running test suite with coverage...${NC}"
+if command -v pytest &> /dev/null; then
+    # Determine if we should run specific tests based on changed files
+    if [ -n "$PYTHON_FILES" ] && command -v pytest-testmon &> /dev/null; then
+        TEST_CMD="pytest tests/ --cov=src --cov-report=term-missing --testmon"
+    else
+        TEST_CMD="pytest tests/ --cov=src --cov-report=term-missing -v"
+    fi
+
+    if run_check "Test Suite (pytest)" "$TEST_CMD" true; then
+        TESTS_PASSED=true
+    else
+        TESTS_PASSED=false
+    fi
+else
+    echo -e "${RED}❌ pytest not found${NC}"
+    echo "Install with: pip install pytest pytest-cov"
+    TESTS_PASSED=false
+fi
+
+# 4. Run security vulnerability scanning
+echo -e "\n${BLUE}🔒 Running security analysis...${NC}"
+if command -v safety &> /dev/null; then
+    # Check project dependencies only (not system-wide)
+    if [ -f "requirements.txt" ]; then
+        run_check "Security Scan (safety)" "safety check --json --file requirements.txt" false
+    elif [ -f "pyproject.toml" ]; then
+        # Extract dependencies from pyproject.toml and check them
+        run_check "Security Scan (safety)" "safety check --json" false
+    else
+        echo -e "${YELLOW}⚠️  No requirements file found, skipping security scan${NC}"
+    fi
+else
+    echo -e "${YELLOW}⚠️  safety not found, skipping security scan${NC}"
+    echo "Install with: pip install safety"
+fi
+
+# 5. Run additional security analysis with bandit (if available)
+if command -v bandit &> /dev/null; then
+    run_check "Security Analysis (bandit)" "bandit -r src/ -f json" false
+else
+    echo -e "${YELLOW}📦 bandit not found, skipping additional security analysis${NC}"
+    echo "Install with: pip install bandit"
+fi
+
+# 6. Check code complexity with radon (if available)
+if command -v radon &> /dev/null; then
+    run_check "Code Complexity (radon)" "radon cc src/ --min B" false
+else
+    echo -e "${YELLOW}📦 radon not found, skipping complexity analysis${NC}"
+    echo "Install with: pip install radon"
+fi
+
+# 7. Check for potential performance issues with profiling (if available)
+if command -v pytest-benchmark &> /dev/null && [ -f "tests/performance/" ]; then
+    run_check "Performance Tests" "pytest tests/performance/ --benchmark-only" false
+fi
+
+# Final status check
+echo -e "\n${BLUE}==================================================${NC}"
+echo -e "${BLUE}🏁 Pre-push Hook Summary${NC}"
+echo "=================================================="
+
+# Check critical failures
+CRITICAL_FAILURES=false
+
+if [ "$TYPE_CHECK_PASSED" != "true" ]; then
+    echo -e "${RED}❌ Type checking failed${NC}"
+    CRITICAL_FAILURES=true
+fi
+
+if [ "$TESTS_PASSED" != "true" ]; then
+    echo -e "${RED}❌ Tests failed${NC}"
+    CRITICAL_FAILURES=true
+fi
+
+if [ "$CRITICAL_FAILURES" = "true" ]; then
+    echo -e "\n${RED}🚫 PUSH BLOCKED${NC}"
+    echo -e "${RED}Critical checks failed. Please fix the issues above before pushing.${NC}"
+    echo -e "\n${YELLOW}💡 Tip: Use 'git commit --no-verify' only in emergencies${NC}"
+    exit 1
+else
+    echo -e "\n${GREEN}✅ ALL CRITICAL CHECKS PASSED${NC}"
+    echo -e "${GREEN}🚀 Ready to push!${NC}"
+
+    # Show warnings if any
+    echo -e "\n${YELLOW}ℹ️  Note: Some non-critical checks may have warnings.${NC}"
+    echo -e "${YELLOW}    Review the output above for details.${NC}"
+
+    exit 0
+fi
