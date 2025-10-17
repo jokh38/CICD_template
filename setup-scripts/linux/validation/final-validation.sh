@@ -152,7 +152,7 @@ fi
 
 # Test with Clang
 print_status "Testing C++ compilation with Clang..."
-if clang++ -std=c++17 -o /tmp/test_clang_cpp /tmp/test_cpp.cpp && /tmp/test_clang_cpp > /tmp/clang_output.txt 2>&1; then
+if clang++-16 -std=c++17 -stdlib=libc++ -I/usr/include/c++/v1 -L/usr/lib/llvm-16/lib -o /tmp/test_clang_cpp /tmp/test_cpp.cpp && /tmp/test_clang_cpp > /tmp/clang_output.txt 2>&1; then
     print_success "✓ Clang compilation and execution"
     if grep -q "Sum: 15" /tmp/clang_output.txt; then
         print_success "✓ Clang program output correct"
