@@ -1,5 +1,9 @@
-# Python Pre-commit (Ruff-based)
+# Python Pre-commit Configuration (Linting & Formatting Only)
+# This configuration focuses on code quality checks that can be automated
+# Dynamic analysis (tests, security scanning) is handled by pre-push hooks
+
 repos:
+  # Basic file quality checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -10,18 +14,30 @@ repos:
         args: ['--maxkb=1000']
       - id: check-merge-conflict
       - id: detect-private-key
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
 
-  # Ruff replaces: Black, Flake8, isort, pyupgrade
+  # Python code formatting and linting (Ruff-based)
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.0
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
+        description: Python linting and auto-fixing (replaces flake8, isort, pyupgrade)
       - id: ruff-format
+        description: Python code formatting (replaces black)
 
-  # Optional: mypy (with basic dependencies)
+  # Basic type checking syntax validation (not full type checking)
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.11.0
     hooks:
       - id: mypy
-        args: [--strict, --ignore-missing-imports]
+        args: [--ignore-missing-imports, --no-error-summary]
+        description: Basic type syntax validation (full type checking in pre-push)
+        pass_filenames: false

@@ -326,6 +326,35 @@ def install_pre_commit():
         print("   ⚠️  You can install manually later with: pre-commit install")
         return False
 
+def install_pre_push_hook():
+    """Install custom pre-push hook for testing and dynamic analysis."""
+    print("• Installing pre-push hook...")
+
+    use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
+
+    if use_git_hooks == "no":
+        print("   ⚠️  Git hooks disabled by configuration")
+        return False
+
+    # Copy the pre-push hook template to .git/hooks/
+    hooks_dir = ".git/hooks"
+    pre_push_source = "hooks/pre-push"
+    pre_push_target = os.path.join(hooks_dir, "pre-push")
+
+    if os.path.exists(pre_push_source):
+        try:
+            import shutil
+            shutil.copy2(pre_push_source, pre_push_target)
+            os.chmod(pre_push_target, 0o755)  # Make executable
+            print("   • Pre-push hook installed successfully")
+            return True
+        except Exception as e:
+            print(f"   ❌ Failed to install pre-push hook: {e}")
+            return False
+    else:
+        print("   ⚠️  Pre-push hook template not found")
+        return False
+
 def print_next_steps():
     project_name = "{{ cookiecutter.project_name }}"
     project_slug = "{{ cookiecutter.project_slug }}"
@@ -359,10 +388,12 @@ def print_next_steps():
 
     if use_git_hooks == "yes":
         print("\n• Pre-commit hooks are installed and will run automatically on commit")
+        print("• Pre-push hooks are installed and will run tests/dynamic analysis on push")
         print("• Run 'pre-commit run --all-files' to check all files manually")
         print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - it bypasses quality checks!")
+        print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - it bypasses testing!")
     else:
-        print("\n• Pre-commit hooks are disabled - manual quality checks required")
+        print("\n• Git hooks are disabled - manual quality checks required")
 
     if use_ai == "yes":
         print("• Serena MCP integration is configured for enhanced AI capabilities")
@@ -524,6 +555,7 @@ def main():
         initialize_git()
         setup_build_directory()
         install_pre_commit()
+        install_pre_push_hook()
         install_serena_mcp()
         print_next_steps()
     except Exception as e:

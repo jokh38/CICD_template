@@ -1,5 +1,9 @@
-# C++ Pre-commit configuration
+# C++ Pre-commit Configuration (Linting & Formatting Only)
+# This configuration focuses on code quality checks that can be automated
+# Dynamic analysis (tests, comprehensive static analysis) is handled by pre-push hooks
+
 repos:
+  # Basic file quality checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -9,32 +13,39 @@ repos:
       - id: check-added-large-files
         args: ['--maxkb=5000']
       - id: check-merge-conflict
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-case-conflict
 
-  # C++ formatting and linting (optional tools)
+  # C++ code formatting and basic linting
   - repo: https://github.com/pocc/pre-commit-hooks
     rev: v1.3.5
     hooks:
-      # Only run clang-format if it's available
+      # Code formatting (always run if available)
       - id: clang-format
         args: [--style=file]
+        description: Format C++ code according to .clang-format
         require_serial: false
 
-      # Run clang-tidy with reasonable checks (less strict)
+      # Basic syntax checking (not full static analysis)
       - id: clang-tidy
         args: [
-          -checks=readability-*,modernize-*,performance-*,bugprone-*,
           -warnings-as-errors=,
           --quiet,
-          --use-color
+          --use-color,
+          -checks=-*,readability-identifier-naming,modernize-use-trailing-type-return,bugprone-*
         ]
+        description: Basic C++ linting (full analysis in pre-push)
         require_serial: false
+        pass_filenames: false
 
-      # Only run cppcheck if it's available (skip otherwise)
-      - id: cppcheck
-        args: [
-          --enable=warning,style,performance,portability,
-          --suppress=missingIncludeSystem,
-          --inline-suppr,
-          --error-exitcode=0
-        ]
-        require_serial: false
+  # CMake file formatting (if available)
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+        description: Format CMake files according to style standards
+      - id: cmake-lint
+        description: Lint CMake files for best practices
