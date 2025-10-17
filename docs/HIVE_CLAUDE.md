@@ -95,22 +95,163 @@ sudo bash setup-scripts/total_run.sh --validate-only
 .\setup-scripts\total_run.ps1 -ValidateOnly
 ```
 
+### Serena-Enhanced Autonomous Development
+
+#### Autonomous Development Workflows
+
+**1. Self-Improving Code Quality**
+```bash
+# Serena automatically maintains code quality
+# Enable shell tools and allow Serena to:
+claude "Analyze codebase and fix all quality issues"
+
+# Serena will:
+# - Run linters and fix formatting issues automatically
+# - Identify and resolve code smells
+# - Apply modern language best practices
+# - Update documentation to match code changes
+# - Validate all changes with tests before committing
+```
+
+**2. Intelligent Testing Automation**
+```bash
+# Serena creates and maintains comprehensive test suites
+claude "Generate missing tests and improve coverage"
+
+# Serena will:
+# - Analyze code to identify untested paths
+# - Generate unit, integration, and performance tests
+# - Fix failing tests automatically
+# - Optimize test execution performance
+# - Maintain test documentation and examples
+# - Run regression tests on code changes
+```
+
+**3. Autonomous Dependency Management**
+```bash
+# Serena manages dependencies proactively
+claude "Audit and optimize all project dependencies"
+
+# Serena will:
+# - Scan for security vulnerabilities and auto-fix
+# - Update packages to optimal compatible versions
+# - Resolve dependency conflicts intelligently
+# - Optimize bundle size and performance
+# - Maintain dependency documentation
+# - Validate updates don't break functionality
+```
+
+**4. Continuous Architecture Evolution**
+```bash
+# Serena evolves and maintains architecture quality
+claude "Analyze architecture and implement improvements"
+
+# Serena will:
+# - Enforce architectural invariants automatically
+# - Identify and refactor code smells
+# - Optimize dependency structure and imports
+# - Apply design patterns where appropriate
+# - Maintain architecture documentation
+# - Validate improvements don't break functionality
+```
+
+**5. Living Documentation System**
+```bash
+# Serena maintains comprehensive, up-to-date documentation
+claude "Update project documentation to match current codebase"
+
+# Serena will:
+# - Generate API documentation from source code
+# - Create architecture diagrams and overviews
+# - Maintain setup and deployment guides
+# - Update examples and tutorials automatically
+# - Create troubleshooting documentation
+# - Ensure docs stay in sync with code changes
+```
+
+#### Advanced Serena Integration Patterns
+
+**1. Proactive Quality Assurance**
+```bash
+# Serena prevents issues before they reach production
+# Setup: Enable all tools and continuous monitoring
+
+# Daily autonomous maintenance:
+claude "Perform daily codebase health check and optimization"
+
+# Serena will autonomously:
+# - Run full test suite and fix any failures
+# - Check code quality metrics and improve them
+# - Audit dependencies and apply security updates
+# - Optimize build performance and configuration
+# - Update documentation and examples
+# - Report changes and improvements made
+```
+
+**2. Intelligent Feature Development**
+```bash
+# Serena assists with end-to-end feature development
+claude "Implement user authentication with comprehensive tests"
+
+# Serena will:
+# - Analyze existing codebase for integration points
+# - Generate feature code following project patterns
+# - Create comprehensive test suites
+# - Update documentation and API references
+# - Validate against architectural invariants
+# - Optimize performance and security
+# - Create deployment and configuration updates
+```
+
+**3. Autonomous Performance Optimization**
+```bash
+# Serena continuously optimizes project performance
+claude "Analyze and optimize project performance"
+
+# Serena will:
+# - Profile application performance bottlenecks
+# - Optimize algorithms and data structures
+# - Improve database queries and caching
+# - Optimize build and deployment processes
+# - Reduce memory usage and improve efficiency
+# - Generate performance benchmarks and monitoring
+```
+
 ### AI-Assisted Development Features
 
 #### Serena MCP Integration
-Projects are created with **Serena MCP** (Model Context Protocol) server integration for enhanced AI capabilities:
+Projects are created with **Serena MCP** (Model Context Protocol) server integration for enhanced AI capabilities. Serena is an advanced AI agent that provides autonomous development capabilities when used with proper configuration.
 
-**Installation:**
+**Installation & Configuration:**
 ```bash
 # Install Serena MCP server for Claude Code
 claude mcp add-json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}'
+
+# Verify installation
+claude mcp list
+
+# Recommended: Use desktop-app context for Claude Desktop integration
+# Projects are pre-configured with optimal Serena settings
 ```
 
-**Features:**
-- **Enhanced Context**: Serena provides intelligent code analysis and context awareness
-- **Workflow Automation**: Advanced automation capabilities for development tasks
-- **Code Understanding**: Deep semantic analysis of code structure and patterns
-- **Documentation Generation**: Automated documentation creation and updates
+**Core Capabilities:**
+- **Autonomous Code Execution**: Shell command execution for testing, building, and deployment
+- **Intelligent Context Management**: Dynamic context understanding with modes and customizable behaviors
+- **Project Onboarding**: Automated codebase analysis and memory system initialization
+- **Multi-Tool Integration**: Seamless use of file operations, search, git commands, and web access
+- **Error Correction**: Self-correcting behavior based on test results and linting feedback
+
+**Recommended Usage Patterns:**
+- **Enable All Tools**: For maximum value, enable Serena's shell execution and editing tools
+- **Planning Mode**: Use `planning` mode for complex architectural decisions
+- **Editing Mode**: Use `editing` mode for focused code modification tasks
+- **Interactive Mode**: Use `interactive` mode for conversational development sessions
+
+**Project-Specific Features:**
+- **Memory System**: Projects include `.serena/memories/` for persistent project knowledge
+- **Custom Contexts**: Pre-configured contexts for different development scenarios
+- **Quality Integration**: Seamless integration with existing git hooks and testing frameworks
+- **Documentation Generation**: Automated creation and maintenance of project documentation
 
 #### GitHub Labels for AI Workflows
 Projects are created with pre-configured labels:
@@ -277,10 +418,74 @@ claude mcp add-json "serena" '{"command":"uvx","args":["--from","git+https://git
 # Verify installation
 claude mcp list
 
-# Use Serena MCP features in your project
-# Serena provides enhanced context analysis and workflow automation
-# Projects are pre-configured to work seamlessly with Serena MCP
+# Enable all tools for maximum value (recommended)
+# In Claude Desktop settings, ensure shell execution and editing tools are enabled
+
+# Run initial project onboarding
+# Serena will automatically analyze your codebase and create memories on first use
+
+# Use Serena for autonomous development:
+# - Code analysis and refactoring
+# - Test execution and bug fixing
+# - Build automation and deployment
+# - Documentation generation
+# - Dependency management
 ```
+
+### Serena MCP Best Practices
+
+#### Recommended Configuration for Maximum Value
+
+**1. Enable All Tools**
+- Serena provides the most value when all tools are enabled
+- Shell execution is crucial for autonomous testing and debugging
+- File editing tools allow Serena to implement fixes automatically
+- Web access enables dependency research and problem-solving
+
+**2. Optimal Context Selection**
+- **`desktop-app`**: Default context, ideal for Claude Desktop users
+- **`agent`**: For more autonomous behavior, use with Agno platform
+- **`ide-assistant`**: Optimized for IDE integration like VSCode or Cursor
+
+**3. Mode Combinations for Different Tasks**
+- **Planning + One-shot**: `--mode planning --mode one-shot` for architectural planning
+- **Editing + Interactive**: `--mode editing --mode interactive` for code modification
+- **Planning + Interactive**: `--mode planning --mode interactive` for complex development sessions
+
+**4. Project Onboarding Workflow**
+- First session: Allow Serena to complete full onboarding process
+- Review generated memories in `.serena/memories/` directory
+- Customize memories with project-specific insights
+- Use new conversations after onboarding for optimal context usage
+
+**5. Error Handling and Recovery**
+- Serena uses test results, linting, and program execution for self-correction
+- Start with clean git state for better change tracking
+- Ensure all linting checks and tests pass before beginning tasks
+- Use git diff to review Serena's changes
+
+**6. Context Management**
+- For long tasks, create summary memories and continue in new conversations
+- Request explicit memory creation when approaching context limits
+- Use read-only mode (`read_only: true`) for analysis-only tasks
+- Backup work and use version control for safety
+
+#### Integration with Existing Development Workflow
+
+**1. Git Hooks Integration**
+- Serena works seamlessly with existing git hooks
+- Hooks provide immediate feedback on Serena's changes
+- Never bypass hooks with `git commit --no-verify`
+
+**2. Testing Integration**
+- Serena can run tests automatically and fix failures
+- Use existing test frameworks (pytest, GoogleTest)
+- Leverage coverage reports to guide Serena's improvements
+
+**3. Code Quality Integration**
+- Serena respects existing linting configurations
+- Can automatically fix formatting and linting issues
+- Works with pre-commit hooks for quality assurance
 
 ### Configuration
 

@@ -21,31 +21,53 @@
 ### Goal
 Receive development requests through external commands (e.g., Issue Comments), generate and validate code, and **automatically create the final Pull Request**.
 
-### AI Automated PR Creation Steps (Step-by-Step Flow)
+### Enhanced AI Automated PR Creation Steps (Serena-Powered)
 
-AI strictly follows these 5-step processes when receiving requests:
+AI strictly follows these 8-step processes when receiving requests:
 
-| Step | Responsibility | Detail |
+| Step | Responsibility | Serena Enhancement |
 | :--- | :--- | :--- |
-| **1. Command Analysis** | `Issue/PR Comment` | Accurately extract requested **task type** (`add-feature`, `fix-issue`) and **detailed requirements** |
-| **2. Code & Test Generation** | `src/`, `tests/` | Implement code matching requirements and **simultaneously** write unit tests (`pytest` or `gtest` based) |
-| **3. Local Quality Validation** | `pre-commit` Hooks | **Immediately after code generation**, ensure passing the following quality gates in **local environment**: <br> - **Formatting**: `ruff format --check` or `clang-format --dry-run`<br> - **Linting/Analysis**: `ruff check` or `clang-tidy`<br> - **Testing**: `pytest tests/` or `ctest --test-dir build` |
-| **4. Atomic Commit** | `git commit` | Bundle all changes including code and test files into a **single atomic commit** |
-| **5. PR Creation & Completion** | `git push` & `gh pr create` | Push commit to new feature branch, **automatically create Pull Request** to main branch, then complete task |
+| **1. Command Analysis** | `Issue/PR Comment` | Accurately extract requested **task type** and **detailed requirements** using Serena's context understanding |
+| **2. Code & Test Generation** | `src/`, `tests/` | Implement code matching requirements and **simultaneously** write comprehensive unit tests |
+| **3. Serena Validation** | `Serena MCP` | **Autonomous validation and optimization**: <br> - Run full test suite and fix failures<br> - Optimize code quality and performance<br> - Validate architectural invariants<br> - Update documentation automatically |
+| **3.5** | **Serena Optimization** | **Performance and security optimization** <br> - Apply best practices automatically<br> - Optimize algorithms and data structures<br> - Enhance security measures<br> - Improve code maintainability |
+| **4. Local Quality Validation** | `pre-commit` Hooks | **Final quality gates**: <br> - **Formatting**: `ruff format --check` or `clang-format --dry-run`<br> - **Linting/Analysis**: `ruff check` or `clang-tidy`<br> - **Testing**: `pytest tests/` or `ctest --test-dir build` |
+| **4.5** | **Serena Documentation** | **Automatic documentation updates** <br> - Update API documentation<br> - Create changelog entries<br> - Update examples and tutorials<br> - Generate architecture diagrams |
+| **5. Atomic Commit** | `git commit` | Bundle all changes including code, tests, and documentation into a **single atomic commit** with detailed Serena-generated commit message |
+| **5.5** | **Serena Verification** | **Pre-push validation** <br> - Final integrity check<br> - Rollback capability if issues detected<br> - Performance regression testing<br> - Security vulnerability scan |
+| **6. PR Creation & Completion** | `git push` & `gh pr create` | Push commit to new feature branch, **automatically create Pull Request** to main branch with comprehensive description, then complete task |
 
-### AI Command Protocol (Command Protocol)
+### Enhanced AI Command Protocol (Serena-Powered)
 
 To trigger AI workflow, include the following commands in Issue or PR Comment:
 
-| Command | Function |
-| :--- | :--- |
-| `/claude add-feature` | Add new feature code and Unit Tests |
-| `/claude fix-issue` | Fix bugs and add Regression Tests |
-| `/claude refactor-code` | Improve existing code according to quality standards |
-| `/claude analyze-codebase` | Deep code analysis using Serena MCP |
-| `/claude optimize-patterns` | Pattern optimization suggestions |
-| `/claude generate-docs` | Automated documentation generation |
-| `/claude serena-insights` | Enhanced insights using Serena MCP capabilities |
+| Command | Serena Enhancement | Function |
+| :--- | :--- | :--- |
+| `/claude add-feature` | **Auto-generate & validate** | Add new feature code with comprehensive tests and documentation |
+| `/claude fix-issue` | **Auto-diagnose & repair** | Identify root cause and implement complete fixes with regression tests |
+| `/claude refactor-code` | **Safe automated refactoring** | Improve code structure while maintaining functionality |
+| `/claude intelligent-testing` | **Self-improving test suite** | Generate, execute, and optimize tests automatically |
+| `/claude architecture-evolution` | **Autonomous architecture management** | Analyze and implement architectural improvements safely |
+| `/claude dependency-audit` | **Auto-fix dependency issues** | Update, secure, and optimize dependencies automatically |
+| `/claude workspace-analysis` | **Workspace optimization** | Analyze and improve multi-project workspace structure |
+| `/claude knowledge-transfer` | **Living documentation system** | Generate and maintain comprehensive documentation |
+| `/claude serena-autofix` | **Comprehensive auto-fix** | Identify and fix all types of code issues automatically |
+| `/claude serena-optimize` | **Performance optimization** | Optimize code, build, and runtime performance |
+| `/claude serena-insights` | **Deep analysis** | Provide comprehensive insights using all Serena capabilities |
+
+#### Serena Autonomous Capabilities
+
+**Self-Validating Changes:**
+- All Serena commands include automatic validation
+- Changes are only committed if all tests pass
+- Quality gates are enforced automatically
+- Rollback capability if issues are detected
+
+**Continuous Improvement:**
+- Serena learns from each interaction
+- Improves accuracy over time
+- Adapts to project-specific patterns
+- Maintains consistency with existing codebase
 
 ---
 
@@ -90,6 +112,15 @@ To trigger AI workflow, include the following commands in Issue or PR Comment:
 **Performance:**
 - **INV-PF-001:** No N+1 query patterns
 - **INV-PF-002:** Always cleanup resources (use context managers)
+
+**Serena Integration:**
+- **INV-SR-001:** Serena must validate all changes before commit
+- **INV-SR-002:** Serena must run full test suite after any code modification
+- **INV-SR-003:** Serena must maintain memory system consistency with code changes
+- **INV-SR-004:** Serena must document all automated changes in commit messages
+- **INV-SR-005:** Serena must preserve architectural invariants during automated changes
+- **INV-SR-006:** Serena must rollback changes if validation fails
+- **INV-SR-007:** Serena must optimize for performance and security in all automated improvements
 
 **MODULE INTERFACE RULES:**
 - Changes to public interfaces require updating ALL "Used By" locations in same commit
