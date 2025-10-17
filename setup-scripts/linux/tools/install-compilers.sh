@@ -32,31 +32,31 @@ apt-get install -y \
 
 # Remove conflicting clang versions first
 print_status "Purging potentially conflicting Clang versions..."
-apt-get purge -y clang clang-18 clang-format-18 clang-tidy-18 clang-tools-18 libclang-common-18-dev llvm-18*
+apt-get purge -y clang clang-18 clang-format-18 clang-tidy-18 clang-tools-18 libclang-common-18-dev llvm-18* || true
 
 # Install Clang
-print_status "Installing Clang 16 compiler..."
+print_status "Installing Clang 14 compiler..."
 apt-get install -y \
-    clang-16 \
-    clang-format-16 \
-    clang-tidy-16 \
-    clang-tools-16 \
-    libc++-16-dev \
-    libc++abi-16-dev
+    clang-14 \
+    clang-format-14 \
+    clang-tidy-14 \
+    clang-tools-14 \
+    libc++-14-dev \
+    libc++abi-14-dev
 
-# Set clang-16 as the default clang
-update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 100
-update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 100
-update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-16 100
-update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-16 100
+# Set clang-14 as the default clang
+update-alternatives --install /usr/bin/clang clang /usr/bin/clang-14 100
+update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-14 100
+update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 100
+update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 100
 
 # Install additional compiler utilities
-print_status "Installing compiler utilities for version 16..."
+print_status "Installing compiler utilities for version 14..."
 apt-get install -y \
-    lldb-16 \
-    lld-16 \
-    llvm-16 \
-    llvm-16-dev
+    lldb-14 \
+    lld-14 \
+    llvm-14 \
+    llvm-14-dev
 
 # Update shared library cache
 print_status "Updating shared library cache..."
