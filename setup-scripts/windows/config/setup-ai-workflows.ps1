@@ -797,6 +797,9 @@ git commit -m "feat: add new feature"  # Triggers prepare-commit-msg hook
 # If all checks pass, commit is created
 # If any check fails, commit is blocked with error details
 
+# ⚠️  WARNING: Never use --no-verify with git commit!
+# It bypasses all quality and security checks!
+
 # Run hooks manually if needed
 .\.git\hooks\prepare-commit-msg .git/COMMIT_EDITMSG message ""
 .\.git\hooks\pre-commit

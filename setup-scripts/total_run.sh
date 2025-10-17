@@ -225,6 +225,7 @@ print_summary() {
     echo "  3. Test the installation with your projects"
     echo "  4. Use the provided aliases for common tasks"
     echo "  5. Git is configured and ready for use with automated hooks"
+    echo "  🔴 IMPORTANT: Never use 'git commit --no-verify' - it bypasses all quality checks!"
     echo ""
     echo "Configuration files created in:"
     echo "  - ~/.gitconfig (Git configuration)"

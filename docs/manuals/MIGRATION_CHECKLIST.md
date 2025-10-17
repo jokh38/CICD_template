@@ -625,7 +625,7 @@ Share with team:
 
 **Common questions to address:**
 - "Why did my code get reformatted?" → Pre-commit auto-fixes
-- "How do I skip hooks temporarily?" → `git commit --no-verify` (not recommended)
+- "How do I skip hooks temporarily?" → `git commit --no-verify` (⚠️ **DANGEROUS** - not recommended)
 - "Why is the first build slow?" → Downloading dependencies (one-time)
 
 ---

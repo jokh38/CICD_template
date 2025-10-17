@@ -237,9 +237,18 @@ ls -la .git/hooks/
 # Cache pre-commit environments
 pre-commit run --all-files  # Run once to cache
 
-# Skip hooks temporarily (not recommended)
-git commit --no-verify -m "message"
+# Skip hooks temporarily (NOT RECOMMENDED - DANGEROUS)
+git commit --no-verify -m "message"  # ⚠️  WARNING: This bypasses all quality checks!
 ```
+
+🔴 **WARNING**: Never use `--no-verify` in production! It bypasses:
+- Code formatting and linting
+- Security checks
+- Type checking
+- Test validation
+- Build verification
+
+This can introduce bugs, security vulnerabilities, and code quality issues.
 
 ---
 

@@ -262,6 +262,7 @@ def print_next_steps():
     if use_git_hooks == "yes":
         print("• Pre-commit hooks are installed and will run automatically on commit")
         print("• Run 'pre-commit run --all-files' to check all files manually")
+        print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - it bypasses quality checks!")
     else:
         print("• Pre-commit hooks are disabled - manual quality checks required")
 
