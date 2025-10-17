@@ -73,10 +73,16 @@ create_project() {
     echo -e "${GREEN}Creating $language project...${NC}"
 
     if [ -n "$project_name" ]; then
-        # Extract just the directory name from full path for project_name
-        local basename_project=$(basename "$project_name")
-        cookiecutter "$template_dir" --no-input project_name="$basename_project" output_dir="$(dirname "$project_name")"
-        local project_dir="$project_name"
+        # Expand tilde and extract just the directory name from full path for project_name
+        local expanded_path="${project_name/#\~/$HOME}"
+        local basename_project=$(basename "$expanded_path")
+        local output_dir=$(dirname "$expanded_path")
+
+        # Create output directory if it doesn't exist
+        mkdir -p "$output_dir"
+
+        cookiecutter "$template_dir" --no-input project_name="$basename_project" -o "$output_dir"
+        local project_dir="$expanded_path"
     else
         cookiecutter "$template_dir"
         # Get the created project directory from cookiecutter output

@@ -7,5 +7,6 @@
     "python_version": ["3.10", "3.11", "3.12"],
     "use_git_hooks": ["yes", "no"],
     "include_docker": ["no", "yes"],
+    "use_ai_workflow": ["yes", "no"],
     "license": ["MIT", "BSD-3-Clause", "Apache-2.0", "GPL-3.0", "None"]
 }
