@@ -3,6 +3,32 @@
 
 set -e
 
+# Parse command line arguments
+CPP_ONLY=false
+PYTHON_ONLY=false
+SYSTEM_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --cpp-only)
+            CPP_ONLY=true
+            shift
+            ;;
+        --python-only)
+            PYTHON_ONLY=true
+            shift
+            ;;
+        --system-only)
+            SYSTEM_ONLY=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -93,23 +119,46 @@ run_category "Build Tools Validation" \
     "vcpkg version"
 
 # Python Tools Tests
-run_category "Python Development Tools Validation" \
-    "ruff --version" \
-    "python3 -c 'import black; print(black.__version__)'" \
-    "pytest --version" \
-    "mypy --version" \
-    "bandit --version" \
-    "pre-commit --version"
+if [ "$CPP_ONLY" != "true" ]; then
+    run_category "Python Development Tools Validation" \
+        "ruff --version" \
+        "python3 -c 'import black; print(black.__version__)'" \
+        "pytest --version" \
+        "mypy --version" \
+        "bandit --version" \
+        "pre-commit --version"
+else
+    print_header "Python Development Tools Validation"
+    print_status "Skipping Python tools validation (C++ only mode)"
+fi
 
 # Configuration Tests
-run_category "Configuration Files Validation" \
-    "test -f ~/.gitignore_global" \
-    "test -f ~/.clang-format" \
-    "test -f ~/.clang-tidy" \
-    "test -f ~/.config/ruff/ruff.toml" \
-    "test -f ~/.config/cmake/CMakePresets.json" \
-    "test -f ~/.config/sccache/config" \
-    "test -d ~/.config/ai-workflows"
+if [ "$CPP_ONLY" = "true" ]; then
+    # C++ only configurations
+    run_category "Configuration Files Validation" \
+        "test -f ~/.gitignore_global" \
+        "test -f ~/.clang-format" \
+        "test -f ~/.clang-tidy" \
+        "test -f ~/.config/cmake/CMakePresets.json" \
+        "test -f ~/.config/sccache/config" \
+        "test -d ~/.config/ai-workflows"
+elif [ "$PYTHON_ONLY" = "true" ]; then
+    # Python only configurations
+    run_category "Configuration Files Validation" \
+        "test -f ~/.gitignore_global" \
+        "test -f ~/.config/ruff/ruff.toml" \
+        "test -d ~/.config/ai-workflows"
+else
+    # Full installation configurations
+    run_category "Configuration Files Validation" \
+        "test -f ~/.gitignore_global" \
+        "test -f ~/.clang-format" \
+        "test -f ~/.clang-tidy" \
+        "test -f ~/.config/ruff/ruff.toml" \
+        "test -f ~/.config/cmake/CMakePresets.json" \
+        "test -f ~/.config/sccache/config" \
+        "test -d ~/.config/ai-workflows"
+fi
 
 # Git Configuration Tests
 run_category "Git Configuration Validation" \
@@ -199,7 +248,8 @@ else
 fi
 
 # Python Environment Tests
-print_header "Python Environment Validation"
+if [ "$CPP_ONLY" != "true" ]; then
+    print_header "Python Environment Validation"
 
 # Test Python code execution
 print_status "Testing Python code execution..."
@@ -268,6 +318,11 @@ if bandit -r /tmp/python_test/src/ > /dev/null 2>&1; then
     print_success "✓ Bandit security analysis"
 else
     print_error "✗ Bandit security analysis failed"
+fi
+
+else
+    print_header "Python Environment Validation"
+    print_status "Skipping Python environment validation (C++ only mode)"
 fi
 
 # Performance Tests

@@ -174,8 +174,18 @@ run_final_validation() {
         return 0
     fi
 
+    # Determine validation arguments
+    local validation_args=""
+    if [ "$INSTALL_CPP" = "true" ] && [ "$INSTALL_PYTHON" = "false" ]; then
+        validation_args="--cpp-only"
+    elif [ "$INSTALL_PYTHON" = "true" ] && [ "$INSTALL_CPP" = "false" ]; then
+        validation_args="--python-only"
+    elif [ "$INSTALL_BASIC" = "true" ] && [ "$INSTALL_ALL" = "false" ]; then
+        validation_args="--system-only"
+    fi
+
     # Run final validation script without output suppression to show detailed results
-    if bash "$LINUX_DIR/validation/final-validation.sh"; then
+    if bash "$LINUX_DIR/validation/final-validation.sh" $validation_args; then
         print_success "✅ Final validation completed successfully"
         return 0
     else

@@ -124,11 +124,11 @@ if [ "$PYTHON_ONLY" != "true" ] && [ "$SYSTEM_ONLY" != "true" ]; then
     run_test "vcpkg installation" "command_exists vcpkg"
 
     # Test C++ compilation
-    run_test "GCC compilation test" "echo 'int main(){return 0;}' | gcc -x c++ - -o /tmp/test_gcc"
-    run_test "Clang compilation test" "echo 'int main(){return 0;}' | clang++ -x c++ - -o /tmp/test_clang"
+    run_test "GCC compilation test" "echo 'int main(){return 0;}' | gcc -x c++ - -o \$HOME/test_gcc"
+    run_test "Clang compilation test" "echo 'int main(){return 0;}' | clang++ -x c++ - -o \$HOME/test_clang"
 
     # Cleanup test files
-    rm -f /tmp/test_gcc /tmp/test_clang
+    rm -f $HOME/test_gcc $HOME/test_clang
 fi
 
 # Python tool validation
@@ -142,6 +142,8 @@ if [ "$CPP_ONLY" != "true" ] && [ "$SYSTEM_ONLY" != "true" ]; then
     run_test "mypy installation" "python3 -c 'import mypy'"
     run_test "bandit installation" "python3 -c 'import bandit'"
     run_test "pre-commit installation" "python3 -c 'import pre_commit'"
+elif [ "$CPP_ONLY" = "true" ]; then
+    print_status "Skipping Python development tools validation (C++ only mode)"
 fi
 
 # Test projects validation
@@ -212,10 +214,18 @@ if [ "$SYSTEM_ONLY" != "true" ]; then
     run_test "Git user email configured" "git config --global user.email"
     run_test "Git global ignore file exists" "test -f ~/.gitignore_global"
 
-    # Check code formatting configurations
-    run_test "Clang-format config exists" "test -f ~/.clang-format"
-    run_test "Ruff config exists" "test -f ~/.config/ruff/ruff.toml"
-    run_test "CMake presets config exists" "test -f ~/.config/cmake/CMakePresets.json"
+    # Check code formatting configurations based on installation type
+    if [ "$PYTHON_ONLY" != "true" ]; then
+        run_test "Clang-format config exists" "test -f ~/.clang-format"
+    fi
+
+    if [ "$CPP_ONLY" != "true" ]; then
+        run_test "Ruff config exists" "test -f ~/.config/ruff/ruff.toml"
+    fi
+
+    if [ "$PYTHON_ONLY" != "true" ]; then
+        run_test "CMake presets config exists" "test -f ~/.config/cmake/CMakePresets.json"
+    fi
 
     # Check AI workflow templates
     run_test "AI workflow templates exist" "test -d ~/.config/ai-workflows"
