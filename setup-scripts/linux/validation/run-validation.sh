@@ -125,7 +125,7 @@ if [ "$PYTHON_ONLY" != "true" ] && [ "$SYSTEM_ONLY" != "true" ]; then
 
     # Test C++ compilation
     run_test "GCC compilation test" "echo 'int main(){return 0;}' | gcc -x c++ - -o \$HOME/test_gcc"
-    run_test "Clang compilation test" "echo 'int main(){return 0;}' | clang++ -x c++ - -o \$HOME/test_clang"
+    run_test "Clang compilation test" "echo 'int main(){return 0;}' | clang++ -stdlib=libc++ -x c++ - -o \$HOME/test_clang"
 
     # Cleanup test files
     rm -f $HOME/test_gcc $HOME/test_clang
