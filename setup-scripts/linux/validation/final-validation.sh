@@ -168,11 +168,12 @@ run_category "Git Configuration Validation" \
     "git config --global core.autocrlf"
 
 # C++ Compilation Tests
-print_header "C++ Compilation Validation"
+if [ "$PYTHON_ONLY" != "true" ]; then
+    print_header "C++ Compilation Validation"
 
-# Test basic compilation
-print_status "Testing C++ compilation with GCC..."
-cat > /tmp/test_cpp.cpp << 'EOF'
+    # Test basic compilation
+    print_status "Testing C++ compilation with GCC..."
+    cat > /tmp/test_cpp.cpp << 'EOF'
 #include <iostream>
 #include <string>
 #include <vector>
@@ -188,34 +189,34 @@ int main() {
 }
 EOF
 
-if g++ -std=c++17 -o /tmp/test_gcc_cpp /tmp/test_cpp.cpp && /tmp/test_gcc_cpp > /tmp/gcc_output.txt 2>&1; then
-    print_success "✓ GCC compilation and execution"
-    if grep -q "Sum: 15" /tmp/gcc_output.txt; then
-        print_success "✓ GCC program output correct"
+    if g++ -std=c++17 -o /tmp/test_gcc_cpp /tmp/test_cpp.cpp && /tmp/test_gcc_cpp > /tmp/gcc_output.txt 2>&1; then
+        print_success "✓ GCC compilation and execution"
+        if grep -q "Sum: 15" /tmp/gcc_output.txt; then
+            print_success "✓ GCC program output correct"
+        else
+            print_error "✗ GCC program output incorrect"
+        fi
     else
-        print_error "✗ GCC program output incorrect"
+        print_error "✗ GCC compilation failed"
     fi
-else
-    print_error "✗ GCC compilation failed"
-fi
 
-# Test with Clang
-print_status "Testing C++ compilation with Clang..."
-if clang++ -stdlib=libc++ -std=c++17 -o /tmp/test_clang_cpp /tmp/test_cpp.cpp && /tmp/test_clang_cpp > /tmp/clang_output.txt 2>&1; then
-    print_success "✓ Clang compilation and execution"
-    if grep -q "Sum: 15" /tmp/clang_output.txt; then
-        print_success "✓ Clang program output correct"
+    # Test with Clang
+    print_status "Testing C++ compilation with Clang..."
+    if clang++ -stdlib=libc++ -std=c++17 -o /tmp/test_clang_cpp /tmp/test_cpp.cpp && /tmp/test_clang_cpp > /tmp/clang_output.txt 2>&1; then
+        print_success "✓ Clang compilation and execution"
+        if grep -q "Sum: 15" /tmp/clang_output.txt; then
+            print_success "✓ Clang program output correct"
+        else
+            print_error "✗ Clang program output incorrect"
+        fi
     else
-        print_error "✗ Clang program output incorrect"
+        print_error "✗ Clang compilation failed"
     fi
-else
-    print_error "✗ Clang compilation failed"
-fi
 
-# Test CMake build
-print_status "Testing CMake build system..."
-mkdir -p /tmp/cmake_test
-cat > /tmp/cmake_test/CMakeLists.txt << 'EOF'
+    # Test CMake build
+    print_status "Testing CMake build system..."
+    mkdir -p /tmp/cmake_test
+    cat > /tmp/cmake_test/CMakeLists.txt << 'EOF'
 cmake_minimum_required(VERSION 3.16)
 project(CppTest VERSION 1.0.0 LANGUAGES CXX)
 
@@ -225,26 +226,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(cpp_test /tmp/test_cpp.cpp)
 EOF
 
-cd /tmp/cmake_test
-if cmake -S . -B build -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1; then
-    print_success "✓ CMake configuration"
-    if cmake --build build --parallel > /dev/null 2>&1; then
-        print_success "✓ CMake build"
-        if ./build/cpp_test > /tmp/cmake_output.txt 2>&1; then
-            print_success "✓ CMake built program execution"
-            if grep -q "Sum: 15" /tmp/cmake_output.txt; then
-                print_success "✓ CMake program output correct"
+    cd /tmp/cmake_test
+    if cmake -S . -B build -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1; then
+        print_success "✓ CMake configuration"
+        if cmake --build build --parallel > /dev/null 2>&1; then
+            print_success "✓ CMake build"
+            if ./build/cpp_test > /tmp/cmake_output.txt 2>&1; then
+                print_success "✓ CMake built program execution"
+                if grep -q "Sum: 15" /tmp/cmake_output.txt; then
+                    print_success "✓ CMake program output correct"
+                else
+                    print_error "✗ CMake program output incorrect"
+                fi
             else
-                print_error "✗ CMake program output incorrect"
+                print_error "✗ CMake built program execution failed"
             fi
         else
-            print_error "✗ CMake built program execution failed"
+            print_error "✗ CMake build failed"
         fi
     else
-        print_error "✗ CMake build failed"
+        print_error "✗ CMake configuration failed"
     fi
 else
-    print_error "✗ CMake configuration failed"
+    print_header "C++ Compilation Validation"
+    print_status "Skipping C++ compilation validation (Python only mode)"
 fi
 
 # Python Environment Tests
@@ -339,7 +344,7 @@ fi
 # Cleanup
 rm -f /tmp/test_cpp.cpp /tmp/test_gcc_cpp /tmp/test_clang_cpp /tmp/test_python.py
 rm -rf /tmp/cmake_test /tmp/python_test
-rm -f /tmp/gcc_output.txt /tmp/clang_output.txt /tmp/cmake_output.txt /tmp/python_output.txt /tmp/sccache_stats.txt
+rm -f /tmp/gcc_output.txt /tmp/clang_output.txt /tmp/cmake_output.txt /tmp/python_output.txt /tmp/sccache_stats.txt /tmp/ruff_empty.toml
 
 # Integration Tests
 print_header "Integration Tests Validation"
