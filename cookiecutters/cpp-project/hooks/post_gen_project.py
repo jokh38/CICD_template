@@ -137,16 +137,14 @@ build_variants:
 
 ## Project Structure
 ```
-{{
-    "src/": "Main source code directory",
-    "include/": "Header files",
-    "tests/": "Test files using {{{{ cookiecutter.testing_framework }}}}",
-    "build/": "Build output directory",
-    "docs/": "Project documentation",
-    "git-hooks/": "Local CI/CD hooks",
-    "configs/": "Tool configuration files",
-    ".serena/": "Serena AI configuration and memories"
-}}
+src/           - Main source code directory
+include/       - Header files
+tests/         - Test files using {{ cookiecutter.testing_framework }}
+build/         - Build output directory
+docs/          - Project documentation
+git-hooks/     - Local CI/CD hooks
+configs/       - Tool configuration files
+.serena/       - Serena AI configuration and memories
 ```
 
 ## Development Workflow

@@ -295,15 +295,13 @@ workflow:
 
 ## Project Structure
 ```
-{{
-    "src/": "Main source code directory",
-    "tests/": "Test files using pytest",
-    "docs/": "Project documentation",
-    ".venv/": "Python virtual environment",
-    "git-hooks/": "Local CI/CD hooks",
-    "configs/": "Tool configuration files",
-    ".serena/": "Serena AI configuration and memories"
-}}
+src/           - Main source code directory
+tests/         - Test files using pytest
+docs/          - Project documentation
+.venv/         - Python virtual environment
+git-hooks/     - Local CI/CD hooks
+configs/       - Tool configuration files
+.serena/       - Serena AI configuration and memories
 ```
 
 ## Development Workflow
