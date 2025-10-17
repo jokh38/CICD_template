@@ -110,11 +110,40 @@ create_project() {
         echo "Install gh CLI: https://cli.github.com/"
     fi
 
+    # Find the absolute path to setup-scripts directory
+    local setup_scripts_path=""
+    local current_dir="$project_dir"
+
+    # Search up the directory tree to find setup-scripts
+    while [ "$current_dir" != "/" ]; do
+        if [ -d "$current_dir/setup-scripts" ]; then
+            setup_scripts_path="$current_dir/setup-scripts"
+            break
+        fi
+        current_dir="$(dirname "$current_dir")"
+    done
+
+    # If not found by searching, try to find it relative to the script location
+    if [ -z "$setup_scripts_path" ]; then
+        local script_dir_setup="$(dirname "$SCRIPT_DIR")/setup-scripts"
+        if [ -d "$script_dir_setup" ]; then
+            setup_scripts_path="$script_dir_setup"
+        fi
+    fi
+
     echo ""
     echo -e "${YELLOW}• Next Steps:${NC}"
     echo "  1. Navigate to your project directory and start development"
-    echo "  2. Install requirements by using setup-scripts/total_run.sh (requires sudo)"
-    echo "     Run: sudo bash setup-scripts/total_run.sh"
+
+    if [ -n "$setup_scripts_path" ]; then
+        echo "  2. Install requirements by using $setup_scripts_path/total_run.sh (requires sudo)"
+        echo "     Run: sudo bash $setup_scripts_path/total_run.sh"
+    else
+        echo "  2. Install requirements by using setup-scripts/total_run.sh (requires sudo)"
+        echo "     Run: sudo bash setup-scripts/total_run.sh"
+        echo -e "${RED}     Warning: Could not locate setup-scripts directory automatically${NC}"
+    fi
+
     echo "  3. Check .github/claude/CLAUDE.md for AI assistant integration details"
     echo "  4. GitHub labels are ready for AI automation (use 'claude', 'ai-assist', etc.)"
 }
