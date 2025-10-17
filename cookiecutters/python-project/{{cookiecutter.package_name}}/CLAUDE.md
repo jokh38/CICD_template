@@ -48,7 +48,7 @@ ruff format .
 
 ```
 {{cookiecutter.project_slug}}/
-├── src/{{cookiecutter.project_slug}}/    # Main package
+├── src/{{cookiecutter.package_name}}/    # Main package
 ├── tests/                                # Test files
 ├── pyproject.toml                        # Project configuration
 ├── README.md                             # Project documentation

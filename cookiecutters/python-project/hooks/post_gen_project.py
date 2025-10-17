@@ -200,9 +200,9 @@ def install_dependencies():
 
     return len(installed_packages) > 0
 
-def install_git_hooks():
-    """Install Git hooks instead of pre-commit."""
-    print("• Installing Git hooks...")
+def install_pre_commit():
+    """Install pre-commit hooks."""
+    print("• Installing pre-commit hooks...")
 
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
 
@@ -210,49 +210,29 @@ def install_git_hooks():
         print("   ⚠️  Git hooks disabled by configuration")
         return False
 
-    # Create .git/hooks directory if it doesn't exist
-    os.makedirs(".git/hooks", exist_ok=True)
+    # Check if pre-commit is available
+    venv_pip = ".venv/bin/pip"
+    pre_commit_cmd = ".venv/bin/pre-commit"
 
-    # Define possible source paths for git hooks
-    possible_source_paths = [
-        os.path.join(os.getcwd(), "..", "..", "git-hooks"),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "git-hooks"),
-        "/home/jokh38/apps/CICD_template/git-hooks"
-    ]
+    # Install pre-commit if not available
+    if not os.path.exists(pre_commit_cmd):
+        print("   • Installing pre-commit...")
+        if not run_command(f"{venv_pip} install pre-commit", check=False):
+            print("   ❌ Failed to install pre-commit")
+            return False
 
-    source_hooks_dir = None
-    for path in possible_source_paths:
-        if os.path.exists(path):
-            source_hooks_dir = path
-            break
-
-    if not source_hooks_dir:
-        print("   ⚠️  Source git hooks directory not found")
+    # Install pre-commit hooks
+    if os.path.exists(pre_commit_cmd):
+        print("   • Installing pre-commit hooks...")
+        if run_command(pre_commit_cmd + " install", check=False):
+            print("   • Pre-commit hooks installed successfully")
+            return True
+        else:
+            print("   ❌ Failed to install pre-commit hooks")
+            return False
+    else:
+        print("   ❌ pre-commit command not found")
         return False
-
-    import shutil
-
-    # Copy prepare-commit-msg hook
-    prepare_commit_msg_src = os.path.join(source_hooks_dir, "prepare-commit-msg")
-    prepare_commit_msg_dst = ".git/hooks/prepare-commit-msg"
-    if os.path.exists(prepare_commit_msg_src):
-        shutil.copy2(prepare_commit_msg_src, prepare_commit_msg_dst)
-        os.chmod(prepare_commit_msg_dst, 0o755)
-        print("   • prepare-commit-msg hook installed")
-    else:
-        print("   ⚠️  prepare-commit-msg hook not found")
-
-    # Copy pre-commit hook
-    pre_commit_src = os.path.join(source_hooks_dir, "pre-commit")
-    pre_commit_dst = ".git/hooks/pre-commit"
-    if os.path.exists(pre_commit_src):
-        shutil.copy2(pre_commit_src, pre_commit_dst)
-        os.chmod(pre_commit_dst, 0o755)
-        print("   • pre-commit hook installed")
-    else:
-        print("   ⚠️  pre-commit hook not found")
-
-    return True
 
 def print_next_steps():
     """Print next steps for user."""
@@ -280,9 +260,10 @@ def print_next_steps():
 
     print("\n• All dependencies are installed and ready to use!")
     if use_git_hooks == "yes":
-        print("• Git hooks are installed and will run automatically on commit")
+        print("• Pre-commit hooks are installed and will run automatically on commit")
+        print("• Run 'pre-commit run --all-files' to check all files manually")
     else:
-        print("• Git hooks are disabled - manual quality checks required")
+        print("• Pre-commit hooks are disabled - manual quality checks required")
 
     print("\n• Create GitHub repository and push:")
     print("  1. Create a new repository on GitHub")
@@ -301,7 +282,7 @@ def main():
         initialize_git()
         create_venv()
         install_dependencies()
-        install_git_hooks()
+        install_pre_commit()
 
         # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
