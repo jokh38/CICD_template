@@ -23,6 +23,7 @@ print_error() {
 
 # Install Google Test
 print_status "Installing Google Test framework..."
+apt-get update > /dev/null 2>&1
 apt-get install -y libgtest-dev libgmock-dev
 
 # Build and install Google Test
@@ -34,7 +35,14 @@ ldconfig
 
 # Install Catch2 (header-only testing framework)
 print_status "Installing Catch2 testing framework..."
-pip3 install catch2
+if command -v pip3 > /dev/null 2>&1; then
+    # Try to install as regular user first, fallback to system install
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        sudo -u "$SUDO_USER" pip3 install --user catch2 2>/dev/null || pip3 install catch2 2>/dev/null || true
+    else
+        pip3 install --user catch2 2>/dev/null || pip3 install catch2 2>/dev/null || true
+    fi
+fi
 
 # Install Boost.Test
 print_status "Installing Boost libraries (includes Boost.Test)..."
@@ -42,6 +50,13 @@ apt-get install -y libboost-all-dev
 
 # Install Doctest (lightweight testing framework)
 print_status "Installing Doctest..."
-pip3 install doctest
+if command -v pip3 > /dev/null 2>&1; then
+    # Try to install as regular user first, fallback to system install
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        sudo -u "$SUDO_USER" pip3 install --user doctest 2>/dev/null || pip3 install doctest 2>/dev/null || true
+    else
+        pip3 install --user doctest 2>/dev/null || pip3 install doctest 2>/dev/null || true
+    fi
+fi
 
 print_success "C++ testing frameworks installed successfully"
