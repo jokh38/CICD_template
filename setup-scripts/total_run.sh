@@ -102,7 +102,6 @@ install_basic_tools() {
     print_status "Installing basic development tools..."
 
     run_script "$LINUX_DIR/core/install-system-deps.sh" "System Dependencies"
-    run_script "$LINUX_DIR/tools/install-compilers.sh" "Compiler Tools"
     run_script "$LINUX_DIR/tools/install-build-tools.sh" "Build Tools"
 }
 
@@ -110,8 +109,10 @@ install_basic_tools() {
 install_cpp_tools() {
     print_status "Installing C++ development tools..."
 
+    run_script "$LINUX_DIR/tools/install-compilers.sh" "Compiler Tools"
     run_script "$LINUX_DIR/tools/install-sccache.sh" "sccache"
     run_script "$LINUX_DIR/tools/install-cpp-frameworks.sh" "C++ Testing Frameworks"
+    run_script "$LINUX_DIR/tools/install-cpp-pkg-managers.sh" "C++ Package Managers"
     run_script "$LINUX_DIR/config/setup-code-formatting.sh" "C++ Code Formatting"
 }
 

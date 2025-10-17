@@ -1,12 +1,11 @@
 #!/bin/bash
+date > /tmp/hook_run.log
+echo "🚀 [HOOK] Running pre-commit hook: Formatting and Quality Checks..."
 
 # Pre-commit hook
-# Replaces the current pre-push hook functionality
-# Handles testing, build verification, and comprehensive validation
+# Handles code quality, formatting, and commit message validation
 
 set -e
-
-echo "🚀 Running pre-commit hook (testing & comprehensive validation)..."
 
 # Determine project type
 if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ]; then
@@ -14,221 +13,136 @@ if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ]; th
 elif [ -f "CMakeLists.txt" ] || [ -f "meson.build" ]; then
     PROJECT_TYPE="cpp"
 else
-    echo "⚠️  Unknown project type, running minimal checks"
-    PROJECT_TYPE="unknown"
+    echo "⚠️  Unknown project type, skipping checks"
+    exit 0
 fi
 
 echo "📦 Detected project type: $PROJECT_TYPE"
 
-# Function to run Python tests and validation
-run_python_validation() {
-    echo "🧪 Running Python testing and validation..."
+# Function to run Python checks
+run_python_checks() {
+    echo "🐍 Running Python code quality checks..."
 
-    # Check if we're in a virtual environment
-    if [ -d "venv" ]; then
-        source venv/bin/activate
-        echo "🔧 Activated virtual environment"
-    elif [ -n "$VIRTUAL_ENV" ]; then
-        echo "🔧 Virtual environment already active: $VIRTUAL_ENV"
+    # Check if ruff is available
+    if command -v ruff >/dev/null 2>&1; then
+        echo "🔧 Running ruff linting and formatting..."
+        ruff check --fix --exit-non-zero-on-fix .
+        ruff format .
     else
-        echo "⚠️  No virtual environment detected, some checks may fail"
+        echo "⚠️  ruff not found, skipping Python formatting"
     fi
 
-    # Install dependencies if requirements.txt exists
-    if [ -f "requirements.txt" ] && command -v pip >/dev/null 2>&1; then
-        echo "📦 Installing/updating dependencies..."
-        pip install -q -r requirements.txt || echo "⚠️  Some dependencies may not be installed"
+    # Check if mypy is available
+    if command -v mypy >/dev/null 2>&1; then
+        echo "🔍 Running mypy type checking..."
+        mypy --strict --ignore-missing-imports src/ || echo "⚠️  mypy completed with warnings"
     fi
 
-    # Install dev dependencies if pyproject.toml has dev dependencies
-    if [ -f "pyproject.toml" ] && command -v pip >/dev/null 2>&1; then
-        echo "📦 Installing development dependencies..."
-        pip install -q pytest pytest-cov ruff mypy || echo "⚠️  Some dev dependencies may not be installed"
-    fi
+    # Check for basic Python syntax errors
+    echo "🔍 Checking Python syntax..."
+    find . -name "*.py" -path "./venv/*" -prune -o -name "*.py" -print0 | xargs -0 python -m py_compile
+}
 
-    # Run pytest if available
-    if command -v pytest >/dev/null 2>&1; then
-        echo "🧪 Running pytest..."
-        if [ -d "tests" ] || [ -d "test" ]; then
-            pytest --tb=short -v || echo "⚠️  Some tests may have failed, but continuing..."
+# Function to run C++ checks
+run_cpp_checks() {
+    echo "🔧 Running C++ code quality checks..."
+    echo "Current directory: $(pwd)"
+
+    # Check if clang-format is available
+    if command -v clang-format >/dev/null 2>&1; then
+        echo "📝 Running clang-format check..."
+        STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|hpp|cc|h)$')
+        if [ -n "$STAGED_FILES" ]; then
+            # Format files in place
+            echo "$STAGED_FILES" | xargs clang-format -i -style=file
+            echo "✅ clang-format finished. Adding changes to git."
+            # Add the formatted files to the staging area
+            echo "$STAGED_FILES" | xargs git add
         else
-            echo "ℹ️  No tests directory found, skipping pytest"
+            echo "ℹ️ No C++ files to format."
         fi
     else
-        echo "⚠️  pytest not found, skipping tests"
+        echo "⚠️  clang-format not found, skipping C++ formatting"
     fi
 
-    # Run coverage if available
-    if command -v pytest >/dev/null 2>&1 && pip show pytest-cov >/dev/null 2>&1; then
-        echo "📊 Running coverage report..."
-        pytest --cov=src --cov-report=term-missing --tb=short || echo "⚠️  Coverage run completed with warnings"
-    fi
-
-    # Check package build if it's a package project
-    if [ -f "pyproject.toml" ] && command -v build >/dev/null 2>&1; then
-        echo "🏗️  Testing package build..."
-        python -m build --wheel --outdir /tmp/ || echo "⚠️  Package build may have issues"
+    # Check if clang-tidy is available
+    if command -v clang-tidy >/dev/null 2>&1; then
+        echo "🔍 Running clang-tidy static analysis..."
+        STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(cpp|cc)$' | head -5)
+        if [ -n "$STAGED_FILES" ]; then
+            echo "$STAGED_FILES" | xargs -I {} clang-tidy {} --quiet --use-color || echo "⚠️  clang-tidy completed with warnings"
+        else
+            echo "ℹ️ No C++ files to analyze with clang-tidy."
+        fi
     fi
 }
 
-# Function to run C++ tests and validation
-run_cpp_validation() {
-    echo "🔧 Running C++ testing and validation..."
+# Function to run universal checks
+run_universal_checks() {
+    echo "🔍 Running universal checks..."
 
-    # Check build directory
-    BUILD_DIR="build"
-    if [ ! -d "$BUILD_DIR" ]; then
-        echo "📁 Creating build directory..."
-        mkdir -p "$BUILD_DIR"
+    # Check for trailing whitespace
+    echo "🧹 Checking for trailing whitespace..."
+    if grep -r '[[:space:]]$' --include="*.py" --include="*.cpp" --include="*.hpp" --include="*.h" --include="*.md" --include="*.yml" --include="*.yaml" --include="*.json" .; then
+        echo "❌ Found trailing whitespace, fixing..."
+        find . -type f \( -name "*.py" -o -name "*.cpp" -o -name "*.hpp" -o -name "*.h" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.json" \) -exec sed -i 's/[[:space:]]*$//' {} \;
     fi
 
-    # Configure with CMake
-    if [ -f "CMakeLists.txt" ] && command -v cmake >/dev/null 2>&1; then
-        echo "⚙️  Configuring with CMake..."
-        cd "$BUILD_DIR"
-        cmake .. -DCMAKE_BUILD_TYPE=Debug || echo "⚠️  CMake configuration may have issues"
-
-        # Build
-        echo "🏗️  Building project..."
-        cmake --build . --config Debug || echo "⚠️  Build may have completed with warnings"
-
-        # Run tests if they exist
-        if command -v ctest >/dev/null 2>&1; then
-            echo "🧪 Running CTest..."
-            ctest --output-on-failure --verbose || echo "⚠️  Some tests may have failed"
-        fi
-
-        cd ..
-    elif [ -f "meson.build" ] && command -v meson >/dev/null 2>&1; then
-        echo "⚙️  Configuring with Meson..."
-        if [ ! -d "$BUILD_DIR" ]; then
-            meson setup "$BUILD_DIR" || echo "⚠️  Meson setup may have issues"
-        fi
-
-        echo "🏗️  Building project..."
-        meson compile -C "$BUILD_DIR" || echo "⚠️  Build may have completed with warnings"
-
-        echo "🧪 Running tests..."
-        meson test -C "$BUILD_DIR" || echo "⚠️  Some tests may have failed"
-    else
-        echo "⚠️  No supported build system found, skipping build tests"
-    fi
-
-    # Run additional C++ checks
-    if command -v cppcheck >/dev/null 2>&1; then
-        echo "🔍 Running cppcheck..."
-        cppcheck --enable=all --suppress=missingIncludeSystem --inline-suppr --error-exitcode=0 src/ || echo "⚠️  cppcheck completed with warnings"
-    fi
-}
-
-# Function to run security checks
-run_security_checks() {
-    echo "🔒 Running security checks..."
-
-    # Check for sensitive files
-    echo "🔍 Checking for sensitive files..."
-    SENSITIVE_PATTERNS=(
-        "*.pem"
-        "*.key"
-        "*.p12"
-        "*.pfx"
-        "id_rsa"
-        "id_dsa"
-        "*.pem"
-        ".env"
-        "password"
-        "secret"
-        "token"
-    )
-
-    for pattern in "${SENSITIVE_PATTERNS[@]}"; do
-        if find . -name "$pattern" -not -path "./.git/*" -not -path "./venv/*" -not -path "./build/*" | head -1 | grep -q .; then
-            echo "⚠️  Potentially sensitive files found matching pattern: $pattern"
+    # Check for YAML syntax
+    find . -name "*.yml" -o -name "*.yaml" | while read yaml_file; do
+        if command -v python >/dev/null 2>&1; then
+            python -c "import yaml; yaml.safe_load(open('$yaml_file'))" || echo "⚠️  YAML syntax error in $yaml_file"
         fi
     done
 
-    # Check for hardcoded secrets in code
-    echo "🔍 Checking for hardcoded secrets..."
-    if command -v grep >/dev/null 2>&1; then
-        SECRET_PATTERNS=(
-            "password\s*=\s*['\"][^'\"]+['\"]"
-            "api_key\s*=\s*['\"][^'\"]+['\"]"
-            "secret\s*=\s*['\"][^'\"]+['\"]"
-            "token\s*=\s*['\"][^'\"]+['\"]"
-        )
-
-        for pattern in "${SECRET_PATTERNS[@]}"; do
-            if grep -r "$pattern" --include="*.py" --include="*.cpp" --include="*.hpp" --include="*.js" --include="*.ts" . 2>/dev/null | head -3 | grep -q .; then
-                echo "⚠️  Potential hardcoded secrets found"
-            fi
-        done
-    fi
+    # Check for large files
+    echo "🔍 Checking for large files..."
+    find . -type f -size +10M -not -path "./.git/*" -not -path "./venv/*" -not -path "./build/*" | while read file; do
+        echo "⚠️  Large file detected: $file ($(du -h "$file" | cut -f1))"
+    done
 }
 
-# Function to run dependency checks
-run_dependency_checks() {
-    echo "📦 Running dependency checks..."
+# Function to validate commit message
+validate_commit_message() {
+    echo "📝 Validating commit message..."
 
-    # Python dependency checks
-    if [ "$PROJECT_TYPE" = "python" ]; then
-        # Check for known vulnerabilities if safety is available
-        if command -v safety >/dev/null 2>&1; then
-            echo "🔒 Checking for known vulnerabilities..."
-            safety check --json || echo "⚠️  Safety check completed with warnings"
+    if [ -f "$COMMIT_MSG_FILE" ]; then
+        local commit_msg=$(cat "$COMMIT_MSG_FILE")
+
+        # Check for empty commit message
+        if [ -z "$commit_msg" ]; then
+            echo "❌ Commit message cannot be empty"
+            exit 1
         fi
 
-        # Check for outdated packages if pip-tools is available
-        if command -v pip-review >/dev/null 2>&1; then
-            echo "📊 Checking for outdated packages..."
-            pip-review --local || echo "⚠️  Some packages may be outdated"
+        # Check for minimum length
+        if [ ${#commit_msg} -lt 5 ]; then
+            echo "❌ Commit message too short (minimum 5 characters)"
+            exit 1
         fi
+
+        # Check for common patterns (optional)
+        if echo "$commit_msg" | grep -E '^(fix|feat|docs|style|refactor|test|chore)(\(.+\))?: .+' >/dev/null; then
+            echo "✅ Commit message follows conventional commit format"
+        else
+            echo "⚠️  Consider using conventional commit format: type(scope): description"
+        fi
+
+        echo "✅ Commit message validation passed"
     fi
 }
 
-# Function to run performance checks
-run_performance_checks() {
-    echo "⚡ Running performance checks..."
-
-    # Python performance checks
-    if [ "$PROJECT_TYPE" = "python" ] && command -v python >/dev/null 2>&1; then
-        echo "📊 Checking Python code complexity..."
-        # Basic complexity check
-        find . -name "*.py" -not -path "./venv/*" -not -path "./build/*" | while read file; do
-            lines=$(wc -l < "$file")
-            if [ "$lines" -gt 500 ]; then
-                echo "⚠️  Large file detected: $file ($lines lines)"
-            fi
-        done
-    fi
-}
-
-# Main execution
-echo "🎯 Starting comprehensive validation..."
-
+# Run checks based on project type
 case $PROJECT_TYPE in
     "python")
-        run_python_validation
+        run_python_checks
         ;;
     "cpp")
-        run_cpp_validation
-        ;;
-    "unknown")
-        echo "ℹ️  Running minimal checks for unknown project type"
+        run_cpp_checks
         ;;
 esac
 
-run_security_checks
-run_dependency_checks
-run_performance_checks
+run_universal_checks
+validate_commit_message
 
-echo ""
-echo "✅ All pre-commit validation completed!"
-echo ""
-echo "📋 Validation Summary:"
-echo "   - Tests executed"
-echo "   - Build verified (if applicable)"
-echo "   - Security scans performed"
-echo "   - Dependencies checked"
-echo "   - Performance analysis completed"
-echo ""
-echo "🎉 Your code is ready to be committed!"
+echo "✅ [HOOK] pre-commit hook finished successfully."

@@ -30,20 +30,36 @@ apt-get install -y \
     g++-multilib \
     linux-libc-dev
 
+# Remove conflicting clang versions first
+print_status "Purging potentially conflicting Clang versions..."
+apt-get purge -y clang clang-18 clang-format-18 clang-tidy-18 clang-tools-18 libclang-common-18-dev llvm-18*
+
 # Install Clang
-print_status "Installing Clang compiler..."
+print_status "Installing Clang 16 compiler..."
 apt-get install -y \
-    clang \
-    clang-format \
-    clang-tidy \
-    clang-tools
+    clang-16 \
+    clang-format-16 \
+    clang-tidy-16 \
+    clang-tools-16 \
+    libc++-16-dev \
+    libc++abi-16-dev
+
+# Set clang-16 as the default clang
+update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 100
+update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 100
+update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-16 100
+update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-16 100
 
 # Install additional compiler utilities
-print_status "Installing compiler utilities..."
+print_status "Installing compiler utilities for version 16..."
 apt-get install -y \
-    lldb \
-    lld \
-    llvm \
-    llvm-dev
+    lldb-16 \
+    lld-16 \
+    llvm-16 \
+    llvm-16-dev
+
+# Update shared library cache
+print_status "Updating shared library cache..."
+ldconfig
 
 print_success "Compiler tools installed successfully"
