@@ -43,7 +43,7 @@ git config --global alias.unstage 'reset HEAD --'
 git config --global alias.last 'log -1 HEAD'
 git config --global alias.visual '!gitk'
 git config --global alias.graph 'log --oneline --graph --decorate --all'
-git config --global alias Amend 'commit --amend --no-edit'
+git config --global alias.amend 'commit --amend --no-edit'
 git config --global alias.fixup 'commit --fixup'
 git config --global alias.squash '!git rebase -i --autosquash'
 
