@@ -1,5 +1,9 @@
 #!/bin/bash
-# Install Build Tools
+# Install System Build Tools
+#
+# This script installs system-level build tools and utilities.
+# C++ package managers (Conan, vcpkg) are handled by install-cpp-pkg-managers.sh
+# to maintain clear separation between system and user-level installations.
 
 set -e
 
@@ -42,19 +46,7 @@ apt-get install -y \
     libtool \
     pkg-config
 
-# Install Conan package manager for C++
-print_status "Installing Conan package manager..."
-pip3 install --upgrade pip
-pip3 install conan
-
-# Install vcpkg (optional C++ package manager)
-print_status "Installing vcpkg..."
-if [ ! -d "/opt/vcpkg" ]; then
-    git clone https://github.com/Microsoft/vcpkg.git /opt/vcpkg
-    /opt/vcpkg/bootstrap-vcpkg.sh
-    ln -sf /opt/vcpkg/vcpkg /usr/local/bin/vcpkg
-else
-    print_status "vcpkg already installed"
-fi
+# C++ package managers (Conan, vcpkg) are now handled by install-cpp-pkg-managers.sh
+# This script focuses on system build tools only
 
 print_success "Build tools installed successfully"
