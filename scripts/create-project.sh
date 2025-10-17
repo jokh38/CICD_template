@@ -93,15 +93,7 @@ create_project() {
     # Change to the project directory for GitHub operations
     cd "$project_dir"
 
-    echo -e "${GREEN}✅ Project created!${NC}"
-    echo ""
-    echo -e "${YELLOW}• AI-Enabled Project Features:${NC}"
-    echo "  - AI workflow templates pre-configured"
-    echo "  - GitHub Actions with AI automation ready"
-    echo "  - Comprehensive documentation for AI development"
-    echo "  - GitHub labels automatically configured for AI workflows"
-    echo ""
-
+  
     # GitHub repository creation
     if [ "$create_repo" = true ] && [ "$GH_AVAILABLE" = true ]; then
         create_github_repo "$(basename "$project_dir")"
