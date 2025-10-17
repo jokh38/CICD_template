@@ -200,6 +200,45 @@ def install_dependencies():
 
     return len(installed_packages) > 0
 
+def install_serena_mcp():
+    """Install Serena MCP server for Claude Code."""
+    print("• Setting up Serena MCP integration...")
+
+    use_ai = "{{ cookiecutter.use_ai_workflow }}"
+
+    if use_ai != "yes":
+        print("   ⚠️  AI workflow disabled - skipping Serena MCP setup")
+        return False
+
+    # Check if Claude Code CLI is available
+    if not run_command("which claude", check=False):
+        print("   ⚠️  Claude Code CLI not found - skipping Serena MCP setup")
+        print("   To install Claude Code: https://claude.ai/cli")
+        return False
+
+    # Check if Serena MCP is already installed
+    if run_command("claude mcp list | grep serena", check=False):
+        print("   • Serena MCP already installed")
+        return True
+
+    # Install Serena MCP
+    print("   • Installing Serena MCP server...")
+    install_cmd = 'claude mcp add-json "serena" \'{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}\''
+
+    if run_command(install_cmd, check=False):
+        print("   • Serena MCP installed successfully")
+
+        # Verify installation
+        if run_command("claude mcp list", check=False):
+            print("   • MCP servers listed successfully")
+
+        return True
+    else:
+        print("   ⚠️  Failed to install Serena MCP")
+        print("   You can install manually later:")
+        print("   claude mcp add-json \"serena\" '{\"command\":\"uvx\",\"args\":[\"--from\",\"git+https://github.com/oraios/serena\",\"serena-mcp-server\"]}'")
+        return False
+
 def install_pre_commit():
     """Install pre-commit hooks."""
     print("• Installing pre-commit hooks...")
@@ -257,8 +296,11 @@ def print_next_steps():
 
     if use_ai == "yes":
         print("  6. Review .github/claude/CLAUDE.md for AI assistant")
+        print("  7. claude mcp list  # Verify Serena MCP installation")
 
     print("\n• All dependencies are installed and ready to use!")
+    if use_ai == "yes":
+        print("• Serena MCP integration is configured for enhanced AI capabilities")
     if use_git_hooks == "yes":
         print("• Pre-commit hooks are installed and will run automatically on commit")
         print("• Run 'pre-commit run --all-files' to check all files manually")
@@ -284,6 +326,7 @@ def main():
         create_venv()
         install_dependencies()
         install_pre_commit()
+        install_serena_mcp()
 
         # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
         if "{{ cookiecutter.use_ai_workflow }}" == "no":

@@ -97,18 +97,35 @@ sudo bash setup-scripts/total_run.sh --validate-only
 
 ### AI-Assisted Development Features
 
+#### Serena MCP Integration
+Projects are created with **Serena MCP** (Model Context Protocol) server integration for enhanced AI capabilities:
+
+**Installation:**
+```bash
+# Install Serena MCP server for Claude Code
+claude mcp add-json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}'
+```
+
+**Features:**
+- **Enhanced Context**: Serena provides intelligent code analysis and context awareness
+- **Workflow Automation**: Advanced automation capabilities for development tasks
+- **Code Understanding**: Deep semantic analysis of code structure and patterns
+- **Documentation Generation**: Automated documentation creation and updates
+
 #### GitHub Labels for AI Workflows
 Projects are created with pre-configured labels:
 - **`claude`**: Issues and PRs related to Claude AI automation
 - **`ai-assist`**: Issues requiring AI assistance or automation
 - **`ai-automation`**: Automated tasks performed by AI assistants
 - **`automated-pr`**: Pull requests created automatically by AI
+- **`serena-mcp`**: Tasks requiring Serena MCP capabilities
 
 #### AI Workflow Templates
 - **Development Guidelines**: AI-ready project structure and conventions
 - **Code Review Templates**: Standardized review processes
 - **Testing Strategies**: Automated test generation and validation
 - **Documentation Standards**: AI-compatible documentation formats
+- **MCP Integration**: Serena MCP server setup and usage instructions
 
 ### Project Structure
 
@@ -149,9 +166,11 @@ created-project/
 
 #### AI Enhancement Features
 - **Claude Integration**: Pre-configured AI assistant context
+- **Serena MCP**: Model Context Protocol server for enhanced AI capabilities
 - **Automated Labels**: GitHub labels for AI workflow triggering
 - **Documentation Templates**: AI-ready project documentation
 - **Quality Gates**: Automated code quality and validation checks
+- **Workflow Automation**: Advanced AI-powered development workflows
 
 ### Usage Examples
 
@@ -248,6 +267,19 @@ cat .github/claude/CLAUDE.md
 
 # This file provides context for AI assistants like Claude Code
 # Includes project structure, development standards, and workflow guidelines
+```
+
+**3. Serena MCP Integration**
+```bash
+# Install Serena MCP (if not already installed)
+claude mcp add-json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}'
+
+# Verify installation
+claude mcp list
+
+# Use Serena MCP features in your project
+# Serena provides enhanced context analysis and workflow automation
+# Projects are pre-configured to work seamlessly with Serena MCP
 ```
 
 ### Configuration

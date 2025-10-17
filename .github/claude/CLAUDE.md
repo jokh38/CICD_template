@@ -5,12 +5,14 @@
 **Project**: {{cookiecutter.project_name}}
 **Description**: {{cookiecutter.project_description}}
 **Language**: {% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}
+**AI Integration**: Claude Code + Serena MCP
 
 ## Development Standards
 
 - **Code Quality**: Follow Ruff (Python) or clang-format/clang-tidy (C++) rules
 - **Testing**: All new features must include **Unit Tests**
 - **Atomic Commit**: Code, tests, and documentation changes must always be handled in a single commit
+- **AI Enhancement**: Use Serena MCP for enhanced code analysis and context understanding
 
 ---
 
@@ -40,6 +42,10 @@ To trigger AI workflow, include the following commands in Issue or PR Comment:
 | `/claude add-feature` | Add new feature code and Unit Tests |
 | `/claude fix-issue` | Fix bugs and add Regression Tests |
 | `/claude refactor-code` | Improve existing code according to quality standards |
+| `/claude analyze-codebase` | Deep code analysis using Serena MCP |
+| `/claude optimize-patterns` | Pattern optimization suggestions |
+| `/claude generate-docs` | Automated documentation generation |
+| `/claude serena-insights` | Enhanced insights using Serena MCP capabilities |
 
 ---
 
@@ -117,10 +123,56 @@ If invariant violation needed: STOP → Document why → Consult team → Get ap
 └── scripts/                       # Utility scripts
 ```
 
+## 🤖 Serena MCP Integration
+
+### Overview
+This project is enhanced with **Serena MCP** (Model Context Protocol) server integration for advanced AI capabilities.
+
+### Installation Commands
+```bash
+# Install Serena MCP server for Claude Code
+claude mcp add-json "serena" '{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}'
+
+# Verify installation
+claude mcp list
+
+# Check available MCP resources
+claude mcp list-resources
+```
+
+### Serena MCP Features
+- **Enhanced Context Analysis**: Deep understanding of code structure and relationships
+- **Workflow Automation**: Advanced automation for repetitive development tasks
+- **Documentation Generation**: Intelligent documentation creation and updates
+- **Code Pattern Recognition**: Identifies common patterns and suggests improvements
+- **Semantic Search**: Advanced code search and understanding capabilities
+
+### Usage Examples
+```bash
+# Use Serena MCP for code analysis
+# AI assistants with Serena MCP can provide enhanced insights
+# about code structure, dependencies, and optimization opportunities
+
+# Commands that leverage Serena MCP:
+/claude analyze-codebase     # Deep code analysis
+/claude optimize-patterns    # Pattern optimization suggestions
+/claude generate-docs        # Automated documentation generation
+```
+
+### Integration with AI Workflows
+Serena MCP enhances all AI automation commands in this project:
+- **Feature Development**: Enhanced code analysis and recommendations
+- **Bug Fixes**: Improved context understanding for faster resolution
+- **Code Reviews**: Deeper insights into code quality and patterns
+- **Documentation**: Automated generation of comprehensive documentation
+
+---
+
 ## 🛡️ Security Guidelines
 - **NEVER** hardcode secrets or API keys in code
 - **ALWAYS** use GitHub Secrets to manage sensitive data
 - **ALWAYS** validate external inputs and follow principle of least privilege
+- **Serena MCP Security**: Ensure MCP server access follows security best practices
 
 ---
 
