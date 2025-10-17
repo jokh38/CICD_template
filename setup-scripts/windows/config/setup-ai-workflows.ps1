@@ -2,7 +2,7 @@
 # Setup AI Workflow Templates for Windows
 
 param(
-    [string]$RunnerUser = "github-runner"
+    [string]$DeveloperUser = "developer"
 )
 
 $ErrorActionPreference = "Stop"
@@ -409,9 +409,10 @@ my-project/
 │   └── README.md
 ├── scripts/
 │   └── setup.ps1
-├── .github/
-│   └── workflows/
-│       └── ci.yml
+├── .git/
+│   └── hooks/
+│       ├── prepare-commit-msg
+│       └── pre-commit
 ├── .gitignore
 ├── .pre-commit-config.yaml
 └── .vscode/
@@ -554,7 +555,7 @@ Brief description of the change and why it's needed.
 - [ ] Self-review completed
 - [ ] Documentation updated
 - [ ] Tests added/updated
-- [ ] CI/CD pipeline passes
+- [ ] Git hooks validation passes
 - [ ] Security considerations addressed
 
 ## Screenshots (if applicable)
@@ -705,267 +706,245 @@ New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name
 }
 
 # Function to create CI/CD workflow templates
-function New-CICDTemplate {
+function New-GitHooksTemplate {
     param(
         [string]$WorkflowDir
     )
 
-    Write-Status "Creating CI/CD workflow templates..."
+    Write-Status "Creating Git Hooks workflow templates..."
 
     try {
-        $templatePath = Join-Path $WorkflowDir "templates\cicd-template.yml"
+        $templatePath = Join-Path $WorkflowDir "templates\git-hooks-workflow.md"
 
         $templateContent = @"
-# GitHub Actions CI/CD Template for Windows
+# Git Hooks Workflow Template (Windows)
 
-name: CI/CD Pipeline
+## Hook Configuration
+This template uses git hooks to replace GitHub Actions CI/CD pipeline on Windows.
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+### Hook Types Used
+- \`prepare-commit-msg\`: Code formatting, linting, and commit message validation
+- \`pre-commit\`: Testing, build verification, and comprehensive validation
 
-env:
-  PYTHON_VERSION: '3.11'
-  NODE_VERSION: '18'
+### Hook Setup Commands (PowerShell)
+\`\`\`powershell
+# Install git hooks
+Set-ItemProperty -Path ".\git-hooks\prepare-commit-msg" -Name IsReadOnly -Value `$false
+Set-ItemProperty -Path ".\git-hooks\pre-commit" -Name IsReadOnly -Value `$false
+Copy-Item ".\git-hooks\prepare-commit-msg" ".git/hooks\" -Force
+Copy-Item ".\git-hooks\pre-commit" ".git/hooks\" -Force
 
-jobs:
-  # Windows Build and Test
-  build-windows:
-    runs-on: windows-latest
+# Or use the setup script
+.\setup-scripts\windows\config\setup-git-hooks.ps1
+\`\`\`
 
-    strategy:
-      matrix:
-        build-type: [Release, Debug]
+### Hook Validation Flow on Windows
+1. **prepare-commit-msg hook** runs:
+   - Code formatting (ruff, black, clang-format)
+   - Static analysis (mypy, clang-tidy)
+   - Syntax validation
+   - Commit message format checking
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+2. **pre-commit hook** runs:
+   - Unit tests (pytest, ctest)
+   - Build verification (CMake, Visual Studio)
+   - Security scans (bandit, safety checks)
+   - Dependency validation
+   - Performance analysis
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: \${{ env.PYTHON_VERSION }}
+### Windows-Specific Hook Configuration
+\`\`\`powershell
+# .git/hooks/prepare-commit-msg (Windows)
+#!/usr/bin/env pwsh
+# PowerShell implementation of prepare-commit-msg hook
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: \${{ env.NODE_VERSION }}
+# Import required modules
+Import-Module Microsoft.PowerShell.Utility
 
-    - name: Cache pip dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: \${{ runner.os }}-pip-\${{ hashFiles('**/requirements*.txt') }}
-        restore-keys: |
-          \${{ runner.os }}-pip-
+# Determine project type
+`$projectType = `$null
+if (Test-Path "pyproject.toml") { `$projectType = "python" }
+elseif (Test-Path "CMakeLists.txt") { `$projectType = "cpp" }
 
-    - name: Cache vcpkg dependencies
-      uses: actions/cache@v3
-      with:
-        path: C:/vcpkg/installed
-        key: \${{ runner.os }}-vcpkg-\${{ hashFiles('**/vcpkg.json') }}
-
-    - name: Install system dependencies
-      run: |
-        choco install -y cmake ninja llvm
-        echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
-
-    - name: Configure CMake
-      run: |
-        cmake -S . -B build -G "Visual Studio 17 2022" -A x64 `
-          -DCMAKE_BUILD_TYPE=\${{ matrix.build-type }} `
-          -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" `
-          -DVCPKG_TARGET_TRIPLET=x64-windows
-
-    - name: Build
-      run: |
-        cmake --build build --config \${{ matrix.build-type }} --parallel
-
-    - name: Run C++ tests
-      run: |
-        ctest --test-dir build --build-config \${{ matrix.build-type }} --output-on-failure --verbose
-
-    - name: Run Python tests
-      run: |
-        pytest tests/ --cov=src --cov-report=xml --cov-report=html
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./coverage.xml
-
-    - name: Run code quality checks
-      run: |
-        # Python code quality
-        ruff check src/ tests/
-        black --check src/ tests/
-        mypy src/
-        bandit -r src/
-
-        # C++ code quality (if tools are available)
-        if (Get-Command clang-format -ErrorAction SilentlyContinue) {
-          Get-ChildItem -Recurse -Include *.cpp,*.hpp | ForEach-Object {
-            clang-format --dry-run --Werror $_.FullName
-          }
+# Run formatting and linting
+switch (`$projectType) {
+    "python" {
+        if (Get-Command ruff -ErrorAction SilentlyContinue) {
+            ruff check --fix --exit-non-zero-on-fix .
+            ruff format .
         }
+        if (Get-Command mypy -ErrorAction SilentlyContinue) {
+            mypy src/
+        }
+    }
+    "cpp" {
+        if (Get-Command clang-format -ErrorAction SilentlyContinue) {
+            Get-ChildItem -Recurse -Include *.cpp,*.hpp | ForEach-Object {
+                clang-format -i `$_.FullName
+            }
+        }
+    }
+}
+\`\`\`
 
-  # Security Scanning
-  security:
-    runs-on: windows-latest
-    needs: build-windows
+### Local Development Workflow (Windows)
+\`\`\`powershell
+# Make changes to your code
+git add .
+git commit -m "feat: add new feature"  # Triggers prepare-commit-msg hook
+                                    # Then triggers pre-commit hook
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+# If all checks pass, commit is created
+# If any check fails, commit is blocked with error details
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: \${{ env.PYTHON_VERSION }}
+# Run hooks manually if needed
+.\.git\hooks\prepare-commit-msg .git/COMMIT_EDITMSG message ""
+.\.git\hooks\pre-commit
+\`\`\`
 
-    - name: Install security tools
-      run: |
-        pip install bandit safety semgrep
+### Windows Git Hooks Troubleshooting
 
-    - name: Run security scan (Python)
-      run: |
-        bandit -r src/ -f json -o bandit-report.json
-        safety check --json --output safety-report.json
+#### PowerShell Execution Policy
+\`\`\`powershell
+# Set execution policy for current user
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-    - name: Run Semgrep
-      uses: returntocorp/semgrep-action@v1
-      with:
-        config: >-
-          p/security-audit
-          p/secrets
-          p/owasp-top-ten
+# Or bypass execution policy for specific scripts
+powershell -ExecutionPolicy Bypass -File ".git/hooks/pre-commit"
+\`\`\`
 
-    - name: Upload security reports
-      uses: actions/upload-artifact@v3
-      if: always()
-      with:
-        name: security-reports
-        path: |
-          bandit-report.json
-          safety-report.json
+#### Line Ending Issues
+\`\`\`cmd
+# Configure git for Windows
+git config --global core.autocrlf true
+git config --global core.eol crlf
 
-  # Performance Testing
-  performance:
-    runs-on: windows-latest
-    needs: build-windows
-    if: github.event_name == 'pull_request'
+# Fix existing files
+git add --renormalize .
+git commit -m "Fix line endings for Windows"
+\`\`\`
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+#### Path Separator Issues
+\`\`\`powershell
+# Use PowerShell's path Join-Path for cross-platform compatibility
+`$buildPath = Join-Path "." "build"
+`$srcPath = Join-Path "." "src"
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: \${{ env.PYTHON_VERSION }}
+# Or use forward slashes in git hooks (works on Windows too)
+`$buildPath = "./build"
+`$srcPath = "./src"
+\`\`\`
 
-    - name: Install dependencies
-      run: |
-        pip install -r requirements-dev.txt
-        pip install pytest-benchmark
+### Quality Gates (Windows)
+- All tests must pass in PowerShell environment
+- Code coverage thresholds met
+- No linting errors (ruff, mypy, clang-tidy)
+- No security vulnerabilities (bandit, safety)
+- Build must succeed with Visual Studio or CMake
+- Commit message follows conventional format
+- PowerShell execution policy configured correctly
 
-    - name: Build project
-      run: |
-        cmake -S . -B build -G "Visual Studio 17 2022" -A x64
-        cmake --build build --config Release
+### Integration with Windows Development Tools
 
-    - name: Run performance tests
-      run: |
-        pytest tests/performance/ --benchmark-only --benchmark-json=benchmark.json
+#### Visual Studio Integration
+- Git hooks run automatically when committing via Visual Studio
+- Configure Visual Studio to use UTF-8 encoding
+- Set up Visual Studio Git integration to respect hooks
 
-    - name: Store benchmark result
-      uses: benchmark-action/github-action-benchmark@v1
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      with:
-        tool: 'pytest'
-        output-file-path: benchmark.json
-        github-token: \${{ secrets.GITHUB_TOKEN }}
-        auto-push: true
+#### VS Code Integration
+- Git hooks run automatically when committing via VS Code
+- Configure VS Code to use PowerShell as default terminal
+- Install GitLens and Git Graph extensions for better Git experience
 
-  # Package and Release
-  release:
-    runs-on: windows-latest
-    needs: [build-windows, security]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+#### Windows Terminal Integration
+\`\`\`json
+// Windows Terminal settings.json profile
+{
+    "name": "Git Dev",
+    "commandline": "pwsh.exe -NoExit -Command 'Set-Location C:\\\\dev\\\\my-project'",
+    "startingDirectory": "C:\\\\dev\\\\my-project",
+    "icon": "🔧"
+}
+\`\`\`
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+### Performance Optimization for Windows
+\`\`\`powershell
+# Optimize PowerShell startup
+Add-Content `$PROFILE "`$env:POWERSHELL_UPDATECHECK = 'Off'"
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: \${{ env.PYTHON_VERSION }}
+# Use parallel execution where possible
+`$files = Get-ChildItem -Recurse -Include *.cpp,*.hpp
+`$files | ForEach-Object -ThrottleLimit 4 -Parallel {
+    clang-format -i `$_.FullName
+}
+\`\`\`
 
-    - name: Install build dependencies
-      run: |
-        pip install build twine
+### Example Windows Git Hook Scripts
 
-    - name: Build Python package
-      run: |
-        python -m build
+#### Enhanced pre-commit hook for Windows
+\`\`\`powershell
+#!/usr/bin/env pwsh
+`$ErrorActionPreference = "Stop"
 
-    - name: Build C++ executables
-      run: |
-        cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=Release
-        cmake --build build --config Release
-        cmake --install build --prefix package
+Write-Host "🚀 Running Windows pre-commit hook..." -ForegroundColor Cyan
 
-    - name: Create release archive
-      run: |
-        Compress-Archive -Path package/* -DestinationPath my-project-windows.zip
+# Check for virtual environment (Python projects)
+if (Test-Path "venv") {
+    & ".\venv\Scripts\Activate.ps1"
+    Write-Host "🐍 Python virtual environment activated" -ForegroundColor Green
+}
 
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: \${{ github.ref }}
-        release_name: Release \${{ github.ref }}
-        draft: false
-        prerelease: false
+# Run tests based on project type
+if (Test-Path "pyproject.toml") {
+    Write-Host "🧪 Running Python tests..." -ForegroundColor Yellow
+    pytest tests/ --cov=src --cov-report=term-missing
+} elseif (Test-Path "CMakeLists.txt") {
+    Write-Host "🔧 Running C++ tests..." -ForegroundColor Yellow
+    if (Test-Path "build") {
+        ctest --test-dir build --output-on-failure
+    } else {
+        Write-Warning "Build directory not found. Run CMake configuration first."
+    }
+}
 
-    - name: Upload release assets
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: \${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./my-project-windows.zip
-        asset_name: my-project-windows.zip
-        asset_content_type: application/zip
+Write-Host "✅ All checks passed!" -ForegroundColor Green
+\`\`\`
 
-    - name: Publish to PyPI
-      if: startsWith(github.ref, 'refs/tags/v')
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: \${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        twine upload dist/*
+#### Enhanced prepare-commit-msg hook for Windows
+\`\`\`powershell
+#!/usr/bin/env pwsh
+`$ErrorActionPreference = "Stop"
+
+Write-Host "🔍 Running Windows prepare-commit-msg hook..." -ForegroundColor Cyan
+
+# Run formatting
+if (Get-Command ruff -ErrorAction SilentlyContinue) {
+    Write-Host "📝 Running ruff formatting..." -ForegroundColor Yellow
+    ruff format .
+    ruff check --fix .
+}
+
+if (Get-Command black -ErrorAction SilentlyContinue) {
+    Write-Host "📝 Running black formatting..." -ForegroundColor Yellow
+    black .
+}
+
+# Run type checking
+if (Get-Command mypy -ErrorAction SilentlyContinue) {
+    Write-Host "🔍 Running mypy type checking..." -ForegroundColor Yellow
+    mypy src/
+}
+
+Write-Host "✅ Code quality checks passed!" -ForegroundColor Green
+\`\`\`
 "@
 
         $templateContent | Out-File -FilePath $templatePath -Encoding UTF8 -Force
 
-        Write-Success "CI/CD workflow template created"
+        Write-Success "Git Hooks workflow template created"
 
     } catch {
-        Write-Error-Error "Failed to create CI/CD template: $($_.Exception.Message)"
+        Write-Error-Output "Failed to create Git Hooks template: $($_.Exception.Message)"
         throw
     }
 }
@@ -1161,7 +1140,7 @@ try {
     New-CppDevelopmentTemplate -WorkflowDir $workflowDir
     New-PythonDevelopmentTemplate -WorkflowDir $workflowDir
     New-GitWorkflowTemplate -WorkflowDir $workflowDir
-    New-CICDTemplate -WorkflowDir $workflowDir
+    New-GitHooksTemplate -WorkflowDir $workflowDir
 
     # Create scripts and examples
     New-PowerShellScripts -WorkflowDir $workflowDir

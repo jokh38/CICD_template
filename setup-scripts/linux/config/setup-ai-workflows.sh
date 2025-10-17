@@ -191,68 +191,61 @@ Brief description of the change
 ```
 EOF
 
-# Create CI/CD workflow template
-cat > "$WORKFLOW_DIR/cicd-template.yml" << 'EOF'
-name: CI/CD Pipeline
+# Create Git Hooks workflow template
+cat > "$WORKFLOW_DIR/git-hooks-workflow.md" << 'EOF'
+# Git Hooks Workflow Template
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
+## Hook Configuration
+This template uses git hooks to replace GitHub Actions CI/CD pipeline.
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9, '3.10']
+### Hook Types Used
+- `prepare-commit-msg`: Code formatting, linting, and commit message validation
+- `pre-commit`: Testing, build verification, and comprehensive validation
 
-    steps:
-    - uses: actions/checkout@v3
+### Hook Setup Commands
+```bash
+# Install git hooks
+chmod +x git-hooks/prepare-commit-msg
+chmod +x git-hooks/pre-commit
+ln -sf ../../git-hooks/prepare-commit-msg .git/hooks/
+ln -sf ../../git-hooks/pre-commit .git/hooks/
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+# Or use the setup script
+./setup-scripts/linux/config/setup-git-hooks.sh
+```
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements-dev.txt
+### Hook Validation Flow
+1. **prepare-commit-msg hook** runs:
+   - Code formatting (ruff, black, clang-format)
+   - Static analysis (mypy, clang-tidy)
+   - Syntax validation
+   - Commit message format checking
 
-    - name: Lint with ruff
-      run: |
-        ruff check src/ tests/
-        ruff format --check src/ tests/
+2. **pre-commit hook** runs:
+   - Unit tests (pytest, ctest)
+   - Build verification (CMake, Meson)
+   - Security scans (bandit, safety checks)
+   - Dependency validation
+   - Performance analysis
 
-    - name: Type check with mypy
-      run: mypy src/
+### Local Development Workflow
+```bash
+# Make changes to your code
+git add .
+git commit -m "feat: add new feature"  # Triggers prepare-commit-msg hook
+                                    # Then triggers pre-commit hook
 
-    - name: Test with pytest
-      run: |
-        pytest tests/ --cov=src --cov-report=xml
+# If all checks pass, commit is created
+# If any check fails, commit is blocked with error details
+```
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-
-  security:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install bandit
-
-    - name: Run security scan
-      run: bandit -r src/
+### Quality Gates
+- All tests must pass
+- Code coverage thresholds met
+- No linting errors
+- No security vulnerabilities
+- Build must succeed
+- Commit message follows conventional format
 EOF
 
 # Create pre-commit configuration template

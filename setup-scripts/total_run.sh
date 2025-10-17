@@ -11,7 +11,7 @@ NC='\033[0m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LINUX_DIR="$SCRIPT_DIR/linux"
-RUNNER_USER="github-runner"
+DEVELOPER_USER="developer"
 
 # Function to print colored output (with timestamps for consistency)
 print_status() {
@@ -43,7 +43,7 @@ show_usage() {
     cat << EOF
 Usage: $0 [OPTIONS]
 
-Complete development environment setup for GitHub Actions runners
+Complete development environment setup for local development with git hooks
 
 OPTIONS:
     --help, -h              Show this help message
@@ -221,10 +221,10 @@ print_summary() {
     echo ""
     echo "Next Steps:"
     echo "  1. Log out and log back in to apply environment changes"
-    echo "  2. To install GitHub Actions runner, run the script install-runner-linux.sh"
+    echo "  2. Set up git hooks: ln -s ../../git-hooks/pre-commit .git/hooks/ && ln -s ../../git-hooks/prepare-commit-msg .git/hooks/"
     echo "  3. Test the installation with your projects"
     echo "  4. Use the provided aliases for common tasks"
-    echo "  5. Git is configured and ready for use"
+    echo "  5. Git is configured and ready for use with automated hooks"
     echo ""
     echo "Configuration files created in:"
     echo "  - ~/.gitconfig (Git configuration)"

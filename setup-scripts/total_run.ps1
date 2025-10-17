@@ -11,7 +11,7 @@ param(
     [switch]$FinalValidation,
     [switch]$Cleanup,
     [switch]$DryRun,
-    [string]$RunnerUser = "github-runner"
+    [string]$DeveloperUser = "developer"
 )
 
 $ErrorActionPreference = "Stop"
@@ -52,7 +52,7 @@ function Write-Error-Output {
 # Function to show usage
 function Show-Usage {
     @"
-Complete development environment setup for GitHub Actions runners (Windows)
+Complete development environment setup for local development with git hooks (Windows)
 
 USAGE:
     .\total_run.ps1 [OPTIONS]
@@ -67,7 +67,7 @@ OPTIONS:
     -FinalValidation         Run final comprehensive validation only
     -Cleanup                 Clean up test projects
     -DryRun                  Show what would be executed without running
-    -RunnerUser <user>       Specify runner user (default: github-runner)
+    -DeveloperUser <user>   Specify developer user (default: developer)
 
 EXAMPLES:
     .\total_run.ps1                      # Full installation with validation
@@ -111,7 +111,7 @@ function Invoke-SetupScript {
 
     try {
         # Run script with suppressed output, redirect all streams to null
-        $process = Start-Process -FilePath "powershell.exe" -ArgumentList "-File", $ScriptPath, "-RunnerUser", $RunnerUser, $Arguments -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput "$env:TEMP\setup-out.log" -RedirectStandardError "$env:TEMP\setup-err.log"
+        $process = Start-Process -FilePath "powershell.exe" -ArgumentList "-File", $ScriptPath, "-DeveloperUser", $DeveloperUser, $Arguments -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput "$env:TEMP\setup-out.log" -RedirectStandardError "$env:TEMP\setup-err.log"
 
         # Clean up log files
         Remove-Item "$env:TEMP\setup-out.log" -ErrorAction SilentlyContinue
@@ -327,7 +327,7 @@ function Show-Summary {
     Write-Host ""
     Write-Host "Next Steps:"
     Write-Host "  1. Restart PowerShell to apply environment changes"
-    Write-Host "  2. To install GitHub Actions runner, run: .\windows\install-runner-windows.ps1 (from setup-scripts directory)"
+    Write-Host "  2. Set up git hooks: Copy-Item git-hooks\*.ps1 .git\hooks\ -Force"
     Write-Host "  3. Test the installation with your projects"
     Write-Host "  4. Use the provided aliases for common tasks"
     Write-Host "  5. Git is configured and ready for use"
