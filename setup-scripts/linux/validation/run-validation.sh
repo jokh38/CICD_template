@@ -129,6 +129,8 @@ if [ "$PYTHON_ONLY" != "true" ] && [ "$SYSTEM_ONLY" != "true" ]; then
 
     # Cleanup test files
     rm -f $HOME/test_gcc $HOME/test_clang
+elif [ "$PYTHON_ONLY" = "true" ]; then
+    print_status "Skipping C++ development tools validation (Python only mode)"
 fi
 
 # Python tool validation
@@ -157,8 +159,31 @@ if [ -z "$TEST_DIR" ]; then
 else
     print_status "Found test projects in: $TEST_DIR"
 
+    # Determine which test projects exist and should be validated
+    CPP_PROJECT_EXISTS=false
+    PYTHON_PROJECT_EXISTS=false
+
+    if [ -d "$TEST_DIR/cpp-test-project" ]; then
+        CPP_PROJECT_EXISTS=true
+    fi
+
+    if [ -d "$TEST_DIR/python-test-project" ]; then
+        PYTHON_PROJECT_EXISTS=true
+    fi
+
+    # If no flags specified and only one project type exists, validate that type only
+    if [ "$PYTHON_ONLY" != "true" ] && [ "$CPP_ONLY" != "true" ] && [ "$SYSTEM_ONLY" != "true" ]; then
+        if [ "$CPP_PROJECT_EXISTS" = "true" ] && [ "$PYTHON_PROJECT_EXISTS" = "false" ]; then
+            # Only C++ project exists
+            CPP_ONLY=true
+        elif [ "$PYTHON_PROJECT_EXISTS" = "true" ] && [ "$CPP_PROJECT_EXISTS" = "false" ]; then
+            # Only Python project exists
+            PYTHON_ONLY=true
+        fi
+    fi
+
     # Validate C++ test project
-    if [ "$PYTHON_ONLY" != "true" ] && [ -d "$TEST_DIR/cpp-test-project" ]; then
+    if [ "$PYTHON_ONLY" != "true" ] && [ "$CPP_PROJECT_EXISTS" = "true" ]; then
         print_status "Validating C++ test project..."
 
         cd "$TEST_DIR/cpp-test-project"
@@ -179,7 +204,7 @@ else
     fi
 
     # Validate Python test project
-    if [ "$CPP_ONLY" != "true" ] && [ -d "$TEST_DIR/python-test-project" ]; then
+    if [ "$CPP_ONLY" != "true" ] && [ "$PYTHON_PROJECT_EXISTS" = "true" ]; then
         print_status "Validating Python test project..."
 
         cd "$TEST_DIR/python-test-project"
