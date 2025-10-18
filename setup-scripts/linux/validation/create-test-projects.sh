@@ -290,7 +290,7 @@ EOF
     cat > src/calculator/calculator.py << 'EOF'
 """Calculator class with basic arithmetic operations."""
 
-from typing import List, Union
+from typing import Sequence, Union
 
 
 class Calculator:
@@ -325,11 +325,11 @@ class Calculator:
             raise ZeroDivisionError("Cannot divide by zero")
         return a / b
 
-    def sum(self, numbers: List[Union[int, float]]) -> Union[int, float]:
+    def sum(self, numbers: Sequence[Union[int, float]]) -> Union[int, float]:
         """Calculate sum of a list of numbers."""
         return sum(numbers)
 
-    def average(self, numbers: List[Union[int, float]]) -> float:
+    def average(self, numbers: Sequence[Union[int, float]]) -> float:
         """Calculate average of a list of numbers.
 
         Args:
@@ -345,7 +345,7 @@ class Calculator:
             raise ValueError("Cannot calculate average of empty list")
         return sum(numbers) / len(numbers)
 
-    def max(self, numbers: List[Union[int, float]]) -> Union[int, float]:
+    def max(self, numbers: Sequence[Union[int, float]]) -> Union[int, float]:
         """Find maximum value in a list of numbers.
 
         Args:
@@ -361,7 +361,7 @@ class Calculator:
             raise ValueError("Cannot find max of empty list")
         return max(numbers)
 
-    def min(self, numbers: List[Union[int, float]]) -> Union[int, float]:
+    def min(self, numbers: Sequence[Union[int, float]]) -> Union[int, float]:
         """Find minimum value in a list of numbers.
 
         Args:
@@ -412,6 +412,7 @@ EOF
 """Tests for calculator module."""
 
 import pytest
+
 from calculator import Calculator
 
 
@@ -556,11 +557,13 @@ target-version = ['py38']
 [tool.ruff]
 line-length = 88
 target-version = "py38"
+
+[tool.ruff.lint]
 select = ["E", "F", "UP", "B", "SIM", "I"]
 ignore = ["F405", "F403", "F841"]
 
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
