@@ -162,8 +162,8 @@ run_category "Git Configuration Validation" \
 if [ "$PYTHON_ONLY" != "true" ]; then
     print_status "Validating: C++ Compilation..."
 
-    local cpp_tests_passed=0
-    local cpp_tests_total=8
+    cpp_tests_passed=0
+    cpp_tests_total=8
     TOTAL_TESTS=$((TOTAL_TESTS + cpp_tests_total))
 
     # Test basic compilation
@@ -256,8 +256,8 @@ fi
 if [ "$CPP_ONLY" != "true" ]; then
     print_status "Validating: Python Environment..."
 
-    local python_tests_passed=0
-    local python_tests_total=6
+    python_tests_passed=0
+    python_tests_total=6
     TOTAL_TESTS=$((TOTAL_TESTS + python_tests_total))
 
     # Test Python code execution
@@ -332,8 +332,8 @@ fi
 if [ "$PYTHON_ONLY" != "true" ]; then
     print_status "Validating: Performance (sccache)..."
 
-    local perf_tests_passed=0
-    local perf_tests_total=1
+    perf_tests_passed=0
+    perf_tests_total=1
     TOTAL_TESTS=$((TOTAL_TESTS + perf_tests_total))
 
     if sccache --show-stats > /tmp/sccache_stats.txt 2>&1; then
@@ -361,8 +361,8 @@ rm -f /tmp/gcc_output.txt /tmp/clang_output.txt /tmp/cmake_output.txt /tmp/pytho
 # Integration Tests
 print_status "Validating: Integration Tests..."
 
-local integration_tests_passed=0
-local integration_tests_total=3
+integration_tests_passed=0
+integration_tests_total=3
 TOTAL_TESTS=$((TOTAL_TESTS + integration_tests_total))
 
 TEST_PROJECT_DIR="/tmp/integration_test_$(date +%s)"
