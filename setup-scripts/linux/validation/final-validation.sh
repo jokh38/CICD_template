@@ -113,10 +113,15 @@ run_category "Compiler Tools Validation" \
     "clang-tidy --version"
 
 # Build Tools Tests
-run_category "Build Tools Validation" \
-    "sccache --version" \
-    "conan --version" \
-    "vcpkg version"
+if [ "$PYTHON_ONLY" != "true" ]; then
+    run_category "Build Tools Validation" \
+        "sccache --version" \
+        "conan --version" \
+        "vcpkg version"
+else
+    print_header "Build Tools Validation"
+    print_status "Skipping C++ build tools validation (Python only mode)"
+fi
 
 # Python Tools Tests
 if [ "$CPP_ONLY" != "true" ]; then
@@ -333,12 +338,16 @@ fi
 # Performance Tests
 print_header "Performance Validation"
 
-# Test compiler cache (sccache)
-print_status "Testing sccache functionality..."
-if sccache --show-stats > /tmp/sccache_stats.txt 2>&1; then
-    print_success "✓ sccache is functional"
+# Test compiler cache (sccache) - only for C++ projects
+if [ "$PYTHON_ONLY" != "true" ]; then
+    print_status "Testing sccache functionality..."
+    if sccache --show-stats > /tmp/sccache_stats.txt 2>&1; then
+        print_success "✓ sccache is functional"
+    else
+        print_error "✗ sccache is not working properly"
+    fi
 else
-    print_error "✗ sccache is not working properly"
+    print_status "Skipping sccache test (Python only mode - compiler cache not needed)"
 fi
 
 # Cleanup
