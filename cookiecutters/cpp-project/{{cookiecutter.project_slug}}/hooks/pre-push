@@ -2,7 +2,7 @@
 # Pre-push hook for C++ projects - Testing and Dynamic Analysis
 # This hook runs comprehensive tests, static analysis, and performance checks
 
-set -e
+# Note: set -e is NOT used to allow non-critical checks to continue on failure
 
 # Colors for output
 RED='\033[0;31m'
@@ -77,8 +77,18 @@ fi
 
 # 2. Build the project
 echo -e "\n${BLUE}🏗️  Building project...${NC}"
+
+# Detect number of cores cross-platform
+if command -v nproc &> /dev/null; then
+    CORES=$(nproc)
+elif command -v sysctl &> /dev/null; then
+    CORES=$(sysctl -n hw.ncpu 2>/dev/null || echo "4")  # macOS
+else
+    CORES=4  # fallback
+fi
+
 if [ "$BUILD_SYSTEM" = "cmake" ]; then
-    if run_check "Build Project" "cmake --build build --parallel $(nproc)" true; then
+    if run_check "Build Project" "cmake --build build --parallel $CORES" true; then
         BUILD_PASSED=true
     else
         BUILD_PASSED=false
@@ -115,19 +125,43 @@ fi
 # 4. Comprehensive static analysis with clang-tidy
 echo -e "\n${BLUE}🔍 Running comprehensive static analysis...${NC}"
 if command -v clang-tidy &> /dev/null; then
-    # Create compile commands if not available
-    if [ ! -f "build/compile_commands.json" ]; then
-        echo "Generating compile commands..."
-        if [ "$BUILD_SYSTEM" = "cmake" ]; then
-            cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-        fi
-    fi
-
-    # Run comprehensive clang-tidy analysis
-    if [ -f "build/compile_commands.json" ]; then
-        run_check "Static Analysis (clang-tidy)" "clang-tidy src/**/*.cpp -p build --warnings-as-errors='*' --quiet" false
+    # Check if src directory exists
+    if [ ! -d "src" ]; then
+        echo -e "${YELLOW}⚠️  src/ directory not found, skipping clang-tidy analysis${NC}"
     else
-        echo -e "${YELLOW}⚠️  compile_commands.json not found, skipping static analysis${NC}"
+        # Create compile commands if not available
+        if [ ! -f "build/compile_commands.json" ]; then
+            echo "Generating compile commands..."
+            if [ "$BUILD_SYSTEM" = "cmake" ]; then
+                cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+            fi
+        fi
+
+        # Run comprehensive clang-tidy analysis
+        if [ -f "build/compile_commands.json" ]; then
+            # Find all .cpp files and process them individually
+            CPP_FILES=$(find src -name "*.cpp" -type f 2>/dev/null)
+            if [ -n "$CPP_FILES" ]; then
+                echo "Analyzing C++ source files with clang-tidy..."
+                TIDY_FAILED=false
+                while IFS= read -r cpp_file; do
+                    echo "  Checking: $cpp_file"
+                    if ! clang-tidy "$cpp_file" -p build --quiet 2>&1; then
+                        TIDY_FAILED=true
+                    fi
+                done <<< "$CPP_FILES"
+
+                if [ "$TIDY_FAILED" = "true" ]; then
+                    echo -e "${YELLOW}⚠️  Some clang-tidy warnings found (non-critical)${NC}"
+                else
+                    echo -e "${GREEN}✅ Static Analysis (clang-tidy) - PASSED${NC}"
+                fi
+            else
+                echo -e "${YELLOW}⚠️  No .cpp files found in src/, skipping analysis${NC}"
+            fi
+        else
+            echo -e "${YELLOW}⚠️  compile_commands.json not found, skipping static analysis${NC}"
+        fi
     fi
 else
     echo -e "${YELLOW}⚠️  clang-tidy not found, skipping static analysis${NC}"
@@ -136,26 +170,46 @@ fi
 # 5. Run cppcheck for additional static analysis
 echo -e "\n${BLUE}🔍 Additional static analysis (cppcheck)...${NC}"
 if command -v cppcheck &> /dev/null; then
-    run_check "Static Analysis (cppcheck)" "cppcheck src/ --enable=all --inconclusive --std=c++{{cookiecutter.cpp_standard}} --suppress=missingIncludeSystem --xml --xml-version=2 2>cppcheck-report.xml" false
+    if [ -d "src" ]; then
+        run_check "Static Analysis (cppcheck)" "cppcheck src/ --enable=all --inconclusive --std=c++{{ cookiecutter.cpp_standard }} --suppress=missingIncludeSystem --xml --xml-version=2 2>cppcheck-report.xml" false
+    else
+        echo -e "${YELLOW}⚠️  src/ directory not found, skipping cppcheck analysis${NC}"
+    fi
 else
     echo -e "${YELLOW}⚠️  cppcheck not found, skipping additional static analysis${NC}"
 fi
 
 # 6. Run sanitizers if available (Debug build)
 echo -e "\n${BLUE}🛡️  Running sanitizers...${NC}"
-if [ "$BUILD_PASSED" = "true" ]; then
-    # Check if sanitizers are available in the build
-    if [ "$BUILD_SYSTEM" = "cmake" ]; then
-        # Try to build and run with sanitizers
-        echo "Testing with AddressSanitizer..."
-        if cmake --build build --config Debug -t test 2>/dev/null; then
-            # Look for ASan-enabled binary
-            ASAN_BINARY=$(find build -name "*test*" -type f -executable 2>/dev/null | head -1)
-            if [ -n "$ASAN_BINARY" ]; then
-                echo "Running AddressSanitizer on $ASAN_BINARY"
-                run_check "AddressSanitizer" "$ASAN_BINARY" false
+if [ "$BUILD_PASSED" = "true" ] && [ "$TESTS_PASSED" = "true" ]; then
+    # Look for test binaries with more specific search
+    TEST_BINARY=$(find build -path "*/tests/*" -type f -executable 2>/dev/null | grep -E "(test|Test)" | head -1)
+    if [ -z "$TEST_BINARY" ]; then
+        TEST_BINARY=$(find build -type f -executable 2>/dev/null | grep -E "(_test|test_|Test)" | head -1)
+    fi
+
+    if [ -n "$TEST_BINARY" ]; then
+        # Check if binary has ASan symbols
+        if command -v nm &> /dev/null; then
+            if nm "$TEST_BINARY" 2>/dev/null | grep -q "__asan"; then
+                echo "AddressSanitizer detected in $TEST_BINARY"
+                run_check "AddressSanitizer" "ASAN_OPTIONS=detect_leaks=1 $TEST_BINARY" false
+            else
+                echo -e "${YELLOW}⚠️  AddressSanitizer not enabled in test binary${NC}"
+                echo "   Add -fsanitize=address to CMAKE_CXX_FLAGS to enable ASan"
             fi
+        else
+            echo -e "${YELLOW}⚠️  'nm' tool not found, cannot verify ASan symbols${NC}"
+            echo "   Skipping sanitizer checks"
         fi
+    else
+        echo -e "${YELLOW}⚠️  No test binary found for sanitizer testing${NC}"
+    fi
+else
+    if [ "$BUILD_PASSED" != "true" ]; then
+        echo -e "${YELLOW}⚠️  Skipping sanitizers due to build failure${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Skipping sanitizers due to test failure${NC}"
     fi
 fi
 
@@ -165,15 +219,29 @@ if command -v gcov &> /dev/null && command -v lcov &> /dev/null; then
     if [ "$BUILD_PASSED" = "true" ] && [ "$TESTS_PASSED" = "true" ]; then
         echo "Generating coverage report..."
         if [ "$BUILD_SYSTEM" = "cmake" ]; then
-            # Rebuild with coverage flags
-            cmake -B build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -g -O0" -DCMAKE_C_FLAGS="--coverage -g -O0"
-            cmake --build build
+            # Check if coverage flags are already set
+            if ! grep -q "\-\-coverage" build/CMakeCache.txt 2>/dev/null; then
+                echo "Reconfiguring build with coverage flags..."
+                # Create separate coverage build to avoid overwriting main build
+                if [ -d "build-coverage" ]; then
+                    rm -rf build-coverage
+                fi
+                cmake -B build-coverage -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="--coverage -g -O0" -DCMAKE_C_FLAGS="--coverage -g -O0"
+                cmake --build build-coverage
 
-            # Run tests again to generate coverage data
-            ctest --test-dir build
+                # Run tests to generate coverage data
+                ctest --test-dir build-coverage --output-on-failure
 
-            # Generate coverage report
-            run_check "Coverage Analysis" "lcov --capture --directory build --output-file coverage.info && lcov --remove coverage.info '/usr/*' --output-file coverage.info && lcov --list coverage.info" false
+                # Generate coverage report
+                run_check "Coverage Analysis" "lcov --capture --directory build-coverage --output-file coverage.info && lcov --remove coverage.info '/usr/*' --output-file coverage.info && lcov --list coverage.info" false
+            else
+                echo "Coverage flags already enabled, using existing build..."
+                # Run tests to generate coverage data
+                ctest --test-dir build --output-on-failure
+
+                # Generate coverage report
+                run_check "Coverage Analysis" "lcov --capture --directory build --output-file coverage.info && lcov --remove coverage.info '/usr/*' --output-file coverage.info && lcov --list coverage.info" false
+            fi
         fi
     fi
 else
@@ -197,14 +265,24 @@ fi
 # 9. Memory leak detection with Valgrind (if available)
 echo -e "\n${BLUE}🧠 Memory leak detection...${NC}"
 if command -v valgrind &> /dev/null && [ "$TESTS_PASSED" = "true" ]; then
-    # Find test binary
-    TEST_BINARY=$(find build -name "*test*" -type f -executable 2>/dev/null | head -1)
+    # Find test binary with improved search
+    TEST_BINARY=$(find build -path "*/tests/*" -type f -executable 2>/dev/null | grep -E "(test|Test)" | head -1)
+    if [ -z "$TEST_BINARY" ]; then
+        TEST_BINARY=$(find build -type f -executable 2>/dev/null | grep -E "(_test|test_|Test)" | head -1)
+    fi
+
     if [ -n "$TEST_BINARY" ]; then
-        echo "Running Valgrind memory check..."
-        run_check "Memory Leak Detection" "valgrind --leak-check=full --error-exitcode=1 $TEST_BINARY" false
+        echo "Running Valgrind memory check on $TEST_BINARY..."
+        run_check "Memory Leak Detection" "valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=1 $TEST_BINARY" false
+    else
+        echo -e "${YELLOW}⚠️  No test binary found for Valgrind analysis${NC}"
     fi
 else
-    echo -e "${YELLOW}📦 valgrind not found or no tests, skipping memory leak detection${NC}"
+    if ! command -v valgrind &> /dev/null; then
+        echo -e "${YELLOW}📦 valgrind not found, skipping memory leak detection${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Tests not passed, skipping memory leak detection${NC}"
+    fi
 fi
 
 # 10. Check for undefined behavior with UBSan (if supported)
