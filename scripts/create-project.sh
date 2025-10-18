@@ -81,12 +81,24 @@ create_project() {
         # Create output directory if it doesn't exist
         mkdir -p "$output_dir"
 
-        # Generate the slug that cookiecutter will use for the directory name
-        local project_slug=$(echo "$basename_project" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g; s/_/-/g')
-        local actual_project_dir="$output_dir/$project_slug"
+        # Generate the package name that cookiecutter will use for the directory name
+        # cookiecutter uses package_name which converts spaces to underscores
+        local package_name=$(echo "$basename_project" | tr '[:upper:]' '[:lower:]' | sed 's/ /_/g; s/-/_/g')
+        local actual_project_dir="$output_dir/$package_name"
 
+        echo -e "${BLUE}Expected project directory: $actual_project_dir${NC}"
         cookiecutter "$template_dir" --no-input project_name="$basename_project" -o "$output_dir"
-        local project_dir="$actual_project_dir"
+
+        # Find the actual directory that was created
+        if [ -d "$actual_project_dir" ]; then
+            local project_dir="$actual_project_dir"
+            echo -e "${GREEN}Found expected project directory: $project_dir${NC}"
+        else
+            echo -e "${YELLOW}Expected directory not found, searching for created project...${NC}"
+            # Fallback: find the most recently created directory in output_dir
+            local project_dir=$(find "$output_dir" -maxdepth 1 -type d -mmin -2 -printf "%T@ %p\n" | sort -n | tail -1 | cut -d' ' -f2-)
+            echo -e "${GREEN}Found project directory: $project_dir${NC}"
+        fi
     else
         cookiecutter "$template_dir"
         # Get the created project directory from cookiecutter output

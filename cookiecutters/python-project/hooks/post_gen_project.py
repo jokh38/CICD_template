@@ -4,6 +4,58 @@
 import os
 import subprocess
 import sys
+import time
+import threading
+
+class ProgressBar:
+    """Progress bar with live updates for long-running operations."""
+
+    def __init__(self, total_steps, width=40):
+        self.total_steps = total_steps
+        self.width = width
+        self.current_step = 0
+        self.start_time = time.time()
+        self.current_operation = "Starting..."
+        self.running = True
+        self.display_thread = None
+
+    def start_display(self):
+        """Start progress display in background thread"""
+        self.running = True
+        self.display_thread = threading.Thread(target=self._update_progress, daemon=True)
+        self.display_thread.start()
+
+    def _update_progress(self):
+        """Thread function to update progress bar"""
+        while self.running:
+            self._display_progress()
+            time.sleep(0.2)
+
+    def _display_progress(self):
+        """Display current progress"""
+        elapsed = time.time() - self.start_time
+        progress = self.current_step / self.total_steps
+        filled_width = int(self.width * progress)
+
+        bar = "█" * filled_width + "░" * (self.width - filled_width)
+        eta = (elapsed / max(1, self.current_step)) * (self.total_steps - self.current_step) if self.current_step > 0 else 0
+
+        sys.stdout.write(f"\r🔄 [{self.current_step}/{self.total_steps}] [{bar}] {progress*100:.0f}% | {self.current_operation} | ⏱️ {elapsed:.0f}s (ETA: {eta:.0f}s)")
+        sys.stdout.flush()
+
+    def step(self, operation):
+        """Advance to next step with new operation description"""
+        self.current_step += 1
+        self.current_operation = operation
+        self._display_progress()
+
+    def finish(self, message):
+        """Stop progress and show completion message"""
+        self.running = False
+        if self.display_thread:
+            time.sleep(0.3)  # Let final update display
+        elapsed = time.time() - self.start_time
+        print(f"\n✅ {message} | 🕐 Total time: {elapsed:.1f}s")
 
 def run_command(cmd, check=True):
     """Run shell command."""
@@ -17,7 +69,7 @@ def run_command(cmd, check=True):
 
 def setup_claude_context():
     """Copy entire .github/claude/ directory and customize CLAUDE.md for new projects."""
-    print("• Setting up Claude AI context...")
+    # Progress bar handles display now
 
     # Ensure .github/claude directory exists
     claude_dir = ".github/claude"
@@ -120,7 +172,7 @@ def copy_claude_md():
     """Copy HIVE_CLAUDE.md from docs/ directory as CLAUDE.md to project root."""
     import shutil
 
-    print("• Setting up CLAUDE.md documentation...")
+    # Progress bar handles display now
 
     # Define possible source paths for HIVE_CLAUDE.md
     possible_source_paths = [
@@ -154,7 +206,7 @@ def copy_claude_md():
 
 def initialize_git():
     """Initialize git repository."""
-    print("• Initializing git repository...")
+    # Progress bar handles display now
     run_command("git init")
 
     # Configure git user if not already configured
@@ -168,13 +220,13 @@ def initialize_git():
 
 def create_venv():
     """Create virtual environment."""
-    print("• Creating virtual environment...")
+    # Progress bar handles display now
     python_version = "{{ cookiecutter.python_version }}"
     run_command(f"python{python_version} -m venv .venv")
 
 def install_dependencies():
     """Install project dependencies including dev dependencies."""
-    print("• Installing project dependencies...")
+    # Progress bar handles display now
     venv_pip = ".venv/bin/pip"
 
     # Upgrade pip first
@@ -202,7 +254,7 @@ def install_dependencies():
 
 def setup_serena_configuration():
     """Create Serena-specific configuration and memory system."""
-    print("• Setting up Serena configuration...")
+    # Progress bar handles display now
 
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
@@ -391,7 +443,7 @@ This project is configured for Serena MCP integration with:
 
 def install_serena_mcp():
     """Install Serena MCP server for Claude Code with enhanced configuration."""
-    print("• Setting up Serena MCP integration...")
+    # Progress bar handles display now
 
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
@@ -439,7 +491,7 @@ def install_serena_mcp():
 
 def install_pre_commit():
     """Install pre-commit hooks."""
-    print("• Installing pre-commit hooks...")
+    # Progress bar handles display now
 
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
 
@@ -473,7 +525,7 @@ def install_pre_commit():
 
 def install_pre_push_hook():
     """Install custom pre-push hook for testing and dynamic analysis."""
-    print("• Installing pre-push hook...")
+    # Progress bar handles display now
 
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
 
@@ -526,20 +578,47 @@ def print_next_steps():
         print("• Git hooks are disabled - manual quality checks required")
 
 def main():
-    """Main post-generation logic."""
+    """Main post-generation logic with progress tracking."""
     try:
+        # Initialize progress bar with total number of steps
+        total_steps = 8  # Total number of main operations
+        progress = ProgressBar(total_steps)
+        progress.start_display()
+
         # Setup Claude AI context with template variables
+        progress.step("Setting up Claude AI context...")
         setup_claude_context()
 
         # Copy HIVE_CLAUDE.md as CLAUDE.md to project root
+        progress.step("Copying CLAUDE.md documentation...")
         copy_claude_md()
 
+        # Initialize git repository
+        progress.step("Initializing git repository...")
         initialize_git()
+
+        # Create virtual environment (this takes time!)
+        progress.step("Creating Python virtual environment...")
         create_venv()
+
+        # Install dependencies (longest operation)
+        progress.step("Installing project dependencies...")
         install_dependencies()
+
+        # Install pre-commit hooks
+        progress.step("Setting up pre-commit hooks...")
         install_pre_commit()
+
+        # Install pre-push hook
+        progress.step("Configuring pre-push hooks...")
         install_pre_push_hook()
+
+        # Install Serena MCP integration
+        progress.step("Configuring Serena AI integration...")
         install_serena_mcp()
+
+        # Finish progress bar
+        progress.finish("Project setup completed successfully!")
 
         # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
         if "{{ cookiecutter.use_ai_workflow }}" == "no":
