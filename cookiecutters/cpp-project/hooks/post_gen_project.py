@@ -124,7 +124,7 @@ build_variants:
         with open(config_file, "w", encoding="utf-8") as f:
             f.write(config_content)
 
-        print(f"   • Created Serena configuration: {config_file}")
+        print("   • Serena configuration created")
 
         # Create initial memory file with project information
         memory_content = f"""# Project Memory: {project_name}
@@ -210,7 +210,7 @@ This project is configured for Serena MCP integration with:
         with open(memory_file, "w", encoding="utf-8") as f:
             f.write(memory_content)
 
-        print(f"   • Created initial memory: {memory_file}")
+        print("   • Initial memory created")
 
         # Create Serena usage guide
         usage_guide = f"""# Serena Usage Guide for {project_name}
@@ -261,7 +261,7 @@ This project is configured for Serena MCP integration with:
         with open(guide_file, "w", encoding="utf-8") as f:
             f.write(usage_guide)
 
-        print(f"   • Created usage guide: {guide_file}")
+        print("   • Usage guide created")
 
         return True
 
@@ -286,13 +286,11 @@ def install_serena_mcp():
     # Check if Claude Code CLI is available
     if not run_command("which claude", check=False):
         print("   ⚠️  Claude Code CLI not found - skipping Serena MCP setup")
-        print("   To install Claude Code: https://claude.ai/cli")
         return False
 
     # Check if Serena MCP is already installed
     if run_command("claude mcp list | grep serena", check=False):
         print("   • Serena MCP already installed")
-        print("   • Configuration files created in .serena/ directory")
         return True
 
     # Install Serena MCP
@@ -301,23 +299,9 @@ def install_serena_mcp():
 
     if run_command(install_cmd, check=False):
         print("   • Serena MCP installed successfully")
-        print("   • Configuration files created in .serena/ directory")
-
-        # Verify installation
-        if run_command("claude mcp list", check=False):
-            print("   • MCP servers listed successfully")
-
-        print("   📖 See .serena/USAGE_GUIDE.md for usage instructions")
-        print("   💡 Enable all tools in Claude Code for maximum value")
-
         return True
     else:
         print("   ⚠️  Failed to install Serena MCP")
-        print("   You can install manually later:")
-        print(
-            '   claude mcp add-json "serena" \'{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}\''
-        )
-        print("   Configuration files have been created in .serena/ directory")
         return False
 
 
@@ -334,21 +318,10 @@ def install_pre_commit():
     # Check if pre-commit is available in the system
     if not run_command("which pre-commit", check=False):
         print("   • Installing pre-commit...")
-        # Try to install pre-commit using pip
-        if not run_command("pip install pre-commit", check=False):
-            print("   ❌ Failed to install pre-commit. Please install it manually:")
-            print("      pip install pre-commit")
-            return False
+        run_command("pip install pre-commit", check=False)
 
     # Install pre-commit hooks
-    print("   • Installing pre-commit hooks...")
-    if run_command("pre-commit install", check=False):
-        print("   • Pre-commit hooks installed successfully")
-        return True
-    else:
-        print("   ❌ Failed to install pre-commit hooks")
-        print("   ⚠️  You can install manually later with: pre-commit install")
-        return False
+    return run_command("pre-commit install", check=False)
 
 
 def install_pre_push_hook():
@@ -372,14 +345,10 @@ def install_pre_push_hook():
 
             shutil.copy2(pre_push_source, pre_push_target)
             os.chmod(pre_push_target, 0o755)  # Make executable
-            print("   • Pre-push hook installed successfully")
             return True
-        except Exception as e:
-            print(f"   ❌ Failed to install pre-push hook: {e}")
+        except Exception:
             return False
-    else:
-        print("   ⚠️  Pre-push hook template not found")
-        return False
+    return False
 
 
 def print_next_steps():
@@ -451,7 +420,6 @@ def setup_claude_context():
 
     if not source_claude_dir:
         print("   ⚠️  Source .github/claude/ directory not found")
-        print(f"   Tried paths: {possible_source_dirs}")
         return False
 
     # Copy entire .github/claude/ directory structure
@@ -485,7 +453,6 @@ def setup_claude_context():
                     customize_claude_md(target_file)
 
         print(f"   • Copied {len(copied_files)} AI workflow files to .github/claude/")
-        print("   • Commands, prompts, and documentation ready")
         return True
 
     except Exception as e:
@@ -561,7 +528,6 @@ def copy_claude_md():
 
     if not source_hive_claude:
         print("   ⚠️  Source HIVE_CLAUDE.md not found in docs/")
-        print(f"   Tried paths: {possible_source_paths}")
         return False
 
     try:
