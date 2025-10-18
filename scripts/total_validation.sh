@@ -24,13 +24,9 @@ detect_project_type() {
     # Check for Python project indicators
     if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ]; then
         detected_type="python"
-        print_status "Detected Python project in current directory"
     # Check for C++ project indicators
     elif [ -f "CMakeLists.txt" ] || [ -f "Makefile" ] || [ -f "configure.ac" ]; then
         detected_type="cpp"
-        print_status "Detected C++ project in current directory"
-    else
-        print_warning "No specific project type detected in current directory"
     fi
 
     echo "$detected_type"
@@ -118,10 +114,13 @@ main() {
     if [ "$AUTO_DETECT" = "true" ]; then
         local detected_project=$(detect_project_type)
         if [ "$detected_project" = "python" ]; then
+            print_status "Detected Python project in current directory"
             PYTHON_ONLY="true"
         elif [ "$detected_project" = "cpp" ]; then
+            print_status "Detected C++ project in current directory"
             CPP_ONLY="true"
         else
+            print_warning "No specific project type detected in current directory"
             print_warning "Running full validation (all tools)"
         fi
     fi
