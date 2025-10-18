@@ -4,236 +4,107 @@ This document describes the restructuring of the development environment setup s
 
 ## What Changed?
 
-### Old Structure (Deprecated)
+### Old Structure (Removed)
 ```
-setup-scripts/
-├── total_run.sh          # Installation + Validation
+setup-scripts/          ❌ REMOVED
+├── total_run.sh
+├── total_run.ps1
 ├── linux/
-│   ├── tools/
-│   ├── config/
-│   └── validation/
-└── README.md
+└── windows/
 ```
-
-**Old Workflow:**
-1. Manually create project
-2. Run `sudo bash setup-scripts/total_run.sh`
-3. Manually validate
-
-**Problems:**
-- Mixed responsibilities (installation + validation)
-- Validation didn't test actual project files
-- Confusing naming (`total_run.sh` doesn't describe its purpose)
-- Ruff errors on cookiecutter templates
 
 ### New Structure
 ```
-scripts/
-├── create-project.sh     # Create project + Auto-install tools
-├── total_validation.sh   # Validation only (tests actual project)
+scripts/                ✅ CURRENT
+├── create-project.sh
+├── total_validation.sh
+├── total_validation.ps1
 ├── linux/
-│   ├── core/             # System dependencies
-│   ├── tools/            # Development tools
-│   ├── config/           # Configurations
-│   └── validation/       # Validation scripts
-└── README.md
+└── windows/
 ```
 
-**New Workflow:**
-1. Run `bash scripts/create-project.sh python my-project`
-   - Creates project from template
-   - **Auto-installs required tools**
-   - Sets up configurations
-2. Run `bash scripts/total_validation.sh` (from project directory)
-   - Tests **actual project files**
-   - Validates installation
-   - Checks code quality
+## Key Changes
 
-**Improvements:**
-- Clear separation of concerns
-- Automatic tool installation
-- Validation tests real project code
-- Better naming conventions
-- No more Ruff errors on templates
+### 1. Directory Renamed
+- **Old:** `setup-scripts/`
+- **New:** `scripts/`
+- **Reason:** Clearer, more concise naming
+
+### 2. Separation of Concerns
+- **Old:** `total_run.*` (did both installation + validation)
+- **New:**
+  - `create-project.sh` - Creates project and auto-installs tools
+  - `total_validation.*` - Validates project setup only
+
+### 3. Improved Validation
+- **Old:** Validated dummy files in `/tmp` or `$env:TEMP`
+- **New:** Validates actual project files in `src/` directory
+
+### 4. Auto-Detection
+- Automatically detects project type (Python vs C++)
+- Installs appropriate tools automatically
+
+### 5. Windows Feature Parity
+- Added `install-cpp-pkg-managers.ps1` for Windows
+- Now 100% feature parity between Linux and Windows
 
 ## Migration Steps
 
-### For Users
-
-#### Before (Old Way)
+### Old Way (Deprecated - No Longer Available)
 ```bash
-# Create project manually or with cookiecutter
+# ❌ This no longer works
 cookiecutter cookiecutters/python-project
-
-# Install tools
 cd my-project
 sudo bash ../setup-scripts/total_run.sh
-
-# Manually validate
-pytest
-ruff check src/
 ```
 
-#### After (New Way)
+### New Way (Current)
+
+**Linux/macOS:**
 ```bash
-# Create project (tools auto-installed)
+# Create project with auto-installation
 bash scripts/create-project.sh python my-project
 
-# Validate (tests actual project)
+# Validate
 cd my-project
 bash ../scripts/total_validation.sh
 ```
 
-### For Script Developers
+**Windows:**
+```powershell
+# Create project (use WSL/Git Bash or cookiecutter directly)
+cookiecutter cookiecutters/python-project
 
-#### Updating References
-
-**Before:**
-```bash
-SETUP_DIR="setup-scripts"
-bash setup-scripts/total_run.sh
-```
-
-**After:**
-```bash
-SCRIPTS_DIR="scripts"
-bash scripts/create-project.sh python my-project
+# Validate
 cd my-project
-bash ../scripts/total_validation.sh
+pwsh ..\scripts\total_validation.ps1
 ```
 
-#### Key Changes
+## Benefits
 
-1. **Installation moved to `create-project.sh`**
-   - Automatic tool installation based on project type
-   - No need for separate installation step
+| Feature | Old | New |
+|---------|-----|-----|
+| Installation | Manual | Automatic |
+| Validation | Dummy files | Real project files |
+| Project detection | Manual flags | Automatic |
+| Naming clarity | `total_run` | `create-project` / `total_validation` |
+| Ruff errors | Template errors | Templates excluded |
+| Feature parity | Linux only had cpp-pkg-managers | Both platforms have all tools |
 
-2. **`total_run.sh` → `total_validation.sh`**
-   - Renamed to reflect actual purpose (validation only)
-   - No longer performs installation
-   - Tests actual project files, not dummy files
+## Documentation
 
-3. **Validation improvements**
-   - Auto-detects project type from current directory
-   - Tests `src/` directory of actual project
-   - Provides meaningful feedback on project quality
+- [scripts/README.md](scripts/README.md) - Complete usage guide
+- [scripts/windows/tools/README.md](scripts/windows/tools/README.md) - Windows tools documentation
 
-## Technical Details
+## Breaking Changes
 
-### Ruff Configuration
+⚠️ **The `setup-scripts/` directory has been removed.**
 
-Added cookiecutter template exclusion to `configs/python/ruff.toml`:
+If you have any references to `setup-scripts/` in your scripts or documentation, update them to `scripts/`.
 
-```toml
-exclude = [
-    "cookiecutters/",
-    "__pycache__",
-    ".venv",
-    "venv",
-    "build",
-    "dist",
-    "*.egg-info",
-]
-```
+## Need Help?
 
-This prevents Ruff from trying to lint Jinja2 template files like `{{cookiecutter.package_name}}`.
-
-### Validation Logic Change
-
-**Before (`total_run.sh`):**
-```bash
-# Created temporary test files in /tmp
-mkdir -p /tmp/python_test/src
-cp /tmp/test_python.py /tmp/python_test/src/
-ruff check /tmp/python_test/src/  # Tests dummy file
-```
-
-**After (`total_validation.sh`):**
-```bash
-# Tests actual project files
-if [ -d "src" ]; then
-    ruff check src/  # Tests real project code
-fi
-```
-
-### Auto-Detection
-
-Both scripts now auto-detect project type:
-
-**`create-project.sh`:**
-```bash
-# Detects from created files
-if [ -f "pyproject.toml" ]; then
-    install_python_tools
-elif [ -f "CMakeLists.txt" ]; then
-    install_cpp_tools
-fi
-```
-
-**`total_validation.sh`:**
-```bash
-# Detects from current directory
-if [ -f "pyproject.toml" ]; then
-    PYTHON_ONLY="true"
-elif [ -f "CMakeLists.txt" ]; then
-    CPP_ONLY="true"
-fi
-```
-
-## Backwards Compatibility
-
-### Legacy Support
-
-The old `setup-scripts/` directory is **kept for now** to avoid breaking existing workflows, but it is **deprecated**.
-
-**Deprecation Timeline:**
-- **Phase 1 (Current)**: Both structures exist, new structure recommended
-- **Phase 2 (1 month)**: Add deprecation warnings to old scripts
-- **Phase 3 (3 months)**: Remove `setup-scripts/` entirely
-
-### Transition Period
-
-During the transition:
-- Old scripts still work but show deprecation warning
-- New scripts are the recommended approach
-- Documentation updated to show new workflow
-
-## Benefits Summary
-
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Project Creation** | Manual | Automated |
-| **Tool Installation** | Manual, separate step | Automatic during creation |
-| **Validation** | Tests dummy files | Tests actual project files |
-| **Naming** | Confusing (`total_run`) | Clear (`create-project`, `total_validation`) |
-| **Ruff Errors** | Template files cause errors | Templates excluded |
-| **User Experience** | Multiple manual steps | Single command |
-| **Clarity** | Mixed responsibilities | Clear separation |
-
-## FAQ
-
-### Q: Do I need to migrate existing projects?
-
-**A:** No. Existing projects continue to work. The changes affect new project creation and validation workflows.
-
-### Q: Will the old scripts stop working?
-
-**A:** Not immediately. They'll show deprecation warnings first, then be removed after a transition period.
-
-### Q: Can I still use `setup-scripts/total_run.sh`?
-
-**A:** Yes, but it's deprecated. Use `scripts/create-project.sh` for new projects.
-
-### Q: Why does validation need to run from the project directory?
-
-**A:** To test your **actual project files** instead of dummy test files. This gives real feedback on your code quality.
-
-### Q: How do I fix Ruff errors on cookiecutter templates?
-
-**A:** The templates are now excluded via `exclude` in `configs/python/ruff.toml`. You shouldn't see these errors anymore.
-
-## See Also
-
-- [Scripts README](scripts/README.md) - Detailed documentation of new structure
-- [Setup Scripts README](setup-scripts/README.md) - Legacy documentation (deprecated)
-- [Cookiecutter Templates](cookiecutters/README.md) - Project templates
+If you encounter issues with the migration, refer to:
+1. [scripts/README.md](scripts/README.md) for detailed usage
+2. Check that you're using the new `scripts/` directory
+3. Use `create-project.sh` instead of manual project creation + `total_run.*`
