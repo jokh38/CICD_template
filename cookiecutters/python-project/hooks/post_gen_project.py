@@ -23,7 +23,9 @@ class ProgressBar:
     def start_display(self):
         """Start progress display in background thread"""
         self.running = True
-        self.display_thread = threading.Thread(target=self._update_progress, daemon=True)
+        self.display_thread = threading.Thread(
+            target=self._update_progress, daemon=True
+        )
         self.display_thread.start()
 
     def _update_progress(self):
@@ -39,9 +41,18 @@ class ProgressBar:
         filled_width = int(self.width * progress)
 
         bar = "█" * filled_width + "░" * (self.width - filled_width)
-        eta = (elapsed / max(1, self.current_step)) * (self.total_steps - self.current_step) if self.current_step > 0 else 0
+        eta = (
+            (elapsed / max(1, self.current_step)) *
+            (self.total_steps - self.current_step)
+            if self.current_step > 0 else 0
+        )
 
-        sys.stdout.write(f"\r🔄 [{self.current_step}/{self.total_steps}] [{bar}] {progress*100:.0f}% | {self.current_operation} | ⏱️ {elapsed:.0f}s (ETA: {eta:.0f}s)")
+        output_str = (
+            f"\r🔄 [{self.current_step}/{self.total_steps}] [{bar}] "
+            f"{progress*100:.0f}% | {self.current_operation} | "
+            f"⏱️ {elapsed:.0f}s (ETA: {eta:.0f}s)"
+        )
+        sys.stdout.write(output_str)
         sys.stdout.flush()
 
     def step(self, operation):
@@ -69,7 +80,8 @@ def run_command(cmd, check=True):
         return False
 
 def setup_claude_context():
-    """Copy entire .github/claude/ directory and customize CLAUDE.md for new projects."""
+    """Copy entire .github/claude/ directory and customize CLAUDE.md
+    for new projects."""
     # Progress bar handles display now
 
     # Ensure .github/claude directory exists
@@ -77,11 +89,14 @@ def setup_claude_context():
     os.makedirs(claude_dir, exist_ok=True)
 
     # Define source directory paths - try multiple approaches
+    script_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
     possible_source_dirs = [
         # Try from current working directory (most reliable after cookiecutter)
         os.path.join(os.getcwd(), "..", "..", ".github", "claude"),
         # Try from script directory
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".github", "claude"),
+        os.path.join(script_dir, ".github", "claude"),
         # Try absolute path fallback
         "/home/jokh38/apps/CICD_template/.github/claude"
     ]
@@ -103,10 +118,13 @@ def setup_claude_context():
 
     try:
         # Walk through source directory and copy all files
-        for root, dirs, files in os.walk(source_claude_dir):
+        for root, _dirs, files in os.walk(source_claude_dir):
             # Calculate relative path from source_claude_dir
             rel_path = os.path.relpath(root, source_claude_dir)
-            target_dir = os.path.join(claude_dir, rel_path) if rel_path != '.' else claude_dir
+            if rel_path != '.':
+                target_dir = os.path.join(claude_dir, rel_path)
+            else:
+                target_dir = claude_dir
 
             # Create target directory if it doesn't exist
             os.makedirs(target_dir, exist_ok=True)
@@ -154,10 +172,12 @@ def customize_claude_md(claude_md_path):
             content = content.replace(template_var, actual_value)
 
         # Handle Jinja2 conditionals for Python projects
-        content = content.replace(
-            '{% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}',
-            f'Python {python_version}'
+        conditional_str = (
+            '{% if cookiecutter.python_version is defined %}Python '
+            '{{cookiecutter.python_version}}{% else %}C++ '
+            '{{cookiecutter.cpp_standard}}{% endif %}'
         )
+        content = content.replace(conditional_str, f'Python {python_version}')
 
         # Write the customized file
         with open(claude_md_path, 'w', encoding='utf-8') as f:
@@ -176,11 +196,14 @@ def copy_claude_md():
     # Progress bar handles display now
 
     # Define possible source paths for HIVE_CLAUDE.md
+    script_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
     possible_source_paths = [
         # Try from current working directory (most reliable after cookiecutter)
         os.path.join(os.getcwd(), "..", "..", "docs", "HIVE_CLAUDE.md"),
         # Try from script directory
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "docs", "HIVE_CLAUDE.md"),
+        os.path.join(script_dir, "docs", "HIVE_CLAUDE.md"),
         # Try absolute path fallback
         "/home/jokh38/apps/CICD_template/docs/HIVE_CLAUDE.md"
     ]
@@ -571,10 +594,10 @@ def print_next_steps():
         print("• Serena MCP integration is configured for enhanced AI capabilities")
     if use_git_hooks == "yes":
         print("• Pre-commit hooks are installed and will run automatically on commit")
-        print("• Pre-push hooks are installed and will run tests/dynamic analysis on push")
+        print("• Pre-push hooks are installed and will run tests/dynamic analysis")
         print("• Run 'pre-commit run --all-files' to check all files manually")
-        print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - it bypasses quality checks!")
-        print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - it bypasses testing!")
+        print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - bypasses checks!")
+        print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - bypasses testing!")
     else:
         print("• Git hooks are disabled - manual quality checks required")
 
@@ -622,16 +645,15 @@ def main():
         progress.finish("Project setup completed successfully!")
 
         # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
-        if "{{ cookiecutter.use_ai_workflow }}" == "no":
-            if os.path.exists(".github/claude"):
-                import shutil
-                shutil.rmtree(".github/claude")
-                run_command("git add .github/claude")
+        ai_workflow_disabled = "{{ cookiecutter.use_ai_workflow }}" == "no"
+        if ai_workflow_disabled and os.path.exists(".github/claude"):
+            import shutil
+            shutil.rmtree(".github/claude")
+            run_command("git add .github/claude")
 
         # Remove license if None
-        if "{{ cookiecutter.license }}" == "None":
-            if os.path.exists("LICENSE"):
-                os.remove("LICENSE")
+        if "{{ cookiecutter.license }}" == "None" and os.path.exists("LICENSE"):
+            os.remove("LICENSE")
 
         print_next_steps()
 

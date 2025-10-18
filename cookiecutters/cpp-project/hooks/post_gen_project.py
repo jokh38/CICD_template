@@ -8,12 +8,14 @@ import sys
 
 def run_command(cmd, check=True):
     try:
-        result = subprocess.run(cmd, shell=True, check=check,
-                                capture_output=True, text=True)
+        result = subprocess.run(
+            cmd, shell=True, check=check, capture_output=True, text=True
+        )
         return result.returncode == 0
     except subprocess.CalledProcessError as e:
         print(f"Error: {e}")
         return False
+
 
 def initialize_git():
     print("• Initializing git repository...")
@@ -28,9 +30,11 @@ def initialize_git():
     run_command("git add .")
     run_command('git commit -m "Initial commit from template"')
 
+
 def setup_build_directory():
     print("• Creating build directory...")
     os.makedirs("build", exist_ok=True)
+
 
 def setup_serena_configuration():
     """Create Serena-specific configuration and memory system for C++ projects."""
@@ -98,7 +102,10 @@ serena_config:
 # Development workflow integration
 workflow:
   # Serena can use these commands for autonomous development
-  configure_command: "cmake -B build -G {'Ninja' if '{{ cookiecutter.use_ninja }}' == 'yes' else 'Unix Makefiles'}"
+  configure_command: >-
+    cmake -B build -G {
+            "Ninja" if "{{ cookiecutter.use_ninja }}" == "yes" else "Unix Makefiles"
+        }
   clean_build: "rm -rf build && cmake -B build && cmake --build build"
   run_tests: "ctest --test-dir build --verbose"
   static_analysis: "clang-tidy src/**/*.cpp -- -I./include"
@@ -114,7 +121,7 @@ build_variants:
 """
 
         config_file = os.path.join(serena_dir, "config.yml")
-        with open(config_file, 'w', encoding='utf-8') as f:
+        with open(config_file, "w", encoding="utf-8") as f:
             f.write(config_content)
 
         print(f"   • Created Serena configuration: {config_file}")
@@ -129,11 +136,20 @@ build_variants:
 ## Technical Stack
 - **Language**: C++{cpp_standard}
 - **Build System**: {build_system.upper()}
-- **Testing**: {{'GoogleTest' if '{{ cookiecutter.testing_framework }}' == 'gtest' else 'Catch2/Doctest'}}
+- **Testing**: {{
+    'GoogleTest' if '{{ cookiecutter.testing_framework }}' == 'gtest'
+    else 'Catch2/Doctest'
+}}
 - **Code Formatting**: clang-format
 - **Static Analysis**: clang-tidy
-- **Compilation Cache**: {{'sccache enabled' if '{{ cookiecutter.enable_cache }}' == 'yes' else 'sccache disabled'}}
-- **Build Generator**: {{'Ninja' if '{{ cookiecutter.use_ninja }}' == 'yes' else 'Unix Makefiles'}}
+- **Compilation Cache**: {{
+    'sccache enabled' if '{{ cookiecutter.enable_cache }}' == 'yes'
+    else 'sccache disabled'
+}}
+- **Build Generator**: {{
+    'Ninja' if '{{ cookiecutter.use_ninja }}' == 'yes'
+    else 'Unix Makefiles'
+}}
 - **Git Hooks**: Pre-commit hooks installed and configured
 
 ## Project Structure
@@ -149,7 +165,10 @@ configs/       - Tool configuration files
 ```
 
 ## Development Workflow
-1. **Configure Build**: `cmake -B build -G {'Ninja' if '{{ cookiecutter.use_ninja }}' == 'yes' else 'Unix Makefiles'}`
+1. **Configure Build**: `cmake -B build -G {{
+    "Ninja" if "{{ cookiecutter.use_ninja }}" == "yes"
+    else "Unix Makefiles"
+}}`
 2. **Build Project**: `cmake --build build`
 3. **Run Tests**: `ctest --test-dir build --output-on-failure`
 4. **Format Code**: `clang-format -i src/**/*.cpp include/**/*.hpp`
@@ -188,7 +207,7 @@ This project is configured for Serena MCP integration with:
 """
 
         memory_file = os.path.join(memories_dir, "project_overview.md")
-        with open(memory_file, 'w', encoding='utf-8') as f:
+        with open(memory_file, "w", encoding="utf-8") as f:
             f.write(memory_content)
 
         print(f"   • Created initial memory: {memory_file}")
@@ -239,7 +258,7 @@ This project is configured for Serena MCP integration with:
 """
 
         guide_file = os.path.join(serena_dir, "USAGE_GUIDE.md")
-        with open(guide_file, 'w', encoding='utf-8') as f:
+        with open(guide_file, "w", encoding="utf-8") as f:
             f.write(usage_guide)
 
         print(f"   • Created usage guide: {guide_file}")
@@ -249,6 +268,7 @@ This project is configured for Serena MCP integration with:
     except Exception as e:
         print(f"   ❌ Error setting up Serena configuration: {e}")
         return False
+
 
 def install_serena_mcp():
     """Install Serena MCP server for Claude Code with enhanced configuration."""
@@ -294,9 +314,12 @@ def install_serena_mcp():
     else:
         print("   ⚠️  Failed to install Serena MCP")
         print("   You can install manually later:")
-        print("   claude mcp add-json \"serena\" '{\"command\":\"uvx\",\"args\":[\"--from\",\"git+https://github.com/oraios/serena\",\"serena-mcp-server\"]}'")
+        print(
+            '   claude mcp add-json "serena" \'{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}\''
+        )
         print("   Configuration files have been created in .serena/ directory")
         return False
+
 
 def install_pre_commit():
     """Install pre-commit hooks for C++ projects."""
@@ -327,6 +350,7 @@ def install_pre_commit():
         print("   ⚠️  You can install manually later with: pre-commit install")
         return False
 
+
 def install_pre_push_hook():
     """Install custom pre-push hook for testing and dynamic analysis."""
     print("• Installing pre-push hook...")
@@ -345,6 +369,7 @@ def install_pre_push_hook():
     if os.path.exists(pre_push_source):
         try:
             import shutil
+
             shutil.copy2(pre_push_source, pre_push_target)
             os.chmod(pre_push_target, 0o755)  # Make executable
             print("   • Pre-push hook installed successfully")
@@ -356,6 +381,7 @@ def install_pre_push_hook():
         print("   ⚠️  Pre-push hook template not found")
         return False
 
+
 def print_next_steps():
     project_name = "{{ cookiecutter.project_name }}"
     project_slug = "{{ cookiecutter.project_slug }}"
@@ -363,21 +389,20 @@ def print_next_steps():
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✅ Project created!")
-    print("="*60)
+    print("=" * 60)
     print(f"\n• Project: {project_name}")
     print(f"• Build: {build_system}")
     print(f"• Git Hooks: {use_git_hooks}")
     print(f"• AI Workflow: {use_ai}")
 
-  
     if use_git_hooks == "yes":
-        print("\n• Pre-commit hooks are installed and will run automatically on commit")
-        print("• Pre-push hooks are installed and will run tests/dynamic analysis on push")
+        print("\n• Pre-commit hooks are installed and will run automatically")
+        print("• Pre-push hooks are installed and will run tests/dynamic analysis")
         print("• Run 'pre-commit run --all-files' to check all files manually")
-        print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - it bypasses quality checks!")
-        print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - it bypasses testing!")
+        print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - bypasses checks!")
+        print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - bypasses testing!")
     else:
         print("\n• Git hooks are disabled - manual quality checks required")
 
@@ -389,8 +414,10 @@ def print_next_steps():
     print("  2. git remote add origin <your-github-repo-url>")
     print("  3. git push -u origin main")
 
+
 def setup_claude_context():
-    """Copy entire .github/claude/ directory and customize CLAUDE.md for new projects."""
+    """Copy entire .github/claude/ directory and customize CLAUDE.md
+    for new projects."""
     print("• Setting up Claude AI context...")
 
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
@@ -404,13 +431,16 @@ def setup_claude_context():
     os.makedirs(claude_dir, exist_ok=True)
 
     # Define source directory paths - try multiple approaches
+    script_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
     possible_source_dirs = [
         # Try from current working directory (most reliable after cookiecutter)
         os.path.join(os.getcwd(), "..", "..", ".github", "claude"),
         # Try from script directory
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), ".github", "claude"),
+        os.path.join(script_dir, ".github", "claude"),
         # Try absolute path fallback
-        "/home/jokh38/apps/CICD_template/.github/claude"
+        "/home/jokh38/apps/CICD_template/.github/claude",
     ]
 
     source_claude_dir = None
@@ -426,14 +456,18 @@ def setup_claude_context():
 
     # Copy entire .github/claude/ directory structure
     import shutil
+
     copied_files = []
 
     try:
         # Walk through source directory and copy all files
-        for root, dirs, files in os.walk(source_claude_dir):
+        for root, _dirs, files in os.walk(source_claude_dir):
             # Calculate relative path from source_claude_dir
             rel_path = os.path.relpath(root, source_claude_dir)
-            target_dir = os.path.join(claude_dir, rel_path) if rel_path != '.' else claude_dir
+            if rel_path != ".":
+                target_dir = os.path.join(claude_dir, rel_path)
+            else:
+                target_dir = claude_dir
 
             # Create target directory if it doesn't exist
             os.makedirs(target_dir, exist_ok=True)
@@ -458,11 +492,12 @@ def setup_claude_context():
         print(f"   ❌ Error copying .github/claude/ directory: {e}")
         return False
 
+
 def customize_claude_md(claude_md_path):
     """Customize CLAUDE.md file with project-specific values."""
     try:
         # Read the file
-        with open(claude_md_path, encoding='utf-8') as f:
+        with open(claude_md_path, encoding="utf-8") as f:
             content = f.read()
 
         # Get actual cookiecutter values
@@ -472,22 +507,24 @@ def customize_claude_md(claude_md_path):
 
         # Replace cookiecutter variables with actual project values
         replacements = {
-            '{{cookiecutter.project_name}}': project_name,
-            '{{cookiecutter.project_description}}': project_description,
-            '{{cookiecutter.cpp_standard}}': cpp_standard,
+            "{{cookiecutter.project_name}}": project_name,
+            "{{cookiecutter.project_description}}": project_description,
+            "{{cookiecutter.cpp_standard}}": cpp_standard,
         }
 
         for template_var, actual_value in replacements.items():
             content = content.replace(template_var, actual_value)
 
         # Handle Jinja2 conditionals for C++ projects
-        content = content.replace(
-            '{% if cookiecutter.python_version is defined %}Python {{cookiecutter.python_version}}{% else %}C++ {{cookiecutter.cpp_standard}}{% endif %}',
-            f'C++ {cpp_standard}'
+        conditional_str = (
+            "{% if cookiecutter.python_version is defined %}Python "
+            "{{cookiecutter.python_version}}{% else %}C++ "
+            "{{cookiecutter.cpp_standard}}{% endif %}"
         )
+        content = content.replace(conditional_str, f"C++ {cpp_standard}")
 
         # Write the customized file
-        with open(claude_md_path, 'w', encoding='utf-8') as f:
+        with open(claude_md_path, "w", encoding="utf-8") as f:
             f.write(content)
 
         return True
@@ -496,6 +533,7 @@ def customize_claude_md(claude_md_path):
         print(f"   ⚠️  Error customizing CLAUDE.md: {e}")
         return False
 
+
 def copy_claude_md():
     """Copy HIVE_CLAUDE.md from docs/ directory as CLAUDE.md to project root."""
     import shutil
@@ -503,13 +541,16 @@ def copy_claude_md():
     print("• Setting up CLAUDE.md documentation...")
 
     # Define possible source paths for HIVE_CLAUDE.md
+    script_dir = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    )
     possible_source_paths = [
         # Try from current working directory (most reliable after cookiecutter)
         os.path.join(os.getcwd(), "..", "..", "docs", "HIVE_CLAUDE.md"),
         # Try from script directory
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "docs", "HIVE_CLAUDE.md"),
+        os.path.join(script_dir, "docs", "HIVE_CLAUDE.md"),
         # Try absolute path fallback
-        "/home/jokh38/apps/CICD_template/docs/HIVE_CLAUDE.md"
+        "/home/jokh38/apps/CICD_template/docs/HIVE_CLAUDE.md",
     ]
 
     source_hive_claude = None
@@ -532,6 +573,7 @@ def copy_claude_md():
         print(f"   ❌ Error copying HIVE_CLAUDE.md: {e}")
         return False
 
+
 def main():
     try:
         # Setup Claude AI context if enabled
@@ -547,6 +589,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
