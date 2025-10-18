@@ -3,34 +3,37 @@
 
 set -e
 
+# Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$SCRIPT_DIR/.."
+COMMON_UTILS="$SCRIPT_DIR/lib/common-utils.sh"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    echo "Error: Cannot find common-utils.sh at $COMMON_UTILS"
+    exit 1
+fi
+
+ROOT_DIR="$SCRIPT_DIR/.."
 
 ERRORS=0
 WARNINGS=0
 
 log_check() {
-    echo -e "${BLUE}[CHECK]${NC} $1"
+    print_status "$1"
 }
 
 log_ok() {
-    echo -e "${GREEN}[OK]${NC} $1"
+    print_success "$1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
+    print_warning "$1"
     ((WARNINGS++))
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    print_error "$1"
     ((ERRORS++))
 }
 
@@ -158,7 +161,7 @@ echo "=========================================="
 echo ""
 
 if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
-    echo -e "${GREEN}✅ All checks passed!${NC}"
+    print_success "All checks passed!"
     echo ""
     echo "The CICD template system is fully set up and ready to use."
     echo ""
@@ -169,12 +172,12 @@ if [ $ERRORS -eq 0 ] && [ $WARNINGS -eq 0 ]; then
     echo ""
     exit 0
 elif [ $ERRORS -eq 0 ]; then
-    echo -e "${YELLOW}⚠️  Setup complete with $WARNINGS warning(s)${NC}"
+    print_warning "Setup complete with $WARNINGS warning(s)"
     echo ""
     echo "The system is functional but some optional features may not work."
     exit 0
 else
-    echo -e "${RED}❌ Setup incomplete: $ERRORS error(s), $WARNINGS warning(s)${NC}"
+    print_error "Setup incomplete: $ERRORS error(s), $WARNINGS warning(s)"
     echo ""
     echo "Please fix the errors above before using the template system."
     exit 1

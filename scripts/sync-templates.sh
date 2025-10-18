@@ -3,12 +3,18 @@
 
 set -e
 
+# Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONFIGS_DIR="$SCRIPT_DIR/../configs"
+COMMON_UTILS="$SCRIPT_DIR/lib/common-utils.sh"
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    echo "Error: Cannot find common-utils.sh at $COMMON_UTILS"
+    exit 1
+fi
+
+CONFIGS_DIR="$SCRIPT_DIR/../configs"
 
 usage() {
     cat <<EOF
@@ -29,26 +35,26 @@ EOF
 sync_python() {
     local target_dir=$1
 
-    echo -e "${GREEN}Syncing Python configurations to $target_dir${NC}"
+    print_success "Syncing Python configurations to $target_dir"
 
     cp "$CONFIGS_DIR/python/.pre-commit-config.yaml" "$target_dir/"
     cp "$CONFIGS_DIR/python/ruff.toml" "$target_dir/"
 
-    echo -e "${YELLOW}Note: Review pyproject.toml manually for Ruff configuration${NC}"
-    echo -e "${GREEN}✅ Python configurations synced${NC}"
+    print_warning "Note: Review pyproject.toml manually for Ruff configuration"
+    print_success "Python configurations synced"
 }
 
 sync_cpp() {
     local target_dir=$1
 
-    echo -e "${GREEN}Syncing C++ configurations to $target_dir${NC}"
+    print_success "Syncing C++ configurations to $target_dir"
 
     cp "$CONFIGS_DIR/cpp/.pre-commit-config.yaml" "$target_dir/"
     cp "$CONFIGS_DIR/cpp/.clang-format" "$target_dir/"
     cp "$CONFIGS_DIR/cpp/.clang-tidy" "$target_dir/"
 
-    echo -e "${YELLOW}Note: Review CMakeLists.txt for any necessary updates${NC}"
-    echo -e "${GREEN}✅ C++ configurations synced${NC}"
+    print_warning "Note: Review CMakeLists.txt for any necessary updates"
+    print_success "C++ configurations synced"
 }
 
 main() {

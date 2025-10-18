@@ -4,12 +4,16 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_UTILS="$SCRIPT_DIR/lib/common-utils.sh"
+
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    echo "Error: Cannot find common-utils.sh at $COMMON_UTILS"
+    exit 1
+fi
 
 # Configuration
 TEMPLATE_DIR="$(pwd)"
@@ -17,40 +21,34 @@ TEST_DIR="/tmp/claude-integration-test"
 PYTHON_PROJECT_NAME="test-python-project"
 CPP_PROJECT_NAME="test-cpp-project"
 
-# Function to print colored output
-print_status() {
-    local color=$1
-    local message=$2
-    echo -e "${color}${message}${NC}"
-}
 
 # Function to cleanup test directory
 cleanup() {
     if [[ -d "$TEST_DIR" ]]; then
-        print_status $BLUE "🧹 Cleaning up test directory..."
+        print_status "🧹 Cleaning up test directory..."
         rm -rf "$TEST_DIR"
     fi
 }
 
 # Function to setup test environment
 setup_test_env() {
-    print_status $BLUE "🔧 Setting up test environment..."
+    print_status "🔧 Setting up test environment..."
 
     # Create test directory
     mkdir -p "$TEST_DIR"
     cd "$TEST_DIR"
 
-    print_status $GREEN "✅ Test directory created: $TEST_DIR"
+    print_success "✅ Test directory created: $TEST_DIR"
 }
 
 # Function to test Python project creation
 test_python_project() {
-    print_status $BLUE "🐍 Testing Python project creation..."
+    print_status "🐍 Testing Python project creation..."
 
     cd "$TEST_DIR"
 
     # Create Python project using cookiecutter
-    print_status $BLUE "   Creating Python project..."
+    print_status "   Creating Python project..."
     cookiecutter "$TEMPLATE_DIR/cookiecutters/python-project" \
         --no-input \
         project_name="$PYTHON_PROJECT_NAME" \
@@ -65,85 +63,85 @@ test_python_project() {
         include_docker="no"
 
     if [[ ! -d "$PYTHON_PROJECT_NAME" ]]; then
-        print_status $RED "❌ Python project creation failed"
+        print_error "❌ Python project creation failed"
         return 1
     fi
 
-    print_status $GREEN "✅ Python project created successfully"
+    print_success "✅ Python project created successfully"
 
     # Validate the created project
     cd "$PYTHON_PROJECT_NAME"
 
     # Run validation script
     if [[ -f "$TEMPLATE_DIR/scripts/validate-claude-integration.sh" ]]; then
-        print_status $BLUE "   Running validation script..."
+        print_status "   Running validation script..."
         "$TEMPLATE_DIR/scripts/validate-claude-integration.sh" . python
         validation_result=$?
 
         if [[ $validation_result -eq 0 ]]; then
-            print_status $GREEN "✅ Python project validation passed"
+            print_success "✅ Python project validation passed"
         else
-            print_status $RED "❌ Python project validation failed"
+            print_error "❌ Python project validation failed"
             return 1
         fi
     else
-        print_status $YELLOW "⚠️  Validation script not found"
+        print_warning "⚠️  Validation script not found"
     fi
 
     # Manual checks
-    print_status $BLUE "   Performing manual checks..."
+    print_status "   Performing manual checks..."
 
     # Check CLAUDE.md content
     if [[ -f ".github/claude/CLAUDE.md" ]]; then
-        print_status $GREEN "✅ CLAUDE.md exists"
+        print_success "✅ CLAUDE.md exists"
 
         # Check for actual project name (not template variable)
         if grep -q "$PYTHON_PROJECT_NAME" ".github/claude/CLAUDE.md"; then
-            print_status $GREEN "✅ Project name properly inserted"
+            print_success "✅ Project name properly inserted"
         else
-            print_status $RED "❌ Project name not found in CLAUDE.md"
+            print_error "❌ Project name not found in CLAUDE.md"
             return 1
         fi
 
         # Check for Python version
         if grep -q "Python 3.10" ".github/claude/CLAUDE.md"; then
-            print_status $GREEN "✅ Python version properly inserted"
+            print_success "✅ Python version properly inserted"
         else
-            print_status $RED "❌ Python version not found in CLAUDE.md"
+            print_error "❌ Python version not found in CLAUDE.md"
             return 1
         fi
 
         # Check that template variables are replaced
         if grep -q "{{cookiecutter" ".github/claude/CLAUDE.md"; then
-            print_status $RED "❌ Template variables not replaced"
+            print_error "❌ Template variables not replaced"
             return 1
         else
-            print_status $GREEN "✅ Template variables properly replaced"
+            print_success "✅ Template variables properly replaced"
         fi
     else
-        print_status $RED "❌ CLAUDE.md not found"
+        print_error "❌ CLAUDE.md not found"
         return 1
     fi
 
     # Check AI workflow
     if [[ -f ".github/workflows/ai-workflow.yaml" ]]; then
-        print_status $GREEN "✅ AI workflow exists"
+        print_success "✅ AI workflow exists"
 
         # Check for Haiku model
         if grep -q "haiku" ".github/workflows/ai-workflow.yaml"; then
-            print_status $GREEN "✅ Uses Haiku model"
+            print_success "✅ Uses Haiku model"
         else
-            print_status $YELLOW "⚠️  Haiku model not specified"
+            print_warning "⚠️  Haiku model not specified"
         fi
 
         # Check for CLAUDE.md reference
         if grep -q "CLAUDE.md" ".github/workflows/ai-workflow.yaml"; then
-            print_status $GREEN "✅ References CLAUDE.md"
+            print_success "✅ References CLAUDE.md"
         else
-            print_status $YELLOW "⚠️  Does not reference CLAUDE.md"
+            print_warning "⚠️  Does not reference CLAUDE.md"
         fi
     else
-        print_status $RED "❌ AI workflow not found"
+        print_error "❌ AI workflow not found"
         return 1
     fi
 
@@ -153,12 +151,12 @@ test_python_project() {
 
 # Function to test C++ project creation
 test_cpp_project() {
-    print_status $BLUE "🔧 Testing C++ project creation..."
+    print_status "🔧 Testing C++ project creation..."
 
     cd "$TEST_DIR"
 
     # Create C++ project using cookiecutter
-    print_status $BLUE "   Creating C++ project..."
+    print_status "   Creating C++ project..."
     cookiecutter "$TEMPLATE_DIR/cookiecutters/cpp-project" \
         --no-input \
         project_name="$CPP_PROJECT_NAME" \
@@ -174,85 +172,85 @@ test_cpp_project() {
         enable_cache="yes"
 
     if [[ ! -d "$CPP_PROJECT_NAME" ]]; then
-        print_status $RED "❌ C++ project creation failed"
+        print_error "❌ C++ project creation failed"
         return 1
     fi
 
-    print_status $GREEN "✅ C++ project created successfully"
+    print_success "✅ C++ project created successfully"
 
     # Validate the created project
     cd "$CPP_PROJECT_NAME"
 
     # Run validation script
     if [[ -f "$TEMPLATE_DIR/scripts/validate-claude-integration.sh" ]]; then
-        print_status $BLUE "   Running validation script..."
+        print_status "   Running validation script..."
         "$TEMPLATE_DIR/scripts/validate-claude-integration.sh" . cpp
         validation_result=$?
 
         if [[ $validation_result -eq 0 ]]; then
-            print_status $GREEN "✅ C++ project validation passed"
+            print_success "✅ C++ project validation passed"
         else
-            print_status $RED "❌ C++ project validation failed"
+            print_error "❌ C++ project validation failed"
             return 1
         fi
     else
-        print_status $YELLOW "⚠️  Validation script not found"
+        print_warning "⚠️  Validation script not found"
     fi
 
     # Manual checks
-    print_status $BLUE "   Performing manual checks..."
+    print_status "   Performing manual checks..."
 
     # Check CLAUDE.md content
     if [[ -f ".github/claude/CLAUDE.md" ]]; then
-        print_status $GREEN "✅ CLAUDE.md exists"
+        print_success "✅ CLAUDE.md exists"
 
         # Check for actual project name (not template variable)
         if grep -q "$CPP_PROJECT_NAME" ".github/claude/CLAUDE.md"; then
-            print_status $GREEN "✅ Project name properly inserted"
+            print_success "✅ Project name properly inserted"
         else
-            print_status $RED "❌ Project name not found in CLAUDE.md"
+            print_error "❌ Project name not found in CLAUDE.md"
             return 1
         fi
 
         # Check for C++ standard
         if grep -q "C++17" ".github/claude/CLAUDE.md"; then
-            print_status $GREEN "✅ C++ standard properly inserted"
+            print_success "✅ C++ standard properly inserted"
         else
-            print_status $RED "❌ C++ standard not found in CLAUDE.md"
+            print_error "❌ C++ standard not found in CLAUDE.md"
             return 1
         fi
 
         # Check that template variables are replaced
         if grep -q "{{cookiecutter" ".github/claude/CLAUDE.md"; then
-            print_status $RED "❌ Template variables not replaced"
+            print_error "❌ Template variables not replaced"
             return 1
         else
-            print_status $GREEN "✅ Template variables properly replaced"
+            print_success "✅ Template variables properly replaced"
         fi
     else
-        print_status $RED "❌ CLAUDE.md not found"
+        print_error "❌ CLAUDE.md not found"
         return 1
     fi
 
     # Check AI workflow
     if [[ -f ".github/workflows/ai-workflow.yaml" ]]; then
-        print_status $GREEN "✅ AI workflow exists"
+        print_success "✅ AI workflow exists"
 
         # Check for Haiku model
         if grep -q "haiku" ".github/workflows/ai-workflow.yaml"; then
-            print_status $GREEN "✅ Uses Haiku model"
+            print_success "✅ Uses Haiku model"
         else
-            print_status $YELLOW "⚠️  Haiku model not specified"
+            print_warning "⚠️  Haiku model not specified"
         fi
 
         # Check for CLAUDE.md reference
         if grep -q "CLAUDE.md" ".github/workflows/ai-workflow.yaml"; then
-            print_status $GREEN "✅ References CLAUDE.md"
+            print_success "✅ References CLAUDE.md"
         else
-            print_status $YELLOW "⚠️  Does not reference CLAUDE.md"
+            print_warning "⚠️  Does not reference CLAUDE.md"
         fi
     else
-        print_status $RED "❌ AI workflow not found"
+        print_error "❌ AI workflow not found"
         return 1
     fi
 
@@ -262,7 +260,7 @@ test_cpp_project() {
 
 # Function to test AI command parsing
 test_ai_commands() {
-    print_status $BLUE "🤖 Testing AI command parsing..."
+    print_status "🤖 Testing AI command parsing..."
 
     # Test command extraction regex (from workflow)
     local test_commands=(
@@ -272,16 +270,16 @@ test_ai_commands() {
     )
 
     for cmd in "${test_commands[@]}"; do
-        print_status $BLUE "   Testing: $cmd"
+        print_status "   Testing: $cmd"
 
         if [[ $cmd =~ \/claude\ (add-feature|fix-issue|refactor-code)(.*) ]]; then
             local command="${BASH_REMATCH[1]}"
             local description="${BASH_REMATCH[2]}"
 
-            print_status $GREEN "      ✅ Command: $command"
-            print_status $GREEN "      ✅ Description: $description"
+            print_success "      ✅ Command: $command"
+            print_success "      ✅ Description: $description"
         else
-            print_status $RED "      ❌ Failed to parse command"
+            print_error "      ❌ Failed to parse command"
             return 1
         fi
     done
@@ -295,50 +293,50 @@ show_summary() {
     local cpp_result=$2
     local command_result=$3
 
-    print_status $BLUE "📊 Test Results Summary"
-    print_status $BLUE "======================="
+    print_status "📊 Test Results Summary"
+    print_status "======================="
     echo
 
-    print_status $BLUE "Python Project Test:"
+    print_status "Python Project Test:"
     if [[ $python_result -eq 0 ]]; then
-        print_status $GREEN "   ✅ PASSED"
+        print_success "   ✅ PASSED"
     else
-        print_status $RED "   ❌ FAILED"
+        print_error "   ❌ FAILED"
     fi
     echo
 
-    print_status $BLUE "C++ Project Test:"
+    print_status "C++ Project Test:"
     if [[ $cpp_result -eq 0 ]]; then
-        print_status $GREEN "   ✅ PASSED"
+        print_success "   ✅ PASSED"
     else
-        print_status $RED "   ❌ FAILED"
+        print_error "   ❌ FAILED"
     fi
     echo
 
-    print_status $BLUE "AI Command Parsing Test:"
+    print_status "AI Command Parsing Test:"
     if [[ $command_result -eq 0 ]]; then
-        print_status $GREEN "   ✅ PASSED"
+        print_success "   ✅ PASSED"
     else
-        print_status $RED "   ❌ FAILED"
+        print_error "   ❌ FAILED"
     fi
     echo
 
     # Overall result
     local overall_result=$((python_result + cpp_result + command_result))
     if [[ $overall_result -eq 0 ]]; then
-        print_status $GREEN "🎉 ALL TESTS PASSED!"
-        print_status $GREEN "✅ CLAUDE.md integration is working correctly"
+        print_success "🎉 ALL TESTS PASSED!"
+        print_success "✅ CLAUDE.md integration is working correctly"
         echo
-        print_status $BLUE "📋 Test projects created in: $TEST_DIR"
-        print_status $BLUE "   - $PYTHON_PROJECT_NAME (Python project)"
-        print_status $BLUE "   - $CPP_PROJECT_NAME (C++ project)"
+        print_status "📋 Test projects created in: $TEST_DIR"
+        print_status "   - $PYTHON_PROJECT_NAME (Python project)"
+        print_status "   - $CPP_PROJECT_NAME (C++ project)"
         echo
-        print_status $BLUE "💡 You can examine these test projects to verify the integration:"
-        print_status $BLUE "   cd $TEST_DIR/$PYTHON_PROJECT_NAME && cat .github/claude/CLAUDE.md"
-        print_status $BLUE "   cd $TEST_DIR/$CPP_PROJECT_NAME && cat .github/claude/CLAUDE.md"
+        print_status "💡 You can examine these test projects to verify the integration:"
+        print_status "   cd $TEST_DIR/$PYTHON_PROJECT_NAME && cat .github/claude/CLAUDE.md"
+        print_status "   cd $TEST_DIR/$CPP_PROJECT_NAME && cat .github/claude/CLAUDE.md"
     else
-        print_status $RED "❌ SOME TESTS FAILED"
-        print_status $RED "Please check the errors above"
+        print_error "❌ SOME TESTS FAILED"
+        print_error "Please check the errors above"
         return 1
     fi
 }
@@ -347,10 +345,10 @@ show_summary() {
 main() {
     local keep_test_files=${1:-false}
 
-    print_status $BLUE "🧪 CLAUDE.md Integration Test Suite"
-    print_status $BLUE "=================================="
-    print_status $BLUE "Template directory: $TEMPLATE_DIR"
-    print_status $BLUE "Test directory: $TEST_DIR"
+    print_status "🧪 CLAUDE.md Integration Test Suite"
+    print_status "=================================="
+    print_status "Template directory: $TEMPLATE_DIR"
+    print_status "Test directory: $TEST_DIR"
     echo
 
     # Setup test environment
@@ -388,7 +386,7 @@ main() {
     if [[ "$keep_test_files" != "true" ]]; then
         cleanup
     else
-        print_status $BLUE "📁 Test files kept in: $TEST_DIR"
+        print_status "📁 Test files kept in: $TEST_DIR"
     fi
 
     return $overall_result

@@ -3,23 +3,16 @@
 
 set -e
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_UTILS="$SCRIPT_DIR/../../lib/common-utils.sh"
 
-print_status() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] [INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] [SUCCESS]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] [ERROR]${NC} $1"
-}
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    echo "Error: Cannot find common-utils.sh at $COMMON_UTILS"
+    exit 1
+fi
 
 # Install Google Test
 print_status "Installing Google Test framework..."

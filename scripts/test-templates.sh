@@ -4,40 +4,26 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 TEST_DIR="$ROOT_DIR/tests"
 TEMP_DIR="/tmp/cicd-template-test-$$"
 
+# Source common utilities
+COMMON_UTILS="$SCRIPT_DIR/lib/common-utils.sh"
+
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    echo "Error: Cannot find common-utils.sh at $COMMON_UTILS"
+    exit 1
+fi
+
 # Test counters
 TESTS_TOTAL=0
 TESTS_PASSED=0
 TESTS_FAILED=0
-
-# Logging function
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR] $1${NC}"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
-}
-
-log_info() {
-    echo -e "${BLUE}[INFO] $1${NC}"
-}
 
 # Test functions
 run_test() {

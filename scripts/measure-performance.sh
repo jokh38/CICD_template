@@ -4,15 +4,17 @@
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Script directory
+# Source common utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+COMMON_UTILS="$SCRIPT_DIR/lib/common-utils.sh"
+
+if [ -f "$COMMON_UTILS" ]; then
+    source "$COMMON_UTILS"
+else
+    echo "Error: Cannot find common-utils.sh at $COMMON_UTILS"
+    exit 1
+fi
+
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Default values
@@ -24,23 +26,6 @@ REPO_NAME=""
 OUTPUT_FORMAT="json"
 COMPARE_WITH_BASELINE=false
 BASELINE_FILE=""
-
-# Logging functions
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR] $1${NC}"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
-}
-
-log_info() {
-    echo -e "${BLUE}[INFO] $1${NC}"
-}
 
 # Usage information
 usage() {
@@ -104,7 +89,7 @@ while [[ $# -gt 0 ]]; do
             exit 0
             ;;
         -*)
-            log_error "Unknown option: $1"
+            print_error "Unknown option: $1"
             usage
             exit 1
             ;;
@@ -112,7 +97,7 @@ while [[ $# -gt 0 ]]; do
             if [ -z "$PROJECT_DIR" ]; then
                 PROJECT_DIR="$1"
             else
-                log_error "Multiple project directories specified"
+                print_error "Multiple project directories specified"
                 usage
                 exit 1
             fi
@@ -123,23 +108,23 @@ done
 
 # Validate arguments
 if [ -z "$PROJECT_DIR" ]; then
-    log_error "Project directory is required"
+    print_error "Project directory is required"
     usage
     exit 1
 fi
 
 if [ ! -d "$PROJECT_DIR" ]; then
-    log_error "Project directory does not exist: $PROJECT_DIR"
+    print_error "Project directory does not exist: $PROJECT_DIR"
     exit 1
 fi
 
 if [[ ! "$OUTPUT_FORMAT" =~ ^(json|csv|table)$ ]]; then
-    log_error "Output format must be: json, csv, or table"
+    print_error "Output format must be: json, csv, or table"
     exit 1
 fi
 
 if [ "$COMPARE_WITH_BASELINE" = true ] && [ ! -f "$BASELINE_FILE" ]; then
-    log_error "Baseline file does not exist: $BASELINE_FILE"
+    print_error "Baseline file does not exist: $BASELINE_FILE"
     exit 1
 fi
 
@@ -150,7 +135,7 @@ detect_project_type() {
     elif [ -f "$PROJECT_DIR/CMakeLists.txt" ]; then
         echo "cpp"
     else
-        log_error "Unsupported project type"
+        print_error "Unsupported project type"
         exit 1
     fi
 }
@@ -160,11 +145,11 @@ get_github_metrics() {
     local metrics_file="$1"
 
     if [ -z "$GITHUB_TOKEN" ] || [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
-        log_warning "GitHub token or repository not provided. Skipping CI/CD metrics."
+        print_warning "GitHub token or repository not provided. Skipping CI/CD metrics."
         return
     fi
 
-    log_info "Fetching GitHub CI/CD metrics..."
+    print_status "Fetching GitHub CI/CD metrics..."
 
     # Export token for GitHub CLI
     export GH_TOKEN="$GITHUB_TOKEN"
@@ -182,7 +167,7 @@ get_github_metrics() {
         }' 2>/dev/null || echo "[]")
 
     if [ "$workflow_runs" = "[]" ]; then
-        log_warning "No CI/CD workflow runs found"
+        print_warning "No CI/CD workflow runs found"
         return
     fi
 
@@ -191,7 +176,7 @@ get_github_metrics() {
     successful_runs=$(echo "$workflow_runs" | jq '[.[] | select(.conclusion == "success")]')
 
     if [ "$successful_runs" = "[]" ]; then
-        log_warning "No successful CI/CD runs found"
+        print_warning "No successful CI/CD runs found"
         return
     fi
 
@@ -230,7 +215,7 @@ EOF
 
     rm -f "$temp_metrics"
 
-    log_info "CI/CD metrics collected: $total_runs runs, ${success_rate}% success rate"
+    print_status "CI/CD metrics collected: $total_runs runs, ${success_rate}% success rate"
 }
 
 # Measure local development metrics
@@ -238,7 +223,7 @@ measure_local_metrics() {
     local project_type="$1"
     local metrics_file="$2"
 
-    log_info "Measuring local development performance..."
+    print_status "Measuring local development performance..."
 
     cd "$PROJECT_DIR"
 
@@ -284,11 +269,11 @@ EOF
 measure_python_performance() {
     local metrics_file="$1"
 
-    log_info "Measuring Python project performance..."
+    print_status "Measuring Python project performance..."
 
     # Setup environment
     if [ ! -d ".venv" ]; then
-        log_info "Creating virtual environment..."
+        print_status "Creating virtual environment..."
         python3 -m venv .venv
     fi
 
@@ -341,7 +326,7 @@ measure_python_performance() {
 measure_cpp_performance() {
     local metrics_file="$1"
 
-    log_info "Measuring C++ project performance..."
+    print_status "Measuring C++ project performance..."
 
     # Check for sccache
     local using_sccache=false
@@ -590,7 +575,7 @@ compare_baseline() {
     local current_file="$1"
     local baseline_file="$2"
 
-    log_info "Comparing with baseline: $baseline_file"
+    print_status "Comparing with baseline: $baseline_file"
 
     echo ""
     echo "Baseline Comparison"
@@ -628,23 +613,23 @@ compare_baseline() {
 
 # Main execution
 main() {
-    log "Starting performance measurement..."
+    print_success "Starting performance measurement..."
 
     # Check dependencies
     if ! command -v bc &> /dev/null; then
-        log_error "bc is required for calculations. Please install: apt-get install bc"
+        print_error "bc is required for calculations. Please install: apt-get install bc"
         exit 1
     fi
 
     if ! command -v jq &> /dev/null; then
-        log_error "jq is required for JSON processing. Please install: apt-get install jq"
+        print_error "jq is required for JSON processing. Please install: apt-get install jq"
         exit 1
     fi
 
     # Detect project type
     local project_type
     project_type=$(detect_project_type)
-    log_info "Detected project type: $project_type"
+    print_status "Detected project type: $project_type"
 
     # Measure local performance
     measure_local_metrics "$project_type" "$METRICS_FILE"
@@ -660,8 +645,8 @@ main() {
         compare_baseline "$METRICS_FILE" "$BASELINE_FILE"
     fi
 
-    log "Performance measurement completed"
-    log "Results saved to: $METRICS_FILE"
+    print_success "Performance measurement completed"
+    print_success "Results saved to: $METRICS_FILE"
 }
 
 # Run main function with all arguments

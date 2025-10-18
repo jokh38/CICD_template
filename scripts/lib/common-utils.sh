@@ -8,38 +8,45 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Logging functions - standardized across all scripts
+# Standardized logging functions with timestamps
+print_status() {
+    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] [INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] [SUCCESS]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] [ERROR]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] [WARNING]${NC} $1"
+}
+
+print_header() {
+    echo ""
+    echo -e "${BLUE}================================${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}================================${NC}"
+}
+
+# Legacy function names for backward compatibility
 log() {
     echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR] $1${NC}"
+    print_error "$1"
 }
 
 log_warning() {
-    echo -e "${YELLOW}[WARNING] $1${NC}"
+    print_warning "$1"
 }
 
 log_info() {
-    echo -e "${BLUE}[INFO] $1${NC}"
-}
-
-# Success/error indicators
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+    print_status "$1"
 }
 
 # Common validation functions
