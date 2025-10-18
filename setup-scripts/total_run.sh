@@ -38,6 +38,40 @@ check_root() {
     fi
 }
 
+# Function to detect project type from current directory or recent projects
+detect_project_type() {
+    local detected_type=""
+
+    # Check if we're in a project directory
+    if [ -n "$PWD" ] && [ "$PWD" != "/" ]; then
+        # Check for Python project indicators
+        if [ -f "pyproject.toml" ] || [ -f "requirements.txt" ] || [ -f "setup.py" ] || ([ -d "src/" ] && [ -d "tests/" ] && [ -d ".venv" ]); then
+            detected_type="python"
+            echo "Detected Python project in current directory" >&2
+        # Check for C++ project indicators
+        elif [ -f "CMakeLists.txt" ] || [ -f "Makefile" ] || [ -f "configure.ac" ] || ([ -d "src/" ] && (ls src/*.cpp src/*.hpp >/dev/null 2>&1)); then
+            detected_type="cpp"
+            echo "Detected C++ project in current directory" >&2
+        fi
+    fi
+
+    # If no project detected in current directory, check for recently created projects
+    if [ -z "$detected_type" ]; then
+        # Look for recent project directories in user's home or common locations
+        local recent_projects=$(find /home -maxdepth 3 -name "pyproject.toml" -o -name "CMakeLists.txt" 2>/dev/null | head -5)
+
+        if echo "$recent_projects" | grep -q "pyproject.toml"; then
+            detected_type="python"
+            echo "Detected recent Python projects" >&2
+        elif echo "$recent_projects" | grep -q "CMakeLists.txt"; then
+            detected_type="cpp"
+            echo "Detected recent C++ projects" >&2
+        fi
+    fi
+
+    echo "$detected_type"
+}
+
 # Function to show usage
 show_usage() {
     cat << EOF
@@ -324,6 +358,22 @@ main() {
                 ;;
         esac
     done
+
+    # Auto-detect project type if no specific installation flags are set
+    if [ "$INSTALL_ALL" = "true" ] && [ "$INSTALL_BASIC" = "false" ] && [ "$INSTALL_CPP" = "false" ] && [ "$INSTALL_PYTHON" = "false" ]; then
+        local detected_project=$(detect_project_type 2>/dev/null)
+        if [ "$detected_project" = "python" ]; then
+            print_status "Auto-detected Python environment - installing Python tools only"
+            INSTALL_ALL="false"
+            INSTALL_PYTHON="true"
+        elif [ "$detected_project" = "cpp" ]; then
+            print_status "Auto-detected C++ environment - installing C++ tools only"
+            INSTALL_ALL="false"
+            INSTALL_CPP="true"
+        else
+            print_status "No specific project type detected - installing all development tools"
+        fi
+    fi
 
     print_status "Starting development environment setup..."
     print_status "Script directory: $SCRIPT_DIR"
