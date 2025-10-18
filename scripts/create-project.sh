@@ -139,21 +139,90 @@ create_project() {
         fi
     fi
 
-    echo ""
-    echo -e "${YELLOW}• Next Steps:${NC}"
-    echo "  1. Navigate to your project directory and start development"
+    # Find the scripts directory path
+    local scripts_path=""
+    local current_search_dir="$SCRIPT_DIR"
 
-    if [ -n "$setup_scripts_path" ]; then
-        echo "  2. Install requirements by using $setup_scripts_path/total_run.sh (requires sudo)"
-        echo "     Run: sudo bash $setup_scripts_path/total_run.sh"
-    else
-        echo "  2. Install requirements by using setup-scripts/total_run.sh (requires sudo)"
-        echo "     Run: sudo bash setup-scripts/total_run.sh"
-        echo -e "${RED}     Warning: Could not locate setup-scripts directory automatically${NC}"
+    # The scripts directory should be in the same parent as this script
+    if [ -d "$SCRIPT_DIR/linux" ]; then
+        scripts_path="$SCRIPT_DIR"
+    elif [ -d "$(dirname "$SCRIPT_DIR")/scripts" ]; then
+        scripts_path="$(dirname "$SCRIPT_DIR")/scripts"
     fi
 
-    echo "  3. Check .github/claude/CLAUDE.md for AI assistant integration details"
-    echo "  4. GitHub labels are ready for AI automation (use 'claude', 'ai-assist', etc.)"
+    echo ""
+    echo -e "${YELLOW}• Project created successfully!${NC}"
+    echo ""
+    echo -e "${BLUE}• Next: Install development tools${NC}"
+
+    if [ -n "$scripts_path" ] && [ -f "$scripts_path/linux/tools/install-python-tools.sh" ]; then
+        echo -e "${YELLOW}  Installing development tools for this project...${NC}"
+
+        # Determine project type
+        local install_type=""
+        if [ -f "$project_dir/pyproject.toml" ] || [ -f "$project_dir/requirements.txt" ]; then
+            install_type="python"
+        elif [ -f "$project_dir/CMakeLists.txt" ]; then
+            install_type="cpp"
+        fi
+
+        # Run installation based on project type
+        if [ "$install_type" = "python" ]; then
+            echo -e "${GREEN}  Detected Python project - installing Python tools...${NC}"
+            if [ "$EUID" -eq 0 ]; then
+                bash "$scripts_path/linux/tools/install-python-tools.sh"
+                bash "$scripts_path/linux/config/setup-git-config.sh"
+                bash "$scripts_path/linux/config/setup-code-formatting.sh"
+                bash "$scripts_path/linux/config/setup-ai-workflows.sh"
+            else
+                echo -e "${YELLOW}  Note: Some tools may require sudo privileges${NC}"
+                sudo bash "$scripts_path/linux/tools/install-python-tools.sh" || echo -e "${RED}  Failed to install Python tools${NC}"
+                bash "$scripts_path/linux/config/setup-git-config.sh" || echo -e "${RED}  Failed to setup git config${NC}"
+                bash "$scripts_path/linux/config/setup-code-formatting.sh" || echo -e "${RED}  Failed to setup code formatting${NC}"
+                bash "$scripts_path/linux/config/setup-ai-workflows.sh" || echo -e "${RED}  Failed to setup AI workflows${NC}"
+            fi
+        elif [ "$install_type" = "cpp" ]; then
+            echo -e "${GREEN}  Detected C++ project - installing C++ tools...${NC}"
+            if [ "$EUID" -eq 0 ]; then
+                bash "$scripts_path/linux/core/install-system-deps.sh"
+                bash "$scripts_path/linux/tools/install-compilers.sh"
+                bash "$scripts_path/linux/tools/install-build-tools.sh"
+                bash "$scripts_path/linux/tools/install-sccache.sh"
+                bash "$scripts_path/linux/tools/install-cpp-frameworks.sh"
+                bash "$scripts_path/linux/tools/install-cpp-pkg-managers.sh"
+                bash "$scripts_path/linux/config/setup-git-config.sh"
+                bash "$scripts_path/linux/config/setup-code-formatting.sh"
+                bash "$scripts_path/linux/config/setup-ai-workflows.sh"
+            else
+                echo -e "${YELLOW}  Note: C++ tools installation requires sudo privileges${NC}"
+                sudo bash "$scripts_path/linux/core/install-system-deps.sh" || echo -e "${RED}  Failed to install system deps${NC}"
+                sudo bash "$scripts_path/linux/tools/install-compilers.sh" || echo -e "${RED}  Failed to install compilers${NC}"
+                sudo bash "$scripts_path/linux/tools/install-build-tools.sh" || echo -e "${RED}  Failed to install build tools${NC}"
+                sudo bash "$scripts_path/linux/tools/install-sccache.sh" || echo -e "${RED}  Failed to install sccache${NC}"
+                sudo bash "$scripts_path/linux/tools/install-cpp-frameworks.sh" || echo -e "${RED}  Failed to install C++ frameworks${NC}"
+                sudo bash "$scripts_path/linux/tools/install-cpp-pkg-managers.sh" || echo -e "${RED}  Failed to install C++ package managers${NC}"
+                bash "$scripts_path/linux/config/setup-git-config.sh" || echo -e "${RED}  Failed to setup git config${NC}"
+                bash "$scripts_path/linux/config/setup-code-formatting.sh" || echo -e "${RED}  Failed to setup code formatting${NC}"
+                bash "$scripts_path/linux/config/setup-ai-workflows.sh" || echo -e "${RED}  Failed to setup AI workflows${NC}"
+            fi
+        fi
+
+        echo ""
+        echo -e "${GREEN}✅ Development tools installed!${NC}"
+        echo ""
+        echo -e "${YELLOW}• Next Steps:${NC}"
+        echo "  1. Navigate to your project: cd $project_dir"
+        echo "  2. Validate installation: bash $scripts_path/total_validation.sh"
+        echo "  3. Start developing!"
+        echo "  4. Check .github/claude/CLAUDE.md for AI assistant integration"
+    else
+        echo ""
+        echo -e "${YELLOW}• Next Steps:${NC}"
+        echo "  1. Navigate to your project directory: cd $project_dir"
+        echo "  2. Install development tools manually"
+        echo "  3. Check .github/claude/CLAUDE.md for AI assistant integration details"
+        echo -e "${RED}     Warning: Could not locate scripts directory automatically${NC}"
+    fi
 }
 
 create_github_repo() {

@@ -1,0 +1,11 @@
+# Ruff ignore patterns
+# Exclude cookiecutter template directories
+cookiecutters/
+**/{{cookiecutter.*}}/
+**/__pycache__/
+*.pyc
+.venv/
+venv/
+build/
+dist/
+*.egg-info/

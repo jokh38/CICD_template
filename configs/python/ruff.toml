@@ -3,6 +3,17 @@ target-version = "py310"
 line-length = 88
 indent-width = 4
 
+# Exclude cookiecutter templates and other directories
+exclude = [
+    "cookiecutters/",
+    "__pycache__",
+    ".venv",
+    "venv",
+    "build",
+    "dist",
+    "*.egg-info",
+]
+
 [lint]
 # Enable rules
 select = [

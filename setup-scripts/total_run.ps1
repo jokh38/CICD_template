@@ -155,6 +155,7 @@ function Install-CppTools {
     $scripts = @(
         @{ Path = "$WindowsDir\tools\install-sccache.ps1"; Desc = "sccache" },
         @{ Path = "$WindowsDir\tools\install-cpp-frameworks.ps1"; Desc = "C++ Testing Frameworks" },
+        @{ Path = "$WindowsDir\tools\install-cpp-pkg-managers.ps1"; Desc = "C++ Package Managers" },
         @{ Path = "$WindowsDir\config\setup-code-formatting.ps1"; Desc = "C++ Code Formatting" }
     )
 
