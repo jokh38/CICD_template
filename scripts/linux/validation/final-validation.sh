@@ -43,6 +43,9 @@ done
 # Validation counters
 TOTAL_CATEGORIES=0
 PASSED_CATEGORIES=0
+TOTAL_TESTS=0
+PASSED_TESTS=0
+declare -a FAILED_TESTS
 
 # Function to run a category of tests
 run_category() {
@@ -52,29 +55,26 @@ run_category() {
     local category_passed=0
 
     TOTAL_CATEGORIES=$((TOTAL_CATEGORIES + 1))
-    print_header "$category_name"
+    print_status "Validating: $category_name..."
 
     # Skip category name parameter for tests
     for test in "${category_tests[@]:1}"; do
         category_total=$((category_total + 1))
-        print_status "Running: $test"
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
         if eval "$test" > /dev/null 2>&1; then
-            print_success "✓ $test"
             category_passed=$((category_passed + 1))
+            PASSED_TESTS=$((PASSED_TESTS + 1))
         else
-            print_error "✗ $test"
+            FAILED_TESTS+=("[$category_name] $test")
         fi
     done
 
-    echo ""
-    echo "Category Results: $category_passed/$category_total tests passed"
-
     if [ $category_passed -eq $category_total ]; then
-        print_success "✅ $category_name - PASSED"
+        print_success "✅ $category_name - PASSED ($category_passed/$category_total)"
         PASSED_CATEGORIES=$((PASSED_CATEGORIES + 1))
     else
-        print_error "❌ $category_name - FAILED"
+        print_error "❌ $category_name - FAILED ($category_passed/$category_total)"
     fi
 }
 
@@ -160,10 +160,13 @@ run_category "Git Configuration Validation" \
 
 # C++ Compilation Tests
 if [ "$PYTHON_ONLY" != "true" ]; then
-    print_header "C++ Compilation Validation"
+    print_status "Validating: C++ Compilation..."
+
+    local cpp_tests_passed=0
+    local cpp_tests_total=8
+    TOTAL_TESTS=$((TOTAL_TESTS + cpp_tests_total))
 
     # Test basic compilation
-    print_status "Testing C++ compilation with GCC..."
     cat > /tmp/test_cpp.cpp << 'EOF'
 #include <iostream>
 #include <string>
@@ -180,32 +183,31 @@ int main() {
 }
 EOF
 
+    # GCC compilation
     if g++ -std=c++17 -o /tmp/test_gcc_cpp /tmp/test_cpp.cpp && /tmp/test_gcc_cpp > /tmp/gcc_output.txt 2>&1; then
-        print_success "✓ GCC compilation and execution"
+        cpp_tests_passed=$((cpp_tests_passed + 1))
         if grep -q "Sum: 15" /tmp/gcc_output.txt; then
-            print_success "✓ GCC program output correct"
+            cpp_tests_passed=$((cpp_tests_passed + 1))
         else
-            print_error "✗ GCC program output incorrect"
+            FAILED_TESTS+=("[C++ Compilation] GCC program output incorrect")
         fi
     else
-        print_error "✗ GCC compilation failed"
+        FAILED_TESTS+=("[C++ Compilation] GCC compilation failed")
     fi
 
-    # Test with Clang
-    print_status "Testing C++ compilation with Clang..."
+    # Clang compilation
     if clang++ -stdlib=libc++ -std=c++17 -o /tmp/test_clang_cpp /tmp/test_cpp.cpp && /tmp/test_clang_cpp > /tmp/clang_output.txt 2>&1; then
-        print_success "✓ Clang compilation and execution"
+        cpp_tests_passed=$((cpp_tests_passed + 1))
         if grep -q "Sum: 15" /tmp/clang_output.txt; then
-            print_success "✓ Clang program output correct"
+            cpp_tests_passed=$((cpp_tests_passed + 1))
         else
-            print_error "✗ Clang program output incorrect"
+            FAILED_TESTS+=("[C++ Compilation] Clang program output incorrect")
         fi
     else
-        print_error "✗ Clang compilation failed"
+        FAILED_TESTS+=("[C++ Compilation] Clang compilation failed")
     fi
 
-    # Test CMake build
-    print_status "Testing CMake build system..."
+    # CMake build
     mkdir -p /tmp/cmake_test
     cat > /tmp/cmake_test/CMakeLists.txt << 'EOF'
 cmake_minimum_required(VERSION 3.16)
@@ -219,37 +221,47 @@ EOF
 
     cd /tmp/cmake_test
     if cmake -S . -B build -DCMAKE_BUILD_TYPE=Release > /dev/null 2>&1; then
-        print_success "✓ CMake configuration"
+        cpp_tests_passed=$((cpp_tests_passed + 1))
         if cmake --build build --parallel > /dev/null 2>&1; then
-            print_success "✓ CMake build"
+            cpp_tests_passed=$((cpp_tests_passed + 1))
             if ./build/cpp_test > /tmp/cmake_output.txt 2>&1; then
-                print_success "✓ CMake built program execution"
+                cpp_tests_passed=$((cpp_tests_passed + 1))
                 if grep -q "Sum: 15" /tmp/cmake_output.txt; then
-                    print_success "✓ CMake program output correct"
+                    cpp_tests_passed=$((cpp_tests_passed + 1))
                 else
-                    print_error "✗ CMake program output incorrect"
+                    FAILED_TESTS+=("[C++ Compilation] CMake program output incorrect")
                 fi
             else
-                print_error "✗ CMake built program execution failed"
+                FAILED_TESTS+=("[C++ Compilation] CMake built program execution failed")
             fi
         else
-            print_error "✗ CMake build failed"
+            FAILED_TESTS+=("[C++ Compilation] CMake build failed")
         fi
     else
-        print_error "✗ CMake configuration failed"
+        FAILED_TESTS+=("[C++ Compilation] CMake configuration failed")
+    fi
+
+    PASSED_TESTS=$((PASSED_TESTS + cpp_tests_passed))
+
+    if [ $cpp_tests_passed -eq $cpp_tests_total ]; then
+        print_success "✅ C++ Compilation - PASSED ($cpp_tests_passed/$cpp_tests_total)"
+    else
+        print_error "❌ C++ Compilation - FAILED ($cpp_tests_passed/$cpp_tests_total)"
     fi
 else
-    print_header "C++ Compilation Validation"
     print_status "Skipping C++ compilation validation (Python only mode)"
 fi
 
 # Python Environment Tests
 if [ "$CPP_ONLY" != "true" ]; then
-    print_header "Python Environment Validation"
+    print_status "Validating: Python Environment..."
 
-# Test Python code execution
-print_status "Testing Python code execution..."
-cat > /tmp/test_python.py << 'EOF'
+    local python_tests_passed=0
+    local python_tests_total=6
+    TOTAL_TESTS=$((TOTAL_TESTS + python_tests_total))
+
+    # Test Python code execution
+    cat > /tmp/test_python.py << 'EOF'
 #!/usr/bin/env python3
 """Test Python script for validation."""
 
@@ -269,123 +281,76 @@ if __name__ == "__main__":
     main()
 EOF
 
-if python3 /tmp/test_python.py > /tmp/python_output.txt 2>&1; then
-    print_success "✓ Python script execution"
-    if grep -q "Sum: 15" /tmp/python_output.txt; then
-        print_success "✓ Python script output correct"
+    if python3 /tmp/test_python.py > /tmp/python_output.txt 2>&1; then
+        python_tests_passed=$((python_tests_passed + 1))
+        if grep -q "Sum: 15" /tmp/python_output.txt; then
+            python_tests_passed=$((python_tests_passed + 1))
+        else
+            FAILED_TESTS+=("[Python Environment] Python script output incorrect")
+        fi
     else
-        print_error "✗ Python script output incorrect"
+        FAILED_TESTS+=("[Python Environment] Python script execution failed")
+    fi
+
+    # Check if we're in a Python project directory
+    if [ -d "src" ] || [ -d "tests" ] || [ -f "pyproject.toml" ]; then
+        # Test on project files
+        if [ -d "src" ]; then
+            black --check src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] Black formatting check failed")
+            ruff check src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] Ruff linting check failed")
+            mypy src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] MyPy type checking failed")
+            bandit -r src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] Bandit security analysis failed")
+        else
+            # Skip tests if no src directory
+            python_tests_total=$((python_tests_total - 4))
+            TOTAL_TESTS=$((TOTAL_TESTS - 4))
+        fi
+    else
+        # Fallback to test file approach
+        mkdir -p /tmp/python_test/src
+        cp /tmp/test_python.py /tmp/python_test/src/
+        black /tmp/python_test/src/ > /dev/null 2>&1
+
+        black --check /tmp/python_test/src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] Black formatting check failed")
+        ruff check /tmp/python_test/src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] Ruff linting check failed")
+        mypy /tmp/python_test/src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] MyPy type checking failed")
+        bandit -r /tmp/python_test/src/ > /dev/null 2>&1 && python_tests_passed=$((python_tests_passed + 1)) || FAILED_TESTS+=("[Python Environment] Bandit security analysis failed")
+    fi
+
+    PASSED_TESTS=$((PASSED_TESTS + python_tests_passed))
+
+    if [ $python_tests_passed -eq $python_tests_total ]; then
+        print_success "✅ Python Environment - PASSED ($python_tests_passed/$python_tests_total)"
+    else
+        print_error "❌ Python Environment - FAILED ($python_tests_passed/$python_tests_total)"
     fi
 else
-    print_error "✗ Python script execution failed"
-fi
-
-# Test Python tools on current project
-print_status "Testing Python development tools on current project..."
-
-# Check if we're in a Python project directory
-if [ -d "src" ] || [ -d "tests" ] || [ -f "pyproject.toml" ]; then
-    print_status "Found Python project structure, testing on project files"
-
-    # Test Black formatting
-    if [ -d "src" ]; then
-        if black --check src/ > /dev/null 2>&1; then
-            print_success "✓ Black formatting check"
-        else
-            print_error "✗ Black formatting check failed"
-        fi
-    else
-        print_warning "⊘ No src/ directory found, skipping Black check"
-    fi
-
-    # Test Ruff linting
-    if [ -d "src" ]; then
-        if ruff check src/ > /dev/null 2>&1; then
-            print_success "✓ Ruff linting check"
-        else
-            print_error "✗ Ruff linting check failed"
-        fi
-    else
-        print_warning "⊘ No src/ directory found, skipping Ruff check"
-    fi
-
-    # Test MyPy type checking
-    if [ -d "src" ]; then
-        if mypy src/ > /dev/null 2>&1; then
-            print_success "✓ MyPy type checking"
-        else
-            print_error "✗ MyPy type checking failed"
-        fi
-    else
-        print_warning "⊘ No src/ directory found, skipping MyPy check"
-    fi
-
-    # Test Bandit security analysis
-    if [ -d "src" ]; then
-        if bandit -r src/ > /dev/null 2>&1; then
-            print_success "✓ Bandit security analysis"
-        else
-            print_error "✗ Bandit security analysis failed"
-        fi
-    else
-        print_warning "⊘ No src/ directory found, skipping Bandit check"
-    fi
-else
-    # Fallback to test file approach if not in a project directory
-    print_warning "Not in a Python project directory, using test file approach"
-    mkdir -p /tmp/python_test/src
-    cp /tmp/test_python.py /tmp/python_test/src/
-
-    # Format file with Black first
-    black /tmp/python_test/src/ > /dev/null 2>&1
-
-    # Test Black formatting (should pass now)
-    if black --check /tmp/python_test/src/ > /dev/null 2>&1; then
-        print_success "✓ Black formatting check"
-    else
-        print_error "✗ Black formatting check failed"
-    fi
-
-    # Test Ruff linting
-    if ruff check /tmp/python_test/src/ > /dev/null 2>&1; then
-        print_success "✓ Ruff linting check"
-    else
-        print_error "✗ Ruff linting check failed"
-    fi
-
-    # Test MyPy type checking
-    if mypy /tmp/python_test/src/ > /dev/null 2>&1; then
-        print_success "✓ MyPy type checking"
-    else
-        print_error "✗ MyPy type checking failed"
-    fi
-
-    # Test Bandit security analysis
-    if bandit -r /tmp/python_test/src/ > /dev/null 2>&1; then
-        print_success "✓ Bandit security analysis"
-    else
-        print_error "✗ Bandit security analysis failed"
-    fi
-fi
-
-else
-    print_header "Python Environment Validation"
     print_status "Skipping Python environment validation (C++ only mode)"
 fi
 
 # Performance Tests
-print_header "Performance Validation"
-
-# Test compiler cache (sccache) - only for C++ projects
 if [ "$PYTHON_ONLY" != "true" ]; then
-    print_status "Testing sccache functionality..."
+    print_status "Validating: Performance (sccache)..."
+
+    local perf_tests_passed=0
+    local perf_tests_total=1
+    TOTAL_TESTS=$((TOTAL_TESTS + perf_tests_total))
+
     if sccache --show-stats > /tmp/sccache_stats.txt 2>&1; then
-        print_success "✓ sccache is functional"
+        perf_tests_passed=$((perf_tests_passed + 1))
     else
-        print_error "✗ sccache is not working properly"
+        FAILED_TESTS+=("[Performance] sccache is not working properly")
+    fi
+
+    PASSED_TESTS=$((PASSED_TESTS + perf_tests_passed))
+
+    if [ $perf_tests_passed -eq $perf_tests_total ]; then
+        print_success "✅ Performance - PASSED ($perf_tests_passed/$perf_tests_total)"
+    else
+        print_error "❌ Performance - FAILED ($perf_tests_passed/$perf_tests_total)"
     fi
 else
-    print_status "Skipping sccache test (Python only mode - compiler cache not needed)"
+    print_status "Skipping Performance validation (Python only mode)"
 fi
 
 # Cleanup
@@ -394,93 +359,107 @@ rm -rf /tmp/cmake_test /tmp/python_test
 rm -f /tmp/gcc_output.txt /tmp/clang_output.txt /tmp/cmake_output.txt /tmp/python_output.txt /tmp/sccache_stats.txt /tmp/ruff_empty.toml
 
 # Integration Tests
-print_header "Integration Tests Validation"
+print_status "Validating: Integration Tests..."
 
-# Test project creation capability
-print_status "Testing project creation workflow..."
+local integration_tests_passed=0
+local integration_tests_total=3
+TOTAL_TESTS=$((TOTAL_TESTS + integration_tests_total))
+
 TEST_PROJECT_DIR="/tmp/integration_test_$(date +%s)"
 if mkdir -p "$TEST_PROJECT_DIR"; then
     cd "$TEST_PROJECT_DIR"
 
     # Initialize git repo
     if git init > /dev/null 2>&1 && git config user.name "Test User" && git config user.email "test@example.com"; then
-        print_success "✓ Git repository initialization"
+        integration_tests_passed=$((integration_tests_passed + 1))
 
         # Create README
         if echo "# Test Project" > README.md; then
-            print_success "✓ Project file creation"
+            integration_tests_passed=$((integration_tests_passed + 1))
 
             # Add and commit
             if git add . && git commit -m "Initial commit" > /dev/null 2>&1; then
-                print_success "✓ Git commit functionality"
+                integration_tests_passed=$((integration_tests_passed + 1))
             else
-                print_error "✗ Git commit failed"
+                FAILED_TESTS+=("[Integration] Git commit failed")
             fi
         else
-            print_error "✗ Project file creation failed"
+            FAILED_TESTS+=("[Integration] Project file creation failed")
         fi
     else
-        print_error "✗ Git repository initialization failed"
+        FAILED_TESTS+=("[Integration] Git repository initialization failed")
     fi
 
     rm -rf "$TEST_PROJECT_DIR"
 else
-    print_error "✗ Test project directory creation failed"
+    FAILED_TESTS+=("[Integration] Test project directory creation failed")
+fi
+
+PASSED_TESTS=$((PASSED_TESTS + integration_tests_passed))
+
+if [ $integration_tests_passed -eq $integration_tests_total ]; then
+    print_success "✅ Integration Tests - PASSED ($integration_tests_passed/$integration_tests_total)"
+else
+    print_error "❌ Integration Tests - FAILED ($integration_tests_passed/$integration_tests_total)"
 fi
 
 # Final Summary
-print_header "Final Validation Summary"
+print_header "═══════════════════════════════════════════════════════════════"
+print_header "                    VALIDATION SUMMARY                          "
+print_header "═══════════════════════════════════════════════════════════════"
 
-echo "Total Categories: $TOTAL_CATEGORIES"
-echo "Passed Categories: $PASSED_CATEGORIES"
-echo "Failed Categories: $((TOTAL_CATEGORIES - PASSED_CATEGORIES))"
-
+# Overall Status
+if [ $PASSED_TESTS -eq $TOTAL_TESTS ]; then
+    print_success "Overall Status: ✅ PASSED"
+else
+    print_error "Overall Status: ❌ FAILED"
+fi
 echo ""
-echo "Environment Information:"
-echo "- OS: $(uname -s) $(uname -r)"
-echo "- Architecture: $(uname -m)"
-echo "- Shell: $SHELL"
-echo "- User: $(whoami)"
-echo "- Home Directory: $HOME"
-echo "- Current Directory: $(pwd)"
 
+# Results Summary
+print_status "Test Results:"
+echo "  - Categories: $PASSED_CATEGORIES passed out of $TOTAL_CATEGORIES"
+echo "  - Total Checks: $PASSED_TESTS passed out of $TOTAL_TESTS"
 echo ""
-echo "Key Tool Versions:"
-echo "- Git: $(git --version 2>/dev/null | cut -d' ' -f3 || echo 'Not installed')"
-echo "- CMake: $(cmake --version 2>/dev/null | head -n1 | cut -d' ' -f3 || echo 'Not installed')"
-echo "- Python: $(python3 --version 2>/dev/null | cut -d' ' -f2 || echo 'Not installed')"
-echo "- GCC: $(gcc --version 2>/dev/null | head -n1 | cut -d' ' -f4 || echo 'Not installed')"
-echo "- Clang: $(clang --version 2>/dev/null | head -n1 | cut -d' ' -f3 || echo 'Not installed')"
 
-if [ $PASSED_CATEGORIES -eq $TOTAL_CATEGORIES ]; then
+# Failed Tests Details
+if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
+    print_error "Failure Details:"
+    for failed_test in "${FAILED_TESTS[@]}"; do
+        echo "  - $failed_test"
+    done
     echo ""
-    print_success "🎉 ALL VALIDATION TESTS PASSED! 🎉"
+fi
+
+# Environment Information
+print_status "Environment Information:"
+echo "  - OS:         $(uname -s) $(uname -r)"
+echo "  - Arch:       $(uname -m)"
+echo "  - User:       $(whoami)"
+echo "  - Git:        $(git --version 2>/dev/null | cut -d' ' -f3 || echo 'Not installed')"
+echo "  - CMake:      $(cmake --version 2>/dev/null | head -n1 | cut -d' ' -f3 || echo 'Not installed')"
+echo "  - Python:     $(python3 --version 2>/dev/null | cut -d' ' -f2 || echo 'Not installed')"
+echo "  - GCC:        $(gcc --version 2>/dev/null | head -n1 | cut -d' ' -f4 || echo 'Not installed')"
+echo "  - Clang:      $(clang --version 2>/dev/null | head -n1 | cut -d' ' -f3 || echo 'Not installed')"
+echo ""
+
+print_header "═══════════════════════════════════════════════════════════════"
+
+# Final Message and Exit
+if [ $PASSED_TESTS -eq $TOTAL_TESTS ]; then
+    print_success "🎉 Your development environment is ready! 🎉"
     echo ""
-    echo "Your development environment is fully configured and ready for use!"
-    echo ""
-    echo "Next Steps:"
-    echo "1. Start developing your projects"
-    echo "2. Use the provided AI workflow templates in ~/.config/ai-workflows/"
-    echo "3. Test your tools with real projects"
-    echo "4. Customize configurations as needed"
-    echo ""
-    echo "Helpful Resources:"
-    echo "- Git configuration: ~/.gitconfig"
-    echo "- Code formatting: ~/.clang-format, ~/.config/ruff/ruff.toml"
-    echo "- Build presets: ~/.config/cmake/CMakePresets.json"
-    echo "- AI workflows: ~/.config/ai-workflows/"
+    print_status "Next Steps:"
+    echo "  1. Start developing your projects."
+    echo "  2. Explore AI workflows in ~/.config/ai-workflows/"
+    echo "  3. Customize configurations as needed."
     exit 0
 else
+    print_error "Validation failed. Please review the errors above."
     echo ""
-    print_error "❌ SOME VALIDATION TESTS FAILED"
-    echo ""
-    echo "Please review the failed tests above and resolve the issues."
-    echo "You may need to reinstall or reconfigure certain tools."
-    echo ""
-    echo "Troubleshooting Tips:"
-    echo "1. Check that all packages were installed correctly"
-    echo "2. Verify environment variables are set correctly"
-    echo "3. Ensure you have the necessary permissions"
-    echo "4. Try running the setup script again"
+    print_status "Troubleshooting:"
+    echo "  1. Ensure all required packages are installed correctly."
+    echo "  2. Verify that your environment variables are set properly."
+    echo "  3. If issues persist, consider re-running the setup script."
     exit 1
 fi
