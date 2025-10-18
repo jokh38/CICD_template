@@ -503,7 +503,6 @@ def install_pre_push_hook():
 def print_next_steps():
     """Print next steps for user."""
     project_name = "{{ cookiecutter.project_name }}"
-    project_slug = "{{ cookiecutter.project_slug }}"
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
@@ -513,18 +512,6 @@ def print_next_steps():
     print(f"\n• Project: {project_name}")
     print(f"• Git Hooks: {use_git_hooks}")
     print(f"• AI Workflow: {use_ai}")
-
-    print("\n• Next Steps:")
-    print(f"  1. cd {project_slug}")
-    print("  2. source .venv/bin/activate")
-    print("  3. git commit -m 'Initial changes'  # Git hooks will run automatically")
-    print("  4. pytest  # Run tests")
-    print("  5. ruff check .  # Lint code")
-
-    if use_ai == "yes":
-        print("  6. Review .github/claude/CLAUDE.md for AI assistant")
-        print("  7. claude mcp list  # Verify Serena MCP installation")
-        print("  8. See .serena/USAGE_GUIDE.md for Serena best practices")
 
     print("\n• All dependencies are installed and ready to use!")
     if use_ai == "yes":
@@ -537,11 +524,6 @@ def print_next_steps():
         print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - it bypasses testing!")
     else:
         print("• Git hooks are disabled - manual quality checks required")
-
-    print("\n• Create GitHub repository and push:")
-    print("  1. Create a new repository on GitHub")
-    print("  2. git remote add origin <your-github-repo-url>")
-    print("  3. git push -u origin main")
 
 def main():
     """Main post-generation logic."""

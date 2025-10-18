@@ -81,8 +81,12 @@ create_project() {
         # Create output directory if it doesn't exist
         mkdir -p "$output_dir"
 
+        # Generate the slug that cookiecutter will use for the directory name
+        local project_slug=$(echo "$basename_project" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g; s/_/-/g')
+        local actual_project_dir="$output_dir/$project_slug"
+
         cookiecutter "$template_dir" --no-input project_name="$basename_project" -o "$output_dir"
-        local project_dir="$expanded_path"
+        local project_dir="$actual_project_dir"
     else
         cookiecutter "$template_dir"
         # Get the created project directory from cookiecutter output
