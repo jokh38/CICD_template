@@ -42,18 +42,65 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Create base test directory
+# Function to detect conda environment
+detect_conda() {
+    if command -v conda >/dev/null 2>&1; then
+        echo "conda"
+    else
+        echo "pip3"
+    fi
+}
+
+# Function to get the appropriate pip command
+get_pip_command() {
+    if [ "$(detect_conda)" = "conda" ]; then
+        echo "pip"
+    else
+        echo "pip3"
+    fi
+}
+
+# Function to get current user (not root)
+get_current_user() {
+    if [ "$EUID" -eq 0 ]; then
+        # If running as root, try to find the original user
+        if [ -n "$SUDO_USER" ]; then
+            echo "$SUDO_USER"
+        elif [ -n "$USER" ] && [ "$USER" != "root" ]; then
+            echo "$USER"
+        else
+            # Fallback to nobody user
+            echo "nobody"
+        fi
+    else
+        echo "$USER"
+    fi
+}
+
+# Create base test directory with correct user permissions
+CURRENT_USER=$(get_current_user)
 TEST_BASE="/tmp/test-projects-$(date +%s)"
 mkdir -p "$TEST_BASE"
-cd "$TEST_BASE"
 
-print_status "Creating test projects in: $TEST_BASE"
+# Change ownership if we're running as root
+if [ "$EUID" -eq 0 ] && [ "$CURRENT_USER" != "root" ]; then
+    chown -R "$CURRENT_USER:$CURRENT_USER" "$TEST_BASE"
+fi
+
+cd "$TEST_BASE"
+print_status "Creating test projects in: $TEST_BASE (user: $CURRENT_USER)"
 
 # Create C++ test project
 if [ "$PYTHON_ONLY" != "true" ]; then
     print_status "Creating C++ test project..."
 
     mkdir -p cpp-test-project/{src,include,tests,build}
+
+    # Set ownership for the C++ project directory
+    if [ "$EUID" -eq 0 ] && [ "$CURRENT_USER" != "root" ]; then
+        chown -R "$CURRENT_USER:$CURRENT_USER" cpp-test-project
+    fi
+
     cd cpp-test-project
 
     # Create main source file
@@ -274,6 +321,12 @@ if [ "$CPP_ONLY" != "true" ]; then
     print_status "Creating Python test project..."
 
     mkdir -p python-test-project/{src,tests,docs}
+
+    # Set ownership for the Python project directory
+    if [ "$EUID" -eq 0 ] && [ "$CURRENT_USER" != "root" ]; then
+        chown -R "$CURRENT_USER:$CURRENT_USER" python-test-project
+    fi
+
     cd python-test-project
 
     # Create main source file

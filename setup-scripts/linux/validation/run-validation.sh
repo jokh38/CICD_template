@@ -93,6 +93,24 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to detect conda environment
+detect_conda() {
+    if command -v conda >/dev/null 2>&1; then
+        echo "conda"
+    else
+        echo "pip3"
+    fi
+}
+
+# Function to get the appropriate pip command
+get_pip_command() {
+    if [ "$(detect_conda)" = "conda" ]; then
+        echo "pip"
+    else
+        echo "pip3"
+    fi
+}
+
 print_status "Starting validation tests..."
 
 # System dependency validation
@@ -209,8 +227,16 @@ else
 
         cd "$TEST_DIR/python-test-project"
 
+        # Get the appropriate pip command
+        PIP_CMD=$(get_pip_command)
+
+        # Clear ruff cache to avoid permission issues
+        if [ -d ".ruff_cache" ]; then
+            rm -rf .ruff_cache
+        fi
+
         # Install package in development mode
-        run_test "Python package installation" "pip3 install -e ."
+        run_test "Python package installation" "$PIP_CMD install -e ."
 
         # Run code formatting checks
         run_test "Black format check" "python3 -m black --check src/ tests/"

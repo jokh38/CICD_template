@@ -33,8 +33,27 @@ print_error() {
 # Function to check if running as root
 check_root() {
     if [ "$EUID" -ne 0 ]; then
-        print_error "Please run as root"
-        exit 1
+        print_error "Please run as root for system package installation"
+        return 1
+    fi
+    return 0
+}
+
+# Function to detect conda environment
+detect_conda() {
+    if command -v conda >/dev/null 2>&1; then
+        echo "conda"
+    else
+        echo "pip3"
+    fi
+}
+
+# Function to get the appropriate pip command
+get_pip_command() {
+    if [ "$(detect_conda)" = "conda" ]; then
+        echo "pip"
+    else
+        echo "pip3"
     fi
 }
 
@@ -383,8 +402,15 @@ main() {
         print_status "Running in DRY RUN mode - no actual changes will be made"
     fi
 
-    # Check prerequisites
+    # Check prerequisites - only require root for system installations
+    ROOT_NEEDED=false
     if [ "$DRY_RUN" != "true" ]; then
+        if [ "$INSTALL_ALL" = "true" ] || [ "$INSTALL_BASIC" = "true" ] || [ "$INSTALL_CPP" = "true" ] || [ "$INSTALL_PYTHON" = "true" ]; then
+            ROOT_NEEDED=true
+        fi
+    fi
+
+    if [ "$ROOT_NEEDED" = "true" ]; then
         check_root
     fi
 
