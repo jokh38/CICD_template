@@ -4,70 +4,6 @@
 import os
 import subprocess
 import sys
-import threading
-import time
-
-
-class ProgressBar:
-    """Progress bar with live updates for long-running operations."""
-
-    def __init__(self, total_steps, width=40):
-        self.total_steps = total_steps
-        self.width = width
-        self.current_step = 0
-        self.start_time = time.time()
-        self.current_operation = "Starting..."
-        self.running = True
-        self.display_thread = None
-
-    def start_display(self):
-        """Start progress display in background thread"""
-        self.running = True
-        self.display_thread = threading.Thread(
-            target=self._update_progress, daemon=True
-        )
-        self.display_thread.start()
-
-    def _update_progress(self):
-        """Thread function to update progress bar"""
-        while self.running:
-            self._display_progress()
-            time.sleep(0.2)
-
-    def _display_progress(self):
-        """Display current progress"""
-        elapsed = time.time() - self.start_time
-        progress = self.current_step / self.total_steps
-        filled_width = int(self.width * progress)
-
-        bar = "█" * filled_width + "░" * (self.width - filled_width)
-        eta = (
-            (elapsed / max(1, self.current_step)) *
-            (self.total_steps - self.current_step)
-            if self.current_step > 0 else 0
-        )
-
-        output_str = (
-            f"\r🔄 [{self.current_step}/{self.total_steps}] [{bar}] "
-            f"{progress*100:.0f}% | {self.current_operation} | "
-            f"⏱️ {elapsed:.0f}s (ETA: {eta:.0f}s)"
-        )
-        sys.stdout.write(output_str)
-        sys.stdout.flush()
-
-    def step(self, operation):
-        """Advance to next step with new operation description"""
-        self.current_step += 1
-        self.current_operation = operation
-        self._display_progress()
-
-    def finish(self, message):
-        """Stop progress and show completion message"""
-        self.running = False
-        if self.display_thread:
-            time.sleep(0.3)  # Let final update display
-        elapsed = time.time() - self.start_time
-        print(f"\n✅ {message} | 🕐 Total time: {elapsed:.1f}s")
 
 def run_command(cmd, check=True):
     """Run shell command."""
@@ -82,7 +18,13 @@ def run_command(cmd, check=True):
 def setup_claude_context():
     """Copy entire .github/claude/ directory and customize CLAUDE.md
     for new projects."""
-    # Progress bar handles display now
+    print("• Setting up Claude AI context...")
+
+    use_ai = "{{ cookiecutter.use_ai_workflow }}"
+
+    if use_ai != "yes":
+        print("   ⚠️  AI workflow disabled - skipping Claude context setup")
+        return False
 
     # Ensure .github/claude directory exists
     claude_dir = ".github/claude"
@@ -109,7 +51,6 @@ def setup_claude_context():
 
     if not source_claude_dir:
         print("   ⚠️  Source .github/claude/ directory not found")
-        print(f"   Tried paths: {possible_source_dirs}")
         return False
 
     # Copy entire .github/claude/ directory structure
@@ -142,7 +83,6 @@ def setup_claude_context():
                     customize_claude_md(target_file)
 
         print(f"   • Copied {len(copied_files)} AI workflow files to .github/claude/")
-        print("   • Commands, prompts, and documentation ready")
         return True
 
     except Exception as e:
@@ -193,7 +133,7 @@ def copy_claude_md():
     """Copy HIVE_CLAUDE.md from docs/ directory as CLAUDE.md to project root."""
     import shutil
 
-    # Progress bar handles display now
+    print("• Setting up CLAUDE.md documentation...")
 
     # Define possible source paths for HIVE_CLAUDE.md
     script_dir = os.path.dirname(
@@ -216,7 +156,6 @@ def copy_claude_md():
 
     if not source_hive_claude:
         print("   ⚠️  Source HIVE_CLAUDE.md not found in docs/")
-        print(f"   Tried paths: {possible_source_paths}")
         return False
 
     try:
@@ -230,7 +169,7 @@ def copy_claude_md():
 
 def initialize_git():
     """Initialize git repository."""
-    # Progress bar handles display now
+    print("• Initializing git repository...")
     run_command("git init")
 
     # Configure git user if not already configured
@@ -244,41 +183,35 @@ def initialize_git():
 
 def create_venv():
     """Create virtual environment."""
-    # Progress bar handles display now
+    print("• Creating Python virtual environment...")
     python_version = "{{ cookiecutter.python_version }}"
     run_command(f"python{python_version} -m venv .venv")
 
 def install_dependencies():
     """Install project dependencies including dev dependencies."""
-    # Progress bar handles display now
+    print("• Installing project dependencies...")
     venv_pip = ".venv/bin/pip"
 
     # Upgrade pip first
-    if run_command(f"{venv_pip} install --upgrade pip", check=False):
-        print("   • pip upgraded")
+    run_command(f"{venv_pip} install --upgrade pip", check=False)
 
     # Install basic dev dependencies individually to avoid dependency conflicts
     dev_packages = ["pytest", "pytest-cov", "ruff", "mypy", "pre-commit"]
-    installed_packages = []
+    installed_count = 0
 
     for package in dev_packages:
         if run_command(f"{venv_pip} install {package}", check=False):
-            print(f"   • {package} installed")
-            installed_packages.append(package)
-        else:
-            print(f"   ⚠️  Failed to install {package}")
+            installed_count += 1
 
     # Try to install project with dev dependencies as fallback
-    if len(installed_packages) < len(dev_packages):
-        print("   • Attempting to install project dependencies...")
-        if run_command(f"{venv_pip} install -e .[dev]", check=False):
-            print("   • Project dependencies installed")
+    if installed_count < len(dev_packages):
+        run_command(f"{venv_pip} install -e .[dev]", check=False)
 
-    return len(installed_packages) > 0
+    return installed_count > 0
 
 def setup_serena_configuration():
     """Create Serena-specific configuration and memory system."""
-    # Progress bar handles display now
+    print("• Setting up Serena configuration...")
 
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
@@ -369,38 +302,11 @@ workflow:
 - **Virtual Environment**: .venv/
 - **Git Hooks**: Pre-commit hooks installed and configured
 
-## Project Structure
-```
-src/           - Main source code directory
-tests/         - Test files using pytest
-docs/          - Project documentation
-.venv/         - Python virtual environment
-git-hooks/     - Local CI/CD hooks
-configs/       - Tool configuration files
-.serena/       - Serena AI configuration and memories
-```
-
 ## Development Workflow
 1. **Activate Environment**: `source .venv/bin/activate`
 2. **Run Tests**: `pytest tests/ -v`
 3. **Lint Code**: `ruff check . && ruff format .`
 4. **Type Check**: `mypy src/`
-5. **Git Hooks**: Automatic on commit (formatting, linting, testing)
-
-## Quality Standards
-- All code must pass ruff linting and formatting
-- All tests must pass before commits
-- Type checking with mypy recommended
-- Pre-commit hooks enforce quality standards
-- Use `git commit --no-verify` only in emergencies
-
-## AI Assistant Integration
-This project is configured for Serena MCP integration with:
-- Shell execution tools enabled for autonomous development
-- File editing tools for automatic bug fixes
-- Web access for dependency research
-- Memory system for project-specific knowledge
-- Integration with existing git hooks and testing
 
 ## Common Commands
 - Development setup: `source .venv/bin/activate`
@@ -409,14 +315,11 @@ This project is configured for Serena MCP integration with:
 - Format code: `ruff format .`
 - Check linting: `ruff check .`
 - Type checking: `mypy src/`
-- Pre-commit check: `pre-commit run --all-files`
 """
 
         memory_file = os.path.join(memories_dir, "project_overview.md")
         with open(memory_file, 'w', encoding='utf-8') as f:
             f.write(memory_content)
-
-        print(f"   • Created initial memory: {memory_file}")
 
         # Create Serena usage guide
         usage_guide = f"""# Serena Usage Guide for {project_name}
@@ -425,39 +328,22 @@ This project is configured for Serena MCP integration with:
 1. Ensure Serena MCP is installed and enabled in Claude Code
 2. Enable all tools (shell execution, editing, web access) for maximum value
 3. Start with onboarding mode to let Serena analyze the codebase
-4. Use appropriate modes for different tasks
-
-## Recommended Modes
-- **Planning tasks**: `--mode planning --mode one-shot`
-- **Code editing**: `--mode editing --mode interactive`
-- **Development sessions**: `--mode planning --mode interactive`
 
 ## Capabilities
 - **Test Execution**: Serena can run `pytest tests/` and fix failures
 - **Code Quality**: Auto-fix ruff linting and formatting issues
 - **Build Management**: Handle dependency installation and updates
 - **Documentation**: Generate and update project documentation
-- **Error Correction**: Self-correct based on test results and feedback
-
-## Integration Notes
-- Git hooks will validate Serena's changes automatically
-- All changes are tracked through git for easy review
-- Serena respects existing project configuration files
-- Memory system maintains project context across sessions
 
 ## Best Practices
 - Start with clean git state when using Serena
 - Review Serena's changes with `git diff` before committing
 - Allow Serena to complete onboarding on first use
-- Use read-only mode for analysis-only tasks
-- Keep backups of important work
 """
 
         guide_file = os.path.join(serena_dir, "USAGE_GUIDE.md")
         with open(guide_file, 'w', encoding='utf-8') as f:
             f.write(usage_guide)
-
-        print(f"   • Created usage guide: {guide_file}")
 
         return True
 
@@ -467,7 +353,7 @@ This project is configured for Serena MCP integration with:
 
 def install_serena_mcp():
     """Install Serena MCP server for Claude Code with enhanced configuration."""
-    # Progress bar handles display now
+    print("• Setting up Serena MCP integration...")
 
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
@@ -481,41 +367,26 @@ def install_serena_mcp():
     # Check if Claude Code CLI is available
     if not run_command("which claude", check=False):
         print("   ⚠️  Claude Code CLI not found - skipping Serena MCP setup")
-        print("   To install Claude Code: https://claude.ai/cli")
         return False
 
     # Check if Serena MCP is already installed
     if run_command("claude mcp list | grep serena", check=False):
         print("   • Serena MCP already installed")
-        print("   • Configuration files created in .serena/ directory")
         return True
 
     # Install Serena MCP
-    print("   • Installing Serena MCP server...")
     install_cmd = 'claude mcp add-json "serena" \'{"command":"uvx","args":["--from","git+https://github.com/oraios/serena","serena-mcp-server"]}\''
 
     if run_command(install_cmd, check=False):
         print("   • Serena MCP installed successfully")
-        print("   • Configuration files created in .serena/ directory")
-
-        # Verify installation
-        if run_command("claude mcp list", check=False):
-            print("   • MCP servers listed successfully")
-
-        print("   📖 See .serena/USAGE_GUIDE.md for usage instructions")
-        print("   💡 Enable all tools in Claude Code for maximum value")
-
         return True
     else:
         print("   ⚠️  Failed to install Serena MCP")
-        print("   You can install manually later:")
-        print("   claude mcp add-json \"serena\" '{\"command\":\"uvx\",\"args\":[\"--from\",\"git+https://github.com/oraios/serena\",\"serena-mcp-server\"]}'")
-        print("   Configuration files have been created in .serena/ directory")
         return False
 
 def install_pre_commit():
     """Install pre-commit hooks."""
-    # Progress bar handles display now
+    print("• Installing pre-commit hooks...")
 
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
 
@@ -529,27 +400,17 @@ def install_pre_commit():
 
     # Install pre-commit if not available
     if not os.path.exists(pre_commit_cmd):
-        print("   • Installing pre-commit...")
-        if not run_command(f"{venv_pip} install pre-commit", check=False):
-            print("   ❌ Failed to install pre-commit")
-            return False
+        run_command(f"{venv_pip} install pre-commit", check=False)
 
     # Install pre-commit hooks
     if os.path.exists(pre_commit_cmd):
-        print("   • Installing pre-commit hooks...")
         if run_command(pre_commit_cmd + " install", check=False):
-            print("   • Pre-commit hooks installed successfully")
             return True
-        else:
-            print("   ❌ Failed to install pre-commit hooks")
-            return False
-    else:
-        print("   ❌ pre-commit command not found")
-        return False
+    return False
 
 def install_pre_push_hook():
     """Install custom pre-push hook for testing and dynamic analysis."""
-    # Progress bar handles display now
+    print("• Installing pre-push hook...")
 
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
 
@@ -567,14 +428,10 @@ def install_pre_push_hook():
             import shutil
             shutil.copy2(pre_push_source, pre_push_target)
             os.chmod(pre_push_target, 0o755)  # Make executable
-            print("   • Pre-push hook installed successfully")
             return True
-        except Exception as e:
-            print(f"   ❌ Failed to install pre-push hook: {e}")
+        except Exception:
             return False
-    else:
-        print("   ⚠️  Pre-push hook template not found")
-        return False
+    return False
 
 def print_next_steps():
     """Print next steps for user."""
@@ -582,67 +439,38 @@ def print_next_steps():
     use_git_hooks = "{{ cookiecutter.use_git_hooks }}"
     use_ai = "{{ cookiecutter.use_ai_workflow }}"
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✅ Project created!")
-    print("="*60)
+    print("=" * 60)
     print(f"\n• Project: {project_name}")
     print(f"• Git Hooks: {use_git_hooks}")
     print(f"• AI Workflow: {use_ai}")
 
-    print("\n• All dependencies are installed and ready to use!")
-    if use_ai == "yes":
-        print("• Serena MCP integration is configured for enhanced AI capabilities")
     if use_git_hooks == "yes":
-        print("• Pre-commit hooks are installed and will run automatically on commit")
+        print("\n• Pre-commit hooks are installed and will run automatically")
         print("• Pre-push hooks are installed and will run tests/dynamic analysis")
         print("• Run 'pre-commit run --all-files' to check all files manually")
         print("• 🔴 IMPORTANT: Never use 'git commit --no-verify' - bypasses checks!")
         print("• 🔴 IMPORTANT: Never use 'git push --no-verify' - bypasses testing!")
     else:
-        print("• Git hooks are disabled - manual quality checks required")
+        print("\n• Git hooks are disabled - manual quality checks required")
+
+    if use_ai == "yes":
+        print("• Serena MCP integration is configured for enhanced AI capabilities")
 
 def main():
-    """Main post-generation logic with progress tracking."""
+    """Main post-generation logic."""
     try:
-        # Initialize progress bar with total number of steps
-        total_steps = 8  # Total number of main operations
-        progress = ProgressBar(total_steps)
-        progress.start_display()
-
-        # Setup Claude AI context with template variables
-        progress.step("Setting up Claude AI context...")
+        # Setup Claude AI context if enabled
         setup_claude_context()
-
-        # Copy HIVE_CLAUDE.md as CLAUDE.md to project root
-        progress.step("Copying CLAUDE.md documentation...")
         copy_claude_md()
 
-        # Initialize git repository
-        progress.step("Initializing git repository...")
         initialize_git()
-
-        # Create virtual environment (this takes time!)
-        progress.step("Creating Python virtual environment...")
         create_venv()
-
-        # Install dependencies (longest operation)
-        progress.step("Installing project dependencies...")
         install_dependencies()
-
-        # Install pre-commit hooks
-        progress.step("Setting up pre-commit hooks...")
         install_pre_commit()
-
-        # Install pre-push hook
-        progress.step("Configuring pre-push hooks...")
         install_pre_push_hook()
-
-        # Install Serena MCP integration
-        progress.step("Configuring Serena AI integration...")
         install_serena_mcp()
-
-        # Finish progress bar
-        progress.finish("Project setup completed successfully!")
 
         # Remove AI workflow if not needed (but keep docs/CLAUDE.md for general use)
         ai_workflow_disabled = "{{ cookiecutter.use_ai_workflow }}" == "no"
