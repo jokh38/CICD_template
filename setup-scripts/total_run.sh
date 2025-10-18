@@ -121,6 +121,20 @@ EXAMPLES:
 EOF
 }
 
+# Function to get the original user (not root)
+get_original_user() {
+    if [ "$EUID" -eq 0 ]; then
+        # If running as root, get the original user
+        if [ -n "$SUDO_USER" ]; then
+            echo "$SUDO_USER"
+        else
+            echo "root"
+        fi
+    else
+        echo "$USER"
+    fi
+}
+
 # Function to run a script with error handling and output suppression
 run_script() {
     local script_path="$1"
@@ -147,6 +161,49 @@ run_script() {
     else
         print_error "✗ $description"
         return 1
+    fi
+}
+
+# Function to run a script as the original user (without sudo)
+run_script_as_user() {
+    local script_path="$1"
+    local description="$2"
+    shift 2
+    local script_args=("$@")
+
+    if [ ! -f "$script_path" ]; then
+        print_error "Script not found: $script_path"
+        return 1
+    fi
+
+    print_status "Running: $description (as user)"
+
+    if [ "$DRY_RUN" = "true" ]; then
+        print_status "[DRY RUN] Would execute as user: $script_path ${script_args[*]}"
+        return 0
+    fi
+
+    local original_user=$(get_original_user)
+
+    # Run script as original user with suppressed output
+    if [ "$EUID" -eq 0 ] && [ "$original_user" != "root" ]; then
+        # Running as root, execute as original user
+        if sudo -u "$original_user" bash "$script_path" "${script_args[@]}" > /dev/null 2>&1; then
+            print_success "✓ $description"
+            return 0
+        else
+            print_error "✗ $description"
+            return 1
+        fi
+    else
+        # Already running as user or running as root without SUDO_USER
+        if bash "$script_path" "${script_args[@]}" > /dev/null 2>&1; then
+            print_success "✓ $description"
+            return 0
+        else
+            print_error "✗ $description"
+            return 1
+        fi
     fi
 }
 
@@ -180,9 +237,9 @@ install_python_tools() {
 setup_configurations() {
     print_status "Setting up configurations..."
 
-    run_script "$LINUX_DIR/config/setup-git-config.sh" "Git Configuration"
-    run_script "$LINUX_DIR/config/setup-code-formatting.sh" "Code Formatting Configurations"
-    run_script "$LINUX_DIR/config/setup-ai-workflows.sh" "AI Workflow Templates"
+    run_script_as_user "$LINUX_DIR/config/setup-git-config.sh" "Git Configuration"
+    run_script_as_user "$LINUX_DIR/config/setup-code-formatting.sh" "Code Formatting Configurations"
+    run_script_as_user "$LINUX_DIR/config/setup-ai-workflows.sh" "AI Workflow Templates"
 }
 
 # Function to create test projects
@@ -191,11 +248,11 @@ create_test_projects() {
         print_status "Creating test projects..."
 
         if [ "$INSTALL_CPP" = "true" ] || [ "$INSTALL_ALL" = "true" ]; then
-            run_script "$LINUX_DIR/validation/create-test-projects.sh" "C++ Test Project" --cpp-only
+            run_script_as_user "$LINUX_DIR/validation/create-test-projects.sh" "C++ Test Project" --cpp-only
         fi
 
         if [ "$INSTALL_PYTHON" = "true" ] || [ "$INSTALL_ALL" = "true" ]; then
-            run_script "$LINUX_DIR/validation/create-test-projects.sh" "Python Test Project" --python-only
+            run_script_as_user "$LINUX_DIR/validation/create-test-projects.sh" "Python Test Project" --python-only
         fi
     fi
 }
@@ -214,7 +271,7 @@ run_validation() {
             validation_args="--system-only"
         fi
 
-        run_script "$LINUX_DIR/validation/run-validation.sh" "Validation Tests" $validation_args
+        run_script_as_user "$LINUX_DIR/validation/run-validation.sh" "Validation Tests" $validation_args
     fi
 }
 
@@ -237,20 +294,34 @@ run_final_validation() {
         validation_args="--system-only"
     fi
 
-    # Run final validation script without output suppression to show detailed results
-    if bash "$LINUX_DIR/validation/final-validation.sh" $validation_args; then
-        print_success "✅ Final validation completed successfully"
-        return 0
+    local original_user=$(get_original_user)
+
+    # Run final validation script as user without output suppression to show detailed results
+    if [ "$EUID" -eq 0 ] && [ "$original_user" != "root" ]; then
+        # Running as root, execute as original user
+        if sudo -u "$original_user" bash "$LINUX_DIR/validation/final-validation.sh" $validation_args; then
+            print_success "✅ Final validation completed successfully"
+            return 0
+        else
+            print_error "❌ Final validation failed"
+            return 1
+        fi
     else
-        print_error "❌ Final validation failed"
-        return 1
+        # Already running as user
+        if bash "$LINUX_DIR/validation/final-validation.sh" $validation_args; then
+            print_success "✅ Final validation completed successfully"
+            return 0
+        else
+            print_error "❌ Final validation failed"
+            return 1
+        fi
     fi
 }
 
 # Function to cleanup
 cleanup() {
     print_status "Cleaning up..."
-    run_script "$LINUX_DIR/validation/run-validation.sh" "Cleanup" --cleanup
+    run_script_as_user "$LINUX_DIR/validation/run-validation.sh" "Cleanup" --cleanup
 }
 
 # Function to print summary
