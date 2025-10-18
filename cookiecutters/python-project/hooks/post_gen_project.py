@@ -4,8 +4,9 @@
 import os
 import subprocess
 import sys
-import time
 import threading
+import time
+
 
 class ProgressBar:
     """Progress bar with live updates for long-running operations."""
@@ -134,7 +135,7 @@ def customize_claude_md(claude_md_path):
     """Customize CLAUDE.md file with project-specific values."""
     try:
         # Read the file
-        with open(claude_md_path, 'r', encoding='utf-8') as f:
+        with open(claude_md_path, encoding='utf-8') as f:
             content = f.read()
 
         # Get actual cookiecutter values

@@ -5,13 +5,14 @@ import os
 import subprocess
 import sys
 
+
 def run_command(cmd, check=True):
     try:
         result = subprocess.run(cmd, shell=True, check=check,
                                 capture_output=True, text=True)
         return result.returncode == 0
     except subprocess.CalledProcessError as e:
-        print("Error: {}".format(e))
+        print(f"Error: {e}")
         return False
 
 def process_workflow_files():
@@ -23,7 +24,6 @@ def process_workflow_files():
         print("   • No workflows directory found")
         return True
 
-    import re
     processed_files = []
 
     try:
@@ -33,7 +33,7 @@ def process_workflow_files():
                     workflow_file = os.path.join(root, file)
 
                     # Read the workflow file
-                    with open(workflow_file, 'r', encoding='utf-8') as f:
+                    with open(workflow_file, encoding='utf-8') as f:
                         content = f.read()
 
                     # Fix GitHub Actions expressions that were escaped for Jinja2
@@ -59,11 +59,11 @@ def process_workflow_files():
 
                     processed_files.append(workflow_file)
 
-        print("   • Processed {} workflow files".format(len(processed_files)))
+        print(f"   • Processed {len(processed_files)} workflow files")
         return True
 
     except Exception as e:
-        print("   ❌ Error processing workflow files: {}".format(e))
+        print(f"   ❌ Error processing workflow files: {e}")
         return False
 
 def setup_claude_context():
@@ -92,7 +92,7 @@ def setup_claude_context():
 
     if not source_claude_dir:
         print("   ⚠️  Source .github/claude/ directory not found")
-        print("   Tried paths: {}".format(possible_source_dirs))
+        print(f"   Tried paths: {possible_source_dirs}")
         return False
 
     # Copy entire .github/claude/ directory structure
@@ -121,19 +121,19 @@ def setup_claude_context():
                 if file == "CLAUDE.md":
                     customize_claude_md(target_file)
 
-        print("   • Copied {} AI workflow files to .github/claude/".format(len(copied_files)))
+        print(f"   • Copied {len(copied_files)} AI workflow files to .github/claude/")
         print("   • Commands, prompts, and documentation ready")
         return True
 
     except Exception as e:
-        print("   ❌ Error copying .github/claude/ directory: {}".format(e))
+        print(f"   ❌ Error copying .github/claude/ directory: {e}")
         return False
 
 def customize_claude_md(claude_md_path):
     """Customize CLAUDE.md file with project-specific values."""
     try:
         # Read the file
-        with open(claude_md_path, 'r', encoding='utf-8') as f:
+        with open(claude_md_path, encoding='utf-8') as f:
             content = f.read()
 
         # Replace cookiecutter variables with actual project values
@@ -157,7 +157,7 @@ def customize_claude_md(claude_md_path):
         return True
 
     except Exception as e:
-        print("   ⚠️  Error customizing CLAUDE.md: {}".format(e))
+        print(f"   ⚠️  Error customizing CLAUDE.md: {e}")
         return False
 
 def copy_claude_md():
@@ -184,7 +184,7 @@ def copy_claude_md():
 
     if not source_hive_claude:
         print("   ⚠️  Source HIVE_CLAUDE.md not found in docs/")
-        print("   Tried paths: {}".format(possible_source_paths))
+        print(f"   Tried paths: {possible_source_paths}")
         return False
 
     try:
@@ -193,7 +193,7 @@ def copy_claude_md():
         print("   • CLAUDE.md copied to project root")
         return True
     except Exception as e:
-        print("   ❌ Error copying HIVE_CLAUDE.md: {}".format(e))
+        print(f"   ❌ Error copying HIVE_CLAUDE.md: {e}")
         return False
 
 def initialize_git():
@@ -278,13 +278,13 @@ def print_next_steps():
     print("\n" + "="*60)
     print("✅ Project created!")
     print("="*60)
-    print("\n• Project: {}".format(project_name))
-    print("• Build: {}".format(build_system))
-    print("• Git Hooks: {}".format(use_git_hooks))
-    print("• AI Workflow: {}".format(use_ai))
+    print(f"\n• Project: {project_name}")
+    print(f"• Build: {build_system}")
+    print(f"• Git Hooks: {use_git_hooks}")
+    print(f"• AI Workflow: {use_ai}")
 
     print("\n• Quick Start:")
-    print("  1. cd {}".format(project_slug))
+    print(f"  1. cd {project_slug}")
     print("  2. mkdir build && cd build")
     if build_system == "cmake":
         print("  3. cmake ..")
@@ -351,7 +351,7 @@ def main():
         print_next_steps()
 
     except Exception as e:
-        print("\n❌ Error: {}".format(e))
+        print(f"\n❌ Error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
